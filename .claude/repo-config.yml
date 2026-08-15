@@ -13,4 +13,4 @@ capabilities:
 
 commands:
   test: python3 -m unittest discover -s tests
-  verify: python3 -m lib.validators.specs && python3 -m lib.validators.boundaries && python3 -m lib.validators.docs
+  verify: python3 -m lib.validators.specs && python3 -m lib.validators.boundaries && python3 -m lib.validators.docs && python3 -m lib.validators.actions

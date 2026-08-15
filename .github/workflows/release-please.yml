@@ -16,7 +16,10 @@ jobs:
   release-please:
     runs-on: ubuntu-latest
     steps:
-      - uses: googleapis/release-please-action@v4
+      # Pinned to a SHA, not a tag: this repository requires third-party
+      # actions to be pinned, and a tag reference is refused when the step
+      # starts. `lib/validators/actions` keeps it that way.
+      - uses: googleapis/release-please-action@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071 # v4
         with:
           config-file: .github/release-please/config.json
           manifest-file: .github/release-please/manifest.json
