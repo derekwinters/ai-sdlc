@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://derekwinters.github.io/ai-sdlc/schema/repo-config.schema.json",
+  "title": "ai-sdlc repository configuration",
+  "description": "Describes a consuming repository. Everything else \u2014 skills, workflows, specifications \u2014 is identical across repositories; this file is how one repository differs from another.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "capabilities": {
+      "description": "Installed capabilities. 'substrate' is implied.",
+      "type": "array",
+      "items": {
+        "enum": [
+          "substrate",
+          "hygiene",
+          "consistency",
+          "labels",
+          "release",
+          "pipeline"
+        ]
+      },
+      "uniqueItems": true
+    },
+    "profiles": {
+      "description": "Opt-in profiles layered on the installed capabilities.",
+      "type": "array",
+      "items": {
+        "enum": [
+          "unity",
+          "mkdocs",
+          "python",
+          "node",
+          "kotlin"
+        ]
+      },
+      "uniqueItems": true
+    },
+    "owners": {
+      "description": "Logins with command authority. One owner is a list of one.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "bot": {
+      "description": "The identity that authors pipeline writes.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "identity": {
+          "enum": [
+            "github-actions",
+            "app"
+          ],
+          "default": "github-actions"
+        },
+        "login": {
+          "type": "string",
+          "default": "github-actions[bot]",
+          "description": "Whose reactions count as the watermark."
+        },
+        "app_id_secret": {
+          "type": "string",
+          "description": "Secret name, never a value."
+        },
+        "private_key_secret": {
+          "type": "string",
+          "description": "Secret name, never a value."
+        }
+      }
+    },
+    "labels": {
+      "description": "Overrides for the pipeline state vocabulary.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "triage": {
+          "type": "string"
+        },
+        "pending_approval": {
+          "type": "string"
+        },
+        "clarification": {
+          "type": "string"
+        },
+        "approved": {
+          "type": "string"
+        },
+        "building": {
+          "type": "string"
+        },
+        "parked": {
+          "type": "string"
+        }
+      }
+    },
+    "milestone_ordering": {
+      "description": "How milestone titles compare. 'none' disables the ordering gate.",
+      "enum": [
+        "semver",
+        "date",
+        "lexical",
+        "none"
+      ],
+      "default": "semver"
+    },
+    "dashboard_issue": {
+      "description": "The issue the dashboard renders into.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "commands": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "test": {
+          "type": "string"
+        },
+        "verify": {
+          "type": "string"
+        },
+        "spec_validator": {
+          "type": "string"
+        }
+      }
+    },
+    "fire": {
+      "description": "Names of secrets holding the routine endpoint and token.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "endpoint_secret": {
+          "type": "string"
+        },
+        "token_secret": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

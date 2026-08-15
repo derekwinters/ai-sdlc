@@ -11,10 +11,10 @@
       
       
       
-        <link rel="prev" href="../configuration/">
+        <link rel="prev" href="../../design/">
       
       
-        <link rel="next" href="../gatekeeper/">
+        <link rel="next" href="../github-api/">
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
@@ -22,7 +22,7 @@
     
     
       
-        <title>GitHub access - ai-sdlc</title>
+        <title>Configuration - ai-sdlc</title>
       
     
     
@@ -74,7 +74,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#specification-github-access-api" class="md-skip">
+        <a href="#specification-configuration-cfg" class="md-skip">
           Skip to content
         </a>
       
@@ -110,7 +110,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              GitHub access
+              Configuration
             
           </span>
         </div>
@@ -332,27 +332,6 @@
                 
   
   
-  
-  
-    <li class="md-nav__item">
-      <a href="../configuration/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Configuration
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
     
   
   
@@ -369,7 +348,7 @@
           
   
   <span class="md-ellipsis">
-    GitHub access
+    Configuration
   </span>
   
 
@@ -380,7 +359,7 @@
         
   
   <span class="md-ellipsis">
-    GitHub access
+    Configuration
   </span>
   
 
@@ -411,45 +390,54 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#1-the-client" class="md-nav__link">
+  <a href="#1-loading" class="md-nav__link">
     <span class="md-ellipsis">
-      1. The client
+      1. Loading
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-failure" class="md-nav__link">
+  <a href="#2-validation" class="md-nav__link">
     <span class="md-ellipsis">
-      2. Failure
+      2. Validation
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-pagination" class="md-nav__link">
+  <a href="#3-capabilities" class="md-nav__link">
     <span class="md-ellipsis">
-      3. Pagination
+      3. Capabilities
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#4-operations" class="md-nav__link">
+  <a href="#4-identity-and-authority" class="md-nav__link">
     <span class="md-ellipsis">
-      4. Operations
+      4. Identity and authority
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#5-the-fake" class="md-nav__link">
+  <a href="#5-pipeline-settings" class="md-nav__link">
     <span class="md-ellipsis">
-      5. The fake
+      5. Pipeline settings
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-the-yaml-subset" class="md-nav__link">
+    <span class="md-ellipsis">
+      6. The YAML subset
     </span>
   </a>
   
@@ -468,6 +456,27 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../github-api/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    GitHub access
+  </span>
+  
+
+      </a>
     </li>
   
 
@@ -605,45 +614,54 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#1-the-client" class="md-nav__link">
+  <a href="#1-loading" class="md-nav__link">
     <span class="md-ellipsis">
-      1. The client
+      1. Loading
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-failure" class="md-nav__link">
+  <a href="#2-validation" class="md-nav__link">
     <span class="md-ellipsis">
-      2. Failure
+      2. Validation
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-pagination" class="md-nav__link">
+  <a href="#3-capabilities" class="md-nav__link">
     <span class="md-ellipsis">
-      3. Pagination
+      3. Capabilities
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#4-operations" class="md-nav__link">
+  <a href="#4-identity-and-authority" class="md-nav__link">
     <span class="md-ellipsis">
-      4. Operations
+      4. Identity and authority
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#5-the-fake" class="md-nav__link">
+  <a href="#5-pipeline-settings" class="md-nav__link">
     <span class="md-ellipsis">
-      5. The fake
+      5. Pipeline settings
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-the-yaml-subset" class="md-nav__link">
+    <span class="md-ellipsis">
+      6. The YAML subset
     </span>
   </a>
   
@@ -676,95 +694,97 @@
   
 
 
-<h1 id="specification-github-access-api">Specification — GitHub access (<code>API</code>)<a class="headerlink" href="#specification-github-access-api" title="Permanent link">&para;</a></h1>
-<p>Every GitHub read and write in ai-sdlc passes through one module. Nothing else opens a socket.</p>
-<p>This exists so the rest of the system is testable without a network, without credentials, and
-without a live repository. A seam that is one module wide can be faked completely; a dozen
-scattered <code>urlopen</code> calls cannot.</p>
-<p><code>API</code> belongs to the <strong>substrate</strong> capability and depends on nothing.</p>
+<h1 id="specification-configuration-cfg">Specification — Configuration (<code>CFG</code>)<a class="headerlink" href="#specification-configuration-cfg" title="Permanent link">&para;</a></h1>
+<p>A consuming repository describes itself in <code>.claude/repo-config.yml</code>. Nothing else varies between
+repositories: the skills, workflows and specs are identical everywhere, and this file is how one
+repository differs from another.</p>
+<p><code>CFG</code> belongs to the <strong>substrate</strong> capability and depends only on <code>API</code>.</p>
 <p>Every requirement below is <code>auto</code> (covered by a named test) unless marked otherwise.</p>
 <hr />
 <h2 id="invariants">Invariants<a class="headerlink" href="#invariants" title="Permanent link">&para;</a></h2>
 <blockquote>
-<p><strong>Invariant — <code>lib/github.py</code> is the only module in the repository that performs network I/O.</strong>
-Every other module receives a client and never constructs its own.</p>
-<p><strong>Invariant — no test performs network I/O.</strong> The suite runs with no credentials and no
-connection. A test needing GitHub uses the fake.</p>
-<p><strong>Invariant — a read never writes.</strong> No read operation may be implemented in terms of a request
-method that mutates state.</p>
+<p><strong>Invariant — configuration describes a repository; it does not switch behaviour on and off.</strong>
+A key exists because repositories genuinely differ — how many owners, what a milestone means,
+what the test command is. A proposed key that would fork behaviour rather than describe a fact
+is a sign that a separate capability is wanted.</p>
+<p><strong>Invariant — every key the code reads exists in the schema.</strong> A key that is read but
+undocumented is a private setting nobody can discover, and it drifts.</p>
+<p><strong>Invariant — a capability may depend only on capabilities below it.</strong> Enabling one without its
+dependencies is a configuration error, refused at load, not a runtime surprise.</p>
 </blockquote>
 <hr />
-<h2 id="1-the-client">1. The client<a class="headerlink" href="#1-the-client" title="Permanent link">&para;</a></h2>
+<h2 id="1-loading">1. Loading<a class="headerlink" href="#1-loading" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>API-001</strong> The client is constructed with a token and a repository in <code>owner/name</code> form.</li>
-<li><strong>API-002</strong> A request targets <code>https://api.github.com</code> by default; the base URL is injectable so
-  the fake and tests can substitute one.</li>
-<li><strong>API-003</strong> Every request sends the <code>Accept: application/vnd.github+json</code> header.</li>
-<li><strong>API-004</strong> Every request sends an <code>X-GitHub-Api-Version</code> header pinned to a named constant, not
-  a literal at the call site.</li>
-<li><strong>API-005</strong> Every request authenticates with the token as a bearer credential.</li>
-<li><strong>API-006</strong> A repository-relative path (<code>/issues/1</code>) is resolved against the configured
-  repository; an absolute path (<code>/rate_limit</code>) is used unchanged.</li>
-<li><strong>API-007</strong> The token is never logged, never included in an error message, and never returned in
-  a result.</li>
+<li><strong>CFG-001</strong> Configuration is read from <code>.claude/repo-config.yml</code> relative to the repository root.</li>
+<li><strong>CFG-002</strong> The path is injectable, so tests and <code>adopt</code> can load a candidate file.</li>
+<li><strong>CFG-003</strong> A missing file is an error naming the expected path, not an empty configuration.</li>
+<li><strong>CFG-004</strong> Unparseable YAML is an error naming the file and the parse problem.</li>
+<li><strong>CFG-005</strong> The loader is pure: given a path it returns a value or raises. It performs no network
+  I/O and never mutates the file.</li>
+<li><strong>CFG-006</strong> Parsing uses no third-party library. The subset of YAML accepted is documented in
+  §6 and is a deliberate restriction, not an accident.</li>
 </ul>
-<h2 id="2-failure">2. Failure<a class="headerlink" href="#2-failure" title="Permanent link">&para;</a></h2>
+<h2 id="2-validation">2. Validation<a class="headerlink" href="#2-validation" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>API-010</strong> A non-2xx response raises a typed error carrying the status, the method, the path,
-  and a bounded excerpt of the body.</li>
-<li><strong>API-011</strong> The body excerpt is truncated to a fixed maximum so a large error page cannot flood
-  a log.</li>
-<li><strong>API-012</strong> A <code>401</code> says the credential is wrong rather than reporting a generic failure.</li>
-<li><strong>API-013</strong> A <code>403</code> distinguishes a rate limit from a permission failure when the response
-  headers allow it.</li>
-<li><strong>API-014</strong> A transport failure — no connection, DNS, timeout — raises the same typed error with
-  a status of <code>None</code> rather than escaping as a raw exception.</li>
-<li><strong>API-015</strong> A response body that is not valid JSON raises the typed error rather than a decoder
-  exception.</li>
-<li><strong>API-016</strong> An empty response body is <code>None</code>, not an error. A <code>204</code> is the normal case.</li>
+<li><strong>CFG-010</strong> A loaded configuration is validated in code, and <code>schema/repo-config.schema.json</code>
+  publishes the same contract for editors and <code>adopt</code>. The two are compared by test — same keys,
+  same enums, same defaults — because two descriptions of one thing drift unless something
+  compares them.</li>
+<li><strong>CFG-011</strong> An unknown top-level key is an error, not ignored. A typo that silently does nothing
+  is worse than a refusal.</li>
+<li><strong>CFG-012</strong> A key of the wrong type is an error naming the key, the expected type, and what was
+  found.</li>
+<li><strong>CFG-013</strong> Every error names the key path, so a nested mistake is findable.</li>
+<li><strong>CFG-014</strong> Validation reports every problem it can find, not only the first.</li>
+<li><strong>CFG-015</strong> A valid configuration exposes defaults for every optional key, so a caller never
+  writes <code>config.get(..., fallback)</code>.</li>
 </ul>
-<h2 id="3-pagination">3. Pagination<a class="headerlink" href="#3-pagination" title="Permanent link">&para;</a></h2>
+<h2 id="3-capabilities">3. Capabilities<a class="headerlink" href="#3-capabilities" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>API-020</strong> A collection read follows pages until a page arrives that is shorter than the page
-  size.</li>
-<li><strong>API-021</strong> Items keep their order across pages.</li>
-<li><strong>API-022</strong> An exactly-full final page costs one additional empty request; the result is
-  correct.</li>
-<li><strong>API-023</strong> An empty first page yields an empty list, not an error.</li>
-<li><strong>API-024</strong> A <code>null</code> page body is treated as empty rather than raising.</li>
-<li><strong>API-025</strong> Pagination stops at a configured maximum page count, so a malformed cursor cannot
-  loop forever.</li>
-<li><strong>API-026</strong> Reaching the page cap is reported by the caller-visible result, not silently
-  swallowed. <em>(manual: surfaced through a log line; asserted by the caller in <code>DASH</code>.)</em></li>
+<li><strong>CFG-020</strong> <code>capabilities</code> is a list drawn from <code>substrate</code>, <code>hygiene</code>, <code>consistency</code>, <code>labels</code>,
+  <code>release</code>, <code>pipeline</code>.</li>
+<li><strong>CFG-021</strong> An unknown capability name is an error listing the valid names.</li>
+<li><strong>CFG-022</strong> <code>substrate</code> is implied and need not be listed.</li>
+<li><strong>CFG-023</strong> Enabling a capability whose dependencies are absent is an error naming the missing
+  ones.</li>
+<li><strong>CFG-024</strong> The dependency table is declared once in code and is the same table the design
+  documents. <em>(manual: kept in step by the consistency gate in #4.)</em></li>
+<li><strong>CFG-025</strong> <code>profiles</code> is a list; an unknown profile name is an error.</li>
 </ul>
-<h2 id="4-operations">4. Operations<a class="headerlink" href="#4-operations" title="Permanent link">&para;</a></h2>
-<p>The vocabulary is deliberately small. Anything absent here is absent by design.</p>
+<h2 id="4-identity-and-authority">4. Identity and authority<a class="headerlink" href="#4-identity-and-authority" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>API-030</strong> <code>issue(number)</code> reads one issue.</li>
-<li><strong>API-031</strong> <code>issues(**filters)</code> reads issues, paginated.</li>
-<li><strong>API-032</strong> <code>comments(issue)</code> reads an issue's comments, paginated, in ascending order.</li>
-<li><strong>API-033</strong> <code>set_labels(issue, labels)</code> replaces an issue's labels.</li>
-<li><strong>API-034</strong> <code>set_milestone(issue, number)</code> sets or clears an issue's milestone.</li>
-<li><strong>API-035</strong> <code>comment(issue, body)</code> posts a comment.</li>
-<li><strong>API-036</strong> <code>reactions(comment)</code> reads a comment's reactions, with each reaction's author.</li>
-<li><strong>API-037</strong> <code>react(comment, content)</code> adds a reaction.</li>
-<li><strong>API-038</strong> <code>unreact(comment, reaction)</code> removes one.</li>
-<li><strong>API-039</strong> <code>milestones(state)</code> reads milestones, paginated.</li>
-<li><strong>API-040</strong> <code>blocked_by(issue)</code> reads native dependency relationships.</li>
-<li><strong>API-041</strong> The client exposes no operation that closes, reopens, or deletes an issue, and none
-  that edits an issue body.</li>
+<li><strong>CFG-030</strong> <code>owners</code> is a non-empty list of GitHub logins when <code>pipeline</code> is enabled.</li>
+<li><strong>CFG-031</strong> A single owner is expressed as a list of one; there is no scalar form.</li>
+<li><strong>CFG-032</strong> <code>bot.identity</code> is <code>github-actions</code> or <code>app</code>, defaulting to <code>github-actions</code>.</li>
+<li><strong>CFG-033</strong> <code>bot.app_id_secret</code> and <code>bot.private_key_secret</code> are required when identity is <code>app</code>
+  and forbidden otherwise.</li>
+<li><strong>CFG-034</strong> <code>bot.login</code> is the login whose reactions count as the watermark, defaulting to
+  <code>github-actions[bot]</code>.</li>
 </ul>
-<h2 id="5-the-fake">5. The fake<a class="headerlink" href="#5-the-fake" title="Permanent link">&para;</a></h2>
+<h2 id="5-pipeline-settings">5. Pipeline settings<a class="headerlink" href="#5-pipeline-settings" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>API-050</strong> <code>FakeGitHub</code> implements the same interface and is constructed from a plain dictionary
-  of repository state.</li>
-<li><strong>API-051</strong> Writes through the fake mutate its state, so a test asserts on the result rather
-  than on calls made.</li>
-<li><strong>API-052</strong> The fake records every request in order, so a test can assert what was <em>not</em> called.</li>
-<li><strong>API-053</strong> The fake can be told to fail a specific operation, so degradation paths are testable.</li>
-<li><strong>API-054</strong> The fake paginates using the same page size as the real client, so pagination
-  behaviour is exercised rather than bypassed.</li>
-<li><strong>API-055</strong> The fake performs no I/O and imports no network library.</li>
+<li><strong>CFG-040</strong> <code>milestone_ordering</code> is <code>semver</code>, <code>date</code>, <code>lexical</code> or <code>none</code>, defaulting to
+  <code>semver</code>.</li>
+<li><strong>CFG-041</strong> <code>dashboard_issue</code> is a positive integer when <code>pipeline</code> is enabled.</li>
+<li><strong>CFG-042</strong> <code>labels</code> maps each pipeline state name to the label used for it, defaulting to the
+  canonical vocabulary.</li>
+<li><strong>CFG-043</strong> Every canonical state has a mapping after defaults are applied; a partial mapping
+  overrides only what it names.</li>
+<li><strong>CFG-044</strong> Two states may not map to the same label.</li>
+<li><strong>CFG-045</strong> <code>commands.test</code>, <code>commands.verify</code> and <code>commands.spec_validator</code> are shell strings,
+  each optional.</li>
+<li><strong>CFG-046</strong> <code>fire.endpoint_secret</code> and <code>fire.token_secret</code> name secrets, never values. A literal
+  that looks like a credential is an error.</li>
+</ul>
+<h2 id="6-the-yaml-subset">6. The YAML subset<a class="headerlink" href="#6-the-yaml-subset" title="Permanent link">&para;</a></h2>
+<p>Parsing is stdlib-only, so the accepted subset is stated rather than inherited.</p>
+<ul>
+<li><strong>CFG-050</strong> Mappings, lists, strings, integers, booleans and <code>null</code> are supported.</li>
+<li><strong>CFG-051</strong> Nesting is by indentation, two spaces per level.</li>
+<li><strong>CFG-052</strong> Comments begin with <code>#</code> and run to end of line.</li>
+<li><strong>CFG-053</strong> Quoted strings preserve <code>#</code> and <code>:</code> inside them.</li>
+<li><strong>CFG-054</strong> Anchors, aliases, multi-document files and flow style are not supported, and using
+  one is an error that says so rather than misreading the file.</li>
 </ul>
 <hr />
 <h2 id="traceability">Traceability<a class="headerlink" href="#traceability" title="Permanent link">&para;</a></h2>
@@ -778,38 +798,43 @@ method that mutates state.</p>
 </thead>
 <tbody>
 <tr>
-<td>The client</td>
-<td>API-001–007</td>
-<td><code>test_github_client.py</code></td>
+<td>Loading</td>
+<td>CFG-001–006</td>
+<td><code>test_config_loading.py</code></td>
 </tr>
 <tr>
-<td>Failure</td>
-<td>API-010–016</td>
-<td><code>test_github_failure.py</code></td>
+<td>Validation</td>
+<td>CFG-010–015</td>
+<td><code>test_config_validation.py</code></td>
 </tr>
 <tr>
-<td>Pagination</td>
-<td>API-020–026</td>
-<td><code>test_github_pagination.py</code></td>
+<td>Capabilities</td>
+<td>CFG-020–025</td>
+<td><code>test_config_capabilities.py</code></td>
 </tr>
 <tr>
-<td>Operations</td>
-<td>API-030–041</td>
-<td><code>test_github_operations.py</code></td>
+<td>Identity</td>
+<td>CFG-030–034</td>
+<td><code>test_config_identity.py</code></td>
 </tr>
 <tr>
-<td>The fake</td>
-<td>API-050–055</td>
-<td><code>test_fake_github.py</code></td>
+<td>Pipeline settings</td>
+<td>CFG-040–046</td>
+<td><code>test_config_pipeline.py</code></td>
 </tr>
 <tr>
-<td>Invariants</td>
-<td>—</td>
-<td><code>test_architecture.py</code></td>
+<td>The YAML subset</td>
+<td>CFG-050–054</td>
+<td><code>test_yaml_subset.py</code></td>
+</tr>
+<tr>
+<td>Schema agreement</td>
+<td>CFG-010</td>
+<td><code>test_config_schema.py</code></td>
 </tr>
 </tbody>
 </table>
-<p><strong>44 requirements, 43 <code>auto</code> and 1 <code>manual</code>.</strong></p>
+<p><strong>39 requirements, 38 <code>auto</code> and 1 <code>manual</code>.</strong></p>
 
 
 

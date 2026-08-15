@@ -1,0 +1,32 @@
+# A repository running the whole pipeline, with the unity profile.
+capabilities:
+  - hygiene
+  - consistency
+  - labels
+  - release
+  - pipeline
+
+profiles:
+  - unity
+
+owners:
+  - derekwinters
+
+bot:
+  identity: github-actions
+
+milestone_ordering: semver
+dashboard_issue: 193
+
+# Only the states this repository renames; the rest keep their defaults.
+labels:
+  approved: ready-for-work
+  building: in-progress
+
+commands:
+  test: dotnet test Tests/Core/Core.Tests.csproj
+  verify: ./scripts/validate-specs.sh
+
+fire:
+  endpoint_secret: ROUTINE_FIRE_URL
+  token_secret: ROUTINE_FIRE_TOKEN
