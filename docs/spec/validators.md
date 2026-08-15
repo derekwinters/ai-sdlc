@@ -114,6 +114,14 @@ Every requirement below is `auto` (covered by a named test) unless marked otherw
   generates would be a rule at war with itself. A subdirectory *action* (`owner/repo/sub/action`)
   is not a workflow and is not exempt.
 
+This gate reads the repository's own workflow files and nothing else. A composite action can
+reference further actions inside its own `action.yml`, and those are equally subject to the
+policy — `actions/upload-pages-artifact@v3` calls `actions/upload-artifact@v4` and is refused for
+that reason alone. Checking them would mean fetching every action's source at validation time,
+which is network I/O in a validator, so the gate does not attempt it. The failure is loud and
+immediate when it happens, and the fix is to pin a version of the action whose own references are
+pinned.
+
 > **How the spec is changing (#64).** The consistency capability previously checked only the
 > specification, the tests, the site and the capability boundaries — everything *inside* the Python.
 > It now also checks the workflow files, because a defect that lives in a `uses:` line is invisible
