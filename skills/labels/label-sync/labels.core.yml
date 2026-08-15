@@ -1,0 +1,43 @@
+# The shared vocabulary. Installed and pinned; not hand-edited.
+#
+# The pipeline's code reads these names, so a repository that redefines one has
+# a pipeline that does not work while appearing adopted. Repository-specific
+# labels — anything `area:*`, and any local `type:*` — belong in
+# labels.repo.yml, which this file never touches.
+
+labels:
+  # ------------------------------------------------------- pipeline states
+  # Exactly one of these is on an open issue at a time.
+  - name: ai-triage
+    color: "1D76DB"
+    description: In the pipeline, awaiting or undergoing analysis
+  - name: pending-approval
+    color: "FBCA04"
+    description: Analysis produced a plan; awaiting the owner's decision
+  - name: needs-clarification
+    color: "D93F0B"
+    description: Analysis needs a human answer before it can continue
+  - name: ready-for-work
+    color: "0E8A16"
+    description: Plan accepted; eligible for the builder
+  - name: in-progress
+    color: "5319E7"
+    description: A builder has taken this issue
+  - name: parked
+    color: "C5DEF5"
+    description: Deliberately set aside; the pipeline leaves it alone
+
+  # ------------------------------------------------------ control labels
+  # Read by the shared workflows rather than by a human.
+  - name: skip-docs
+    color: "BFD4F2"
+    description: This change needs no documentation update; the docs gate passes
+  - name: no-closing-keyword
+    color: "BFD4F2"
+    description: This pull request deliberately closes no issue; the check passes
+
+  # ------------------------------------------------------ classification
+  # type:epic is read by the gatekeeper's scope rules.
+  - name: type:epic
+    color: "3E4B9E"
+    description: A container issue; its children are the work

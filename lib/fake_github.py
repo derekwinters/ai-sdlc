@@ -46,6 +46,7 @@ class FakeGitHub:
         milestones=None,
         blocked_by=None,
         reactions=None,
+        labels=None,
         actor="github-actions[bot]",
         fail=None,
         repository="owner/repo",
@@ -60,6 +61,7 @@ class FakeGitHub:
         self._milestones = [dict(m) for m in (milestones or [])]
         self._blocked_by = {n: list(bs) for n, bs in (blocked_by or {}).items()}
         self._reactions = {c: list(rs) for c, rs in (reactions or {}).items()}
+        self._labels = [dict(label) for label in (labels or [])]
         self._fail = dict(fail or {})
         self._ids = itertools.count(1000)
 
@@ -107,6 +109,28 @@ class FakeGitHub:
         if state != "all":
             found = [m for m in found if m.get("state", "open") == state]
         return self._page([dict(m) for m in found])
+
+    def labels(self):
+        self._record("labels")
+        return [dict(label) for label in self._labels]
+
+    def create_label(self, name, color, description):
+        self._record("create_label", name)
+        self._labels.append({"name": name, "color": color, "description": description})
+        return dict(self._labels[-1])
+
+    def update_label(self, name, color, description):
+        self._record("update_label", name)
+        for label in self._labels:
+            if label["name"] == name:
+                label.update(color=color, description=description)
+                return dict(label)
+        raise GitHubError("Not found.", status=404, method="PATCH", path=f"/labels/{name}")
+
+    def delete_label(self, name):
+        self._record("delete_label", name)
+        self._labels = [label for label in self._labels if label["name"] != name]
+        return None
 
     def create_milestone(self, title, description=None, due_on=None):
         self._record("create_milestone", title)

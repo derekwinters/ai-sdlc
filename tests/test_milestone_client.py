@@ -55,3 +55,34 @@ class TestUpdate(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestLabelOperations(unittest.TestCase):
+    """API-044 to API-046 — the label vocabulary on the client."""
+
+    def test_labels_are_paginated(self):  # API-044
+        api, _ = client("[]")
+        self.assertEqual(api.labels(), [])
+
+    def test_create_posts_all_three_fields(self):  # API-045
+        api, transport = client()
+        api.create_label("x", "ABCDEF", "words")
+        self.assertEqual(
+            json.loads(transport.requests[0]["body"]),
+            {"name": "x", "color": "ABCDEF", "description": "words"},
+        )
+
+    def test_update_patches_colour_and_description(self):  # API-045
+        api, transport = client()
+        api.update_label("x", "ABCDEF", "words")
+        self.assertEqual(transport.requests[0]["method"], "PATCH")
+
+    def test_a_label_name_is_url_encoded(self):  # API-045
+        api, transport = client()
+        api.update_label("area:build", "ABCDEF", "words")
+        self.assertIn("area%3Abuild", transport.requests[0]["url"])
+
+    def test_delete_issues_a_delete(self):  # API-046
+        api, transport = client("")
+        api.delete_label("x")
+        self.assertEqual(transport.requests[0]["method"], "DELETE")

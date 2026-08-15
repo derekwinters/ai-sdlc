@@ -191,6 +191,31 @@ class GitHub:
     def milestones(self, state="all"):
         return self.paginate("/milestones", state=state)
 
+    def labels(self):
+        return self.paginate("/labels")
+
+    def create_label(self, name, color, description):
+        return self.request(
+            "POST", "/labels",
+            {"name": name, "color": color, "description": description},
+        )
+
+    def update_label(self, name, color, description):
+        import urllib.parse
+
+        quoted = urllib.parse.quote(name, safe="")
+        return self.request(
+            "PATCH", f"/labels/{quoted}",
+            {"color": color, "description": description},
+        )
+
+    def delete_label(self, name):
+        """The one deletion in the vocabulary, and it is a label rather than an
+        issue. Guarded by the manifest's explicit `delete:` list — see `LBL`."""
+        import urllib.parse
+
+        return self.request("DELETE", f"/labels/{urllib.parse.quote(name, safe='')}")
+
     def create_milestone(self, title, description=None, due_on=None):
         payload = {"title": title}
         if description is not None:

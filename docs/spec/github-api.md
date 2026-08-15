@@ -83,6 +83,12 @@ The vocabulary is deliberately small. Anything absent here is absent by design.
 - **API-038** `unreact(comment, reaction)` removes one.
 - **API-039** `milestones(state)` reads milestones, paginated.
 - **API-040** `blocked_by(issue)` reads native dependency relationships.
+- **API-044** `labels()` reads the repository's labels, paginated.
+- **API-045** `create_label(name, color, description)` and
+  `update_label(name, color, description)` manage one.
+- **API-046** `delete_label(name)` removes one. This is the only deletion in the vocabulary; it
+  exists because a label taxonomy needs to be able to retire a name, and it is guarded by the
+  manifest's explicit delete list rather than being reachable from ordinary use.
 - **API-042** `create_milestone(title, description, due_on)` creates one and returns it with its
   assigned number.
 - **API-043** `update_milestone(number, **fields)` changes only the fields it is given.
@@ -115,4 +121,4 @@ The vocabulary is deliberately small. Anything absent here is absent by design.
 | The fake | API-050–055 | `test_fake_github.py` |
 | Invariants | — | `test_architecture.py` |
 
-**46 requirements, 45 `auto` and 1 `manual`.**
+**49 requirements, 48 `auto` and 1 `manual`.**

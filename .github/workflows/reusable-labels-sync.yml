@@ -1,0 +1,54 @@
+name: labels-sync
+
+# The label taxonomy is the pipeline's state machine, so it lives in git and is
+# applied from there. Runs when a manifest changes, and on demand.
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: >-
+          The ai-sdlc ref providing the sync. Leave unset when ai-sdlc is
+          itself the caller.
+        type: string
+        default: ""
+      directory:
+        description: Where the two manifests live in the calling repository.
+        type: string
+        default: .github
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: labels-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch the sync
+        if: inputs.ref != ''
+        uses: actions/checkout@v4
+        with:
+          repository: derekwinters/ai-sdlc
+          ref: ${{ inputs.ref }}
+          path: .ai-sdlc
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Apply the taxonomy
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          SKILL_ROOT: ${{ inputs.ref != '' && '.ai-sdlc' || '.' }}
+        run: |
+          PYTHONPATH="$SKILL_ROOT:$SKILL_ROOT/skills/labels/label-sync" \
+            python3 "$SKILL_ROOT/skills/labels/label-sync/label_sync.py" \
+            "${{ inputs.directory }}"
