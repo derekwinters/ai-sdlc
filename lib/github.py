@@ -68,6 +68,24 @@ def _urllib_transport(method, url, headers, body):
         )
 
 
+def post_json(url, headers, body):
+    """POST a JSON body to an arbitrary URL, returning (status, text).
+
+    Here rather than in a caller because this module is the only one permitted
+    to open a socket. The gatekeeper's routine fire is not a GitHub call, but
+    it is still network I/O, and the seam is about where I/O happens rather
+    than about who it talks to.
+    """
+    request = urllib.request.Request(
+        url, data=body.encode(), headers=headers, method="POST"
+    )
+    try:
+        with urllib.request.urlopen(request) as response:  # noqa: S310
+            return response.status, response.read().decode("utf-8", "replace")
+    except urllib.error.HTTPError as error:
+        return error.code, error.read().decode("utf-8", "replace")
+
+
 class _Response:
     __slots__ = ("status", "body", "headers")
 
