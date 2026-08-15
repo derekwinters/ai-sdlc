@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.3](https://github.com/derekwinters/ai-sdlc/compare/v0.4.2...v0.4.3) (2026-08-15)
+
+
+### Fixes
+
+* **adopt:** install labels.core.yml with the labels capability ([#76](https://github.com/derekwinters/ai-sdlc/issues/76)) ([6ea1630](https://github.com/derekwinters/ai-sdlc/commit/6ea1630ed497f560cbb8493d0c1f5be98b041ab6)), closes [#75](https://github.com/derekwinters/ai-sdlc/issues/75)
+
 ## [0.4.2](https://github.com/derekwinters/ai-sdlc/compare/v0.4.1...v0.4.2) (2026-08-15)
 
 
