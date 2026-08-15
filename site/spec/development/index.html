@@ -11,10 +11,10 @@
       
       
       
-        <link rel="prev" href="../configuration/">
+        <link rel="prev" href="../dashboard/">
       
       
-        <link rel="next" href="../github-api/">
+        <link rel="next" href="../labels/">
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
@@ -22,7 +22,7 @@
     
     
       
-        <title>Pull request hygiene - ai-sdlc</title>
+        <title>Development queue - ai-sdlc</title>
       
     
     
@@ -74,7 +74,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#specification-pull-request-hygiene-sys" class="md-skip">
+        <a href="#specification-development-queue-dev" class="md-skip">
           Skip to content
         </a>
       
@@ -110,7 +110,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Pull request hygiene
+              Development queue
             
           </span>
         </div>
@@ -373,30 +373,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    Pull request hygiene
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../hygiene/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -405,71 +385,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#invariants" class="md-nav__link">
-    <span class="md-ellipsis">
-      Invariants
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#1-closing-keywords" class="md-nav__link">
-    <span class="md-ellipsis">
-      1. Closing keywords
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#2-the-escape-hatch" class="md-nav__link">
-    <span class="md-ellipsis">
-      2. The escape hatch
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#3-running" class="md-nav__link">
-    <span class="md-ellipsis">
-      3. Running
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#traceability" class="md-nav__link">
-    <span class="md-ellipsis">
-      Traceability
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -584,10 +499,30 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../development/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Development queue
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -596,6 +531,89 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#invariants" class="md-nav__link">
+    <span class="md-ellipsis">
+      Invariants
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-eligibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Eligibility
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-ordering" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Ordering
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-the-cap" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. The cap
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-taking-an-issue" class="md-nav__link">
+    <span class="md-ellipsis">
+      4. Taking an issue
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-the-agents-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      5. The agent's contract
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#traceability" class="md-nav__link">
+    <span class="md-ellipsis">
+      Traceability
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -775,27 +793,45 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#1-closing-keywords" class="md-nav__link">
+  <a href="#1-eligibility" class="md-nav__link">
     <span class="md-ellipsis">
-      1. Closing keywords
+      1. Eligibility
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-the-escape-hatch" class="md-nav__link">
+  <a href="#2-ordering" class="md-nav__link">
     <span class="md-ellipsis">
-      2. The escape hatch
+      2. Ordering
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-running" class="md-nav__link">
+  <a href="#3-the-cap" class="md-nav__link">
     <span class="md-ellipsis">
-      3. Running
+      3. The cap
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-taking-an-issue" class="md-nav__link">
+    <span class="md-ellipsis">
+      4. Taking an issue
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-the-agents-contract" class="md-nav__link">
+    <span class="md-ellipsis">
+      5. The agent's contract
     </span>
   </a>
   
@@ -828,59 +864,79 @@
   
 
 
-<h1 id="specification-pull-request-hygiene-sys">Specification — Pull request hygiene (<code>SYS</code>)<a class="headerlink" href="#specification-pull-request-hygiene-sys" title="Permanent link">&para;</a></h1>
-<p>Rules about how a change lands, independent of what the change is. They apply to any repository
-where pull requests are how work reaches the default branch.</p>
-<p><code>SYS</code> belongs to the <strong>hygiene</strong> capability and depends only on the substrate. In particular it
-does not depend on the pipeline: a repository can adopt these checks without adopting an issue
-lifecycle, and the checks must never import from it.</p>
+<h1 id="specification-development-queue-dev">Specification — Development queue (<code>DEV</code>)<a class="headerlink" href="#specification-development-queue-dev" title="Permanent link">&para;</a></h1>
+<p>Which approved issue gets built next, and the rules the builder works under.</p>
+<p>The queue is where the derived-blockedness decision pays off. An issue's eligibility is computed
+from the dependency graph every time the queue is built, so an issue whose blocker closed becomes
+available on its own — nothing has to notice and wake it. That is why there is no blocked label,
+and why the revisit machinery that used to maintain one no longer exists.</p>
+<p><code>DEV</code> belongs to the <strong>pipeline</strong> capability.</p>
 <p>Every requirement below is <code>auto</code> (covered by a named test) unless marked otherwise.</p>
 <hr />
 <h2 id="invariants">Invariants<a class="headerlink" href="#invariants" title="Permanent link">&para;</a></h2>
 <blockquote>
-<p><strong>Invariant — a required check always runs and always reports.</strong> A check skipped by a workflow
-condition stays pending forever and blocks the merge it was meant to permit. An escape hatch
-makes a check <em>pass</em>; it never makes it absent.</p>
-<p><strong>Invariant — the escape hatch is a deliberate, visible act.</strong> Applying a label is a decision
-recorded on the pull request, not a configuration nobody can see.</p>
+<p><strong>Invariant — blockedness is derived at selection time, never stored.</strong> An issue blocked today
+and unblocked tomorrow needs nothing done to it. Storing the state means maintaining it, and
+maintaining it means a sweep.</p>
+<p><strong>Invariant — a hard blocker gates; a soft dependency only orders.</strong> Conflating them either
+stalls work that could proceed or builds things in the wrong order.</p>
+<p><strong>Invariant — one issue, one branch, one pull request.</strong> A pull request closing four issues is
+not reviewable, and cannot be reverted for one of them.</p>
 </blockquote>
 <hr />
-<h2 id="1-closing-keywords">1. Closing keywords<a class="headerlink" href="#1-closing-keywords" title="Permanent link">&para;</a></h2>
-<p>An issue whose work has merged should close. When it does not, it sits in a working state and the
-board misreports what is in flight — the condition the deleted reconcile sweep existed to repair.
-Requiring the keyword removes the condition instead of detecting it.</p>
+<h2 id="1-eligibility">1. Eligibility<a class="headerlink" href="#1-eligibility" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>SYS-001</strong> A pull request body containing <code>Closes #N</code>, <code>Fixes #N</code> or <code>Resolves #N</code> satisfies the
-  check.</li>
-<li><strong>SYS-002</strong> Matching is case-insensitive.</li>
-<li><strong>SYS-003</strong> The keyword's other forms — <code>close</code>, <code>closed</code>, <code>fix</code>, <code>fixed</code>, <code>resolve</code>, <code>resolved</code>
-  — are accepted, as GitHub accepts them.</li>
-<li><strong>SYS-004</strong> A cross-repository reference (<code>owner/repo#N</code>) satisfies the check.</li>
-<li><strong>SYS-005</strong> A bare mention (<code>#N</code>) or a <code>Refs #N</code> does not. Those link without closing, which is
-  the failure this check exists to prevent.</li>
-<li><strong>SYS-006</strong> A keyword inside a fenced code block does not count, since it does not close anything
-  either.</li>
-<li><strong>SYS-007</strong> An empty or absent body does not satisfy the check.</li>
-<li><strong>SYS-008</strong> The check reports which keyword it found and which issue, so a passing run is
-  evidence rather than silence.</li>
+<li><strong>DEV-001</strong> An issue is eligible when it carries the approved state.</li>
+<li><strong>DEV-002</strong> A closed issue is never eligible.</li>
+<li><strong>DEV-003</strong> A parked issue is never eligible.</li>
+<li><strong>DEV-004</strong> An issue already building is not eligible; it is already taken.</li>
+<li><strong>DEV-005</strong> An issue with an unresolved hard blocker is not eligible.</li>
+<li><strong>DEV-006</strong> An issue whose blockers are all resolved is eligible, with nothing having updated it.</li>
+<li><strong>DEV-007</strong> An issue with an unknown blocker is not eligible; not knowing is not the same as
+  resolved.</li>
+<li><strong>DEV-008</strong> An issue with an open pull request is not eligible; the work exists already.</li>
 </ul>
-<h2 id="2-the-escape-hatch">2. The escape hatch<a class="headerlink" href="#2-the-escape-hatch" title="Permanent link">&para;</a></h2>
+<h2 id="2-ordering">2. Ordering<a class="headerlink" href="#2-ordering" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>SYS-010</strong> A pull request labelled <code>no-closing-keyword</code> passes without one.</li>
-<li><strong>SYS-011</strong> The label's effect is reported in the check's output, so the exemption is visible in
-  the run rather than only on the pull request.</li>
-<li><strong>SYS-012</strong> The check runs and passes when labelled; it is never skipped. A skipped required
-  check stays pending and blocks the merge.</li>
-<li><strong>SYS-013</strong> The label name is fixed, not configurable. A required check's escape hatch that
-  varies per repository is one nobody can reason about across repositories.</li>
+<li><strong>DEV-010</strong> Eligible issues are ordered so that a soft dependency is built before its dependent.</li>
+<li><strong>DEV-011</strong> A soft dependency on an ineligible issue does not remove the dependent from the
+  queue; it only cannot be ordered against it.</li>
+<li><strong>DEV-012</strong> Issues with no ordering relationship keep issue-number order, so a run is
+  reproducible.</li>
+<li><strong>DEV-013</strong> A cycle among soft dependencies degrades to issue-number order rather than looping
+  or dropping work.</li>
+<li><strong>DEV-014</strong> The focus milestone is preferred: its issues come before others.</li>
 </ul>
-<h2 id="3-running">3. Running<a class="headerlink" href="#3-running" title="Permanent link">&para;</a></h2>
+<h2 id="3-the-cap">3. The cap<a class="headerlink" href="#3-the-cap" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>SYS-020</strong> The check is a script runnable alone, taking the body on standard input or as an
-  argument.</li>
-<li><strong>SYS-021</strong> It exits <code>0</code> when satisfied and <code>1</code> when not.</li>
-<li><strong>SYS-022</strong> It uses only the standard library.</li>
-<li><strong>SYS-023</strong> It never reads the network. The body and labels are supplied by the workflow.</li>
+<li><strong>DEV-020</strong> The queue is limited by the configured concurrency cap.</li>
+<li><strong>DEV-021</strong> Issues already building count against the cap.</li>
+<li><strong>DEV-022</strong> A cap already met yields an empty queue rather than an error.</li>
+<li><strong>DEV-023</strong> No cap configured means no limit.</li>
+<li><strong>DEV-024</strong> A truncated queue reports how many were left, so a partial run is not mistaken for a
+  complete one.</li>
+</ul>
+<h2 id="4-taking-an-issue">4. Taking an issue<a class="headerlink" href="#4-taking-an-issue" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>DEV-030</strong> Taking an issue moves it to the building state.</li>
+<li><strong>DEV-031</strong> Taking is refused if the issue is no longer eligible — the world may have changed
+  since the queue was built.</li>
+<li><strong>DEV-032</strong> One issue is taken at a time; the builder never holds two.</li>
+<li><strong>DEV-033</strong> The branch name derives from the issue number, so the association is recoverable
+  from the branch alone.</li>
+</ul>
+<h2 id="5-the-agents-contract">5. The agent's contract<a class="headerlink" href="#5-the-agents-contract" title="Permanent link">&para;</a></h2>
+<p>Rules the <code>dev</code> agent works under, enforced by review and by the gates rather than by this module.</p>
+<ul>
+<li><strong>DEV-040</strong> The agent writes the specification or contract change before the code.</li>
+<li><strong>DEV-041</strong> The agent writes a failing test before the implementation, and shows the failure.</li>
+<li><strong>DEV-042</strong> The agent's pull request body opens with a plain-English lead.</li>
+<li><strong>DEV-043</strong> The agent's pull request body carries a <code>## Deviations and Decisions</code> section, even
+  when empty.</li>
+<li><strong>DEV-044</strong> The agent reconciles the documentation it affects in the same pull request.</li>
+<li><strong>DEV-045</strong> The agent's pull request closes exactly one issue, with a closing keyword.</li>
+<li><strong>DEV-046</strong> The agent reads the repository's own configuration for stack specifics rather than
+  assuming a stack. <em>(manual: verified by the agent working unchanged across repositories.)</em></li>
 </ul>
 <hr />
 <h2 id="traceability">Traceability<a class="headerlink" href="#traceability" title="Permanent link">&para;</a></h2>
@@ -894,23 +950,33 @@ Requiring the keyword removes the condition instead of detecting it.</p>
 </thead>
 <tbody>
 <tr>
-<td>Closing keywords</td>
-<td>SYS-001–008</td>
-<td><code>test_closing_keyword.py</code></td>
+<td>Eligibility</td>
+<td>DEV-001–008</td>
+<td><code>test_dev_queue.py</code></td>
 </tr>
 <tr>
-<td>The escape hatch</td>
-<td>SYS-010–013</td>
-<td><code>test_closing_keyword.py</code></td>
+<td>Ordering</td>
+<td>DEV-010–014</td>
+<td><code>test_dev_queue.py</code></td>
 </tr>
 <tr>
-<td>Running</td>
-<td>SYS-020–023</td>
-<td><code>test_closing_keyword.py</code></td>
+<td>The cap</td>
+<td>DEV-020–024</td>
+<td><code>test_dev_queue.py</code></td>
+</tr>
+<tr>
+<td>Taking an issue</td>
+<td>DEV-030–033</td>
+<td><code>test_dev_take.py</code></td>
+</tr>
+<tr>
+<td>The agent's contract</td>
+<td>DEV-040–046</td>
+<td><code>test_dev_agent.py</code></td>
 </tr>
 </tbody>
 </table>
-<p><strong>16 requirements, all <code>auto</code>.</strong></p>
+<p><strong>33 requirements, 32 <code>auto</code> and 1 <code>manual</code>.</strong></p>
 
 
 
