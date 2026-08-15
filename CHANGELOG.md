@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.2.0 (2026-08-15)
+
+Pipeline state and visibility. The pipeline can now describe its own state — milestones, labels
+and dependencies — and report what has gone wrong with it.
+
+### Features
+
+* **ms:** milestone operations, including the create and edit the MCP server does not provide ([#50](https://github.com/derekwinters/ai-sdlc/pull/50))
+* **lbl:** the label taxonomy and its sync, in git rather than clicked into the interface ([#51](https://github.com/derekwinters/ai-sdlc/pull/51))
+* **blk:** native issue dependency tooling, with prose blockers reported as drift ([#52](https://github.com/derekwinters/ai-sdlc/pull/52))
+* **dash:** the pipeline dashboard, reporting every fault the pipeline deliberately does not repair ([#53](https://github.com/derekwinters/ai-sdlc/pull/53))
+
+### Notable decisions
+
+* **A prose `Blocked by #N` is found, reported, and never honoured.** Honouring it would make the
+  invisible-to-tooling form work, so it would stay ([#52](https://github.com/derekwinters/ai-sdlc/pull/52))
+* **Nothing deletes a label unless explicitly listed.** Deleting one strips it from every issue
+  that carried it ([#51](https://github.com/derekwinters/ai-sdlc/pull/51))
+* **An empty dashboard fault section is omitted**, so a healthy pipeline renders about a dozen
+  lines and length itself is the signal ([#53](https://github.com/derekwinters/ai-sdlc/pull/53))
+
+### At this release
+
+* 320 requirements: 314 covered by a named test, 6 explicitly manual, 0 planned
+* 858 tests, all offline
+
 ## 0.1.0 (2026-08-15)
 
 The gatekeeper pilot. ai-sdlc has a specification, a test suite that enforces it, and its first
