@@ -4,6 +4,12 @@ The gatekeeper is the only component permitted to move an issue through the pipe
 machine. It translates the repository owner's commands, written as comments, into label changes,
 and it refuses commands that would violate a pipeline rule.
 
+`GK` belongs to the **pipeline** capability and may depend on every capability below it.
+
+> **Status — planned (#5).** Specified ahead of implementation; built one section at a time in
+> issues #5 to #13. Requirements here are exempt from the coverage gate until then, and the
+> exemption disappears as each section lands.
+
 Every requirement below is `auto` (covered by a named test) unless marked otherwise.
 
 ---

@@ -1,0 +1,43 @@
+name: consistency
+
+# The specification, the tests, the skills and the site describe one system.
+# These gates fail the build when they stop.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: consistency-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Specification and tests agree
+        run: python3 -m lib.validators.specs
+
+      - name: Capability boundaries hold
+        run: python3 -m lib.validators.boundaries
+
+      - name: Specification and site agree
+        run: python3 -m lib.validators.docs
+
+      - name: The suite reaches no network
+        # A belt-and-braces run with no DNS: if anything opened a socket the
+        # architecture test missed, it fails here rather than in production.
+        run: python3 -m unittest discover -s tests
+        env:
+          http_proxy: http://127.0.0.1:9
+          https_proxy: http://127.0.0.1:9
