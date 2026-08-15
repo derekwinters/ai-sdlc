@@ -75,6 +75,15 @@ Every path adoption owns falls into exactly one class.
 - **ADOPT-035** Collisions are only checked for events the adoption actually installs a handler
   for. A repository taking only the hygiene capability installs no issue handler, so another
   repository's issue workflow is not its concern.
+- **ADOPT-036** A workflow adoption itself manages is never a collision. It is keyed on provenance
+  rather than on the file name, so a consumer's hand-written `dashboard.yml` still collides — the
+  name is precisely what would match.
+
+> **How the spec is changing (#90).** §4 said a workflow listening on a claimed event is a
+> collision, without excepting adoption's own. Installing `pipeline` therefore made every later
+> `apply` refuse, and `ADOPT-046` — *upgrading is the same operation* — became false for exactly the
+> repositories that had taken the most. Found upgrading `connor-multiplying-frogs` from v0.4.6 to
+> v0.4.7, one command after the pipeline landed.
 
 ## 5. Applying
 
@@ -173,10 +182,10 @@ than a formatting one: a reusable workflow runs with the **caller's** token, on 
 | Detecting | ADOPT-001–005 | `test_adopt_detect.py` |
 | Planning | ADOPT-010–015 | `test_adopt_plan.py` |
 | Classification | ADOPT-020–025 | `test_adopt_classify.py` |
-| Trigger collisions | ADOPT-030–035 | `test_adopt_collision.py` |
+| Trigger collisions | ADOPT-030–036 | `test_adopt_collision.py` |
 | Applying | ADOPT-040–047 | `test_adopt_apply.py` |
 | Verifying | ADOPT-050–054 | `test_adopt_verify.py` |
 | Pinning a caller | ADOPT-060–066 | `test_adopt_pin.py` |
 | Caller permissions | ADOPT-068–069 | `test_adopt_permissions.py` |
 
-**45 requirements, all `auto`.**
+**46 requirements, all `auto`.**
