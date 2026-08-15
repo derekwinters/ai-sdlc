@@ -34,6 +34,9 @@ jobs:
       - name: Specification and site agree
         run: python3 -m lib.validators.docs
 
+      - name: Third-party actions are pinned to a commit SHA
+        run: python3 -m lib.validators.actions
+
       - name: The suite reaches no network
         # A belt-and-braces run with no DNS: if anything opened a socket the
         # architecture test missed, it fails here rather than in production.

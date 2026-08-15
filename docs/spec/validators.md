@@ -91,6 +91,31 @@ Every requirement below is `auto` (covered by a named test) unless marked otherw
   usable in a diff. *(manual: ordering is asserted; determinism across environments is observed in
   CI.)*
 
+## 6. Workflow actions
+
+> **Invariant — a third-party action is referenced by commit SHA, never by tag or branch.** A tag
+> is a moving pointer to code published by someone else, running with the workflow's token.
+
+- **VAL-050** Every `uses:` reference in every `.yml` and `.yaml` file under `.github/workflows/`
+  is checked. A repository with no workflows is clean.
+- **VAL-051** A third-party action names a full 40-character commit SHA. A tag, a branch, or an
+  abbreviated SHA is reported.
+- **VAL-052** A local reference (`./…`) and a container reference (`docker://…`) are exempt: neither
+  is a third-party action resolved from a moving ref.
+- **VAL-053** An action owned by GitHub itself is exempt, matching the platform's own allow policy.
+  The owner is matched as a whole segment, so `actionsfoo/x` is not mistaken for `actions/x`.
+- **VAL-054** A SHA pin carries a trailing comment naming the version it pins, so a reader can tell
+  what forty characters of hexadecimal mean. A pin with no comment is reported.
+- **VAL-055** A problem names the workflow file and the line number.
+
+> **How the spec is changing (#64).** The consistency capability previously checked only the
+> specification, the tests, the site and the capability boundaries — everything *inside* the Python.
+> It now also checks the workflow files, because a defect that lives in a `uses:` line is invisible
+> to all of the above and only shows up as a failing run. `release-please.yml` referenced
+> `googleapis/release-please-action@v4`, this repository requires third-party actions to be pinned
+> to a full-length SHA, and every release run failed at the point of starting the step while the
+> whole suite stayed green.
+
 ---
 
 ## Traceability
@@ -102,5 +127,6 @@ Every requirement below is `auto` (covered by a named test) unless marked otherw
 | Specification and documentation | VAL-020–023 | `test_validate_docs.py` |
 | Capability boundaries | VAL-030–033 | `test_validate_boundaries.py` |
 | Running | VAL-040–044 | `test_validators_run.py` |
+| Workflow actions | VAL-050–055 | `test_validate_actions.py` |
 
-**29 requirements, 28 `auto` and 1 `manual`.**
+**35 requirements, 34 `auto` and 1 `manual`.**
