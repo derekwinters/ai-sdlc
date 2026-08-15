@@ -28,6 +28,21 @@ only you can do.
 everything else alone. Install and upgrade are one mechanism, so the upgrade path cannot rot
 separately from the install path.
 
+## Callers are pinned to a commit
+
+A caller references a **commit SHA**, with the version as a trailing comment:
+
+```yaml
+uses: derekwinters/ai-sdlc/.github/workflows/reusable-closing-keyword.yml@5c625bfb… # v0.4.1
+with:
+  ref: 5c625bfb…
+```
+
+A reusable workflow runs with the *caller's* token, on `issue_comment` and `issues`, inside the
+consuming repository. A tag can move; publishing it ourselves says who could move it, not that it
+cannot. You still type a version — `adopt` resolves it and rewrites both the SHA and the comment on
+upgrade, so nobody resolves a SHA by hand.
+
 ## It never overwrites what it did not write
 
 Files `adopt` writes carry a provenance header — source, ref, content hash. That is how it tells
@@ -61,4 +76,4 @@ workflows is the one a file comparison misses.
 - **`CLAUDE.md` is never rewritten.** One import line is appended, once. Your rules are yours.
 - **An existing dashboard issue is reused**, never duplicated.
 
-Specification: `docs/spec/adopt.md` (`ADOPT`), 35 requirements.
+Specification: `docs/spec/adopt.md` (`ADOPT`), 42 requirements.

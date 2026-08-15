@@ -2,11 +2,10 @@
 
 import unittest
 
-from _adopt import repository
+from _adopt import repository, NEWER_PIN, OLDER_PIN, PIN
 import _adopt  # noqa: F401
 from adopt import apply, verify
 
-PIN = "v0.4.0"
 CONFIG = "capabilities:\n  - hygiene\n"
 
 
@@ -28,11 +27,11 @@ class TestAHealthyRepository(unittest.TestCase):
 
 class TestDrift(unittest.TestCase):
     def test_an_older_pin_is_reported(self):  # ADOPT-050
-        result = verify(adopted(pin="v0.1.0"), pin=PIN)
+        result = verify(adopted(pin=OLDER_PIN), pin=PIN)
         self.assertFalse(result.ok)
 
     def test_the_report_names_both_versions(self):  # ADOPT-050
-        result = verify(adopted(pin="v0.1.0"), pin=PIN)
+        result = verify(adopted(pin=OLDER_PIN), pin=PIN)
         self.assertIn("v0.1.0", " ".join(result.problems))
 
     def test_a_locally_edited_managed_file_is_reported(self):  # ADOPT-052

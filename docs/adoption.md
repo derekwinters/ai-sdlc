@@ -52,13 +52,18 @@ permissions:
 
 jobs:
   closing-keyword:
-    uses: derekwinters/ai-sdlc/.github/workflows/reusable-closing-keyword.yml@v0.1.0
+    uses: derekwinters/ai-sdlc/.github/workflows/reusable-closing-keyword.yml@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071 # v0.4.1
     with:
-      ref: v0.1.0
+      ref: 5c625bfb5d1ff62eadeeb3772007f7f66fdcf071
 ```
 
-Pin to a released tag rather than `main`. An upgrade is then a pull request that moves the pin,
-reviewed like any other change.
+Pin to a **commit**, not a tag and not `main`. A reusable workflow runs with the caller's token, on
+`issue_comment` and `issues`, so a mutable ref there is the same exposure as a mutable action —
+publishing it ourselves says who could move the tag, not that it cannot move.
+
+The version comment is what keeps this readable: nobody reads forty characters of hexadecimal and
+knows whether they are three releases behind. `adopt` writes both, and rewrites both on upgrade, so
+an upgrade is still a pull request that moves one line and nobody resolves a SHA by hand.
 
 ## 4. Make the checks required
 

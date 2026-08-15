@@ -108,11 +108,9 @@ Every requirement below is `auto` (covered by a named test) unless marked otherw
 - **VAL-054** A SHA pin carries a trailing comment naming the version it pins, so a reader can tell
   what forty characters of hexadecimal mean. A pin with no comment is reported.
 - **VAL-055** A problem names the workflow file and the line number.
-- **VAL-056** A reusable-workflow reference — a path under `/.github/workflows/` ending `.yml` or
-  `.yaml` — is exempt. That is a workflow, not an action, and ai-sdlc distributes its own by tag
-  deliberately: `adopt` writes those callers, and a rule that flagged the line its own skill
-  generates would be a rule at war with itself. A subdirectory *action* (`owner/repo/sub/action`)
-  is not a workflow and is not exempt.
+- **VAL-056** A reusable-workflow reference is **not** exempt. It runs with the caller's token, so
+  a moving ref there is the same exposure as a moving action, and being published by us narrows who
+  could move the tag without making the reference immutable.
 
 This gate reads the repository's own workflow files and nothing else. A composite action can
 reference further actions inside its own `action.yml`, and those are equally subject to the
@@ -121,6 +119,15 @@ that reason alone. Checking them would mean fetching every action's source at va
 which is network I/O in a validator, so the gate does not attempt it. The failure is loud and
 immediate when it happens, and the fix is to pin a version of the action whose own references are
 pinned.
+
+> **How the spec is changing (#72).** VAL-056 used to exempt reusable workflows, on the grounds
+> that ai-sdlc distributes its own by tag and a gate flagging the line its own `adopt` skill writes
+> would be at war with itself. That resolved the contradiction in the wrong direction: the gate was
+> right and `adopt` was wrong. A reusable workflow runs with the caller's token, so a mutable ref
+> there is the same exposure as a mutable action — "we publish it" says who could move the tag, not
+> that it cannot move. `adopt` now writes a commit SHA with the version as a trailing comment, so
+> there is no longer a contradiction to resolve. Found adopting `connor-multiplying-frogs`, whose
+> own pin checker rejected the caller and was correct to.
 
 > **How the spec is changing (#64).** The consistency capability previously checked only the
 > specification, the tests, the site and the capability boundaries — everything *inside* the Python.

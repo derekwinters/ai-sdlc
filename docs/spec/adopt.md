@@ -97,6 +97,41 @@ Every path adoption owns falls into exactly one class.
   keeping its own version of something is visibly non-standard.
 - **ADOPT-054** `verify` writes nothing.
 
+## 7. Pinning a caller
+
+A caller names the ai-sdlc workflow it runs. What it names it *by* is a security decision rather
+than a formatting one: a reusable workflow runs with the **caller's** token, on `issue_comment` and
+`issues`, in the consumer's repository.
+
+> **Invariant — a caller references a commit SHA, never a tag or a branch.** A tag is a mutable
+> pointer. Publishing it ourselves narrows who could move it; it does not make the reference
+> immutable, and immutability is the property being relied on.
+
+- **ADOPT-060** A caller's `uses:` names a full 40-character commit SHA, and its `ref:` input is
+  that same SHA. The two cannot be allowed to disagree: a caller running one version of the
+  workflow against another version of the code is exactly what pairing them prevents.
+- **ADOPT-061** The SHA carries a trailing comment naming the version it resolves to. Forty
+  characters of hexadecimal tell a reviewer nothing about how far behind they are, which was the
+  one real advantage a tag had.
+- **ADOPT-062** The command still takes a **version**. A human knows `v0.4.1`; nobody resolves a
+  SHA by hand, and an upgrade stays a pull request moving one line because `apply` rewrites it.
+- **ADOPT-063** Resolution from version to SHA goes through an injected resolver, so no test
+  performs network I/O and the one-module network seam holds.
+- **ADOPT-064** An annotated tag is dereferenced to the commit it points at. `refs/tags/v4` and
+  `refs/tags/v4^{}` are different objects and only the second is a commit; pinning the tag object
+  produces a reference that does not resolve.
+- **ADOPT-065** A version that resolves to nothing is an error naming the version, never a caller
+  written with an empty or partial ref.
+- **ADOPT-066** The recorded pin holds the version and the SHA together, so `verify` at the same
+  version needs no network.
+
+> **How the spec is changing (#72).** Callers used to reference a tag — `@v0.4.1` — and §7 did not
+> exist. The reason given was that a tag keeps an upgrade readable, and that a workflow we publish
+> ourselves is not third-party code. The first is true and is now served by the trailing comment;
+> the second confuses *who could move the tag* with *whether it can move*. Found adopting
+> `connor-multiplying-frogs`, whose own action-pin checker rejected the caller `adopt` wrote and
+> was right to. `VAL-056` moved with it, in the same direction.
+
 ---
 
 ## Traceability
@@ -109,5 +144,6 @@ Every path adoption owns falls into exactly one class.
 | Trigger collisions | ADOPT-030–035 | `test_adopt_collision.py` |
 | Applying | ADOPT-040–046 | `test_adopt_apply.py` |
 | Verifying | ADOPT-050–054 | `test_adopt_verify.py` |
+| Pinning a caller | ADOPT-060–066 | `test_adopt_pin.py` |
 
-**35 requirements, all `auto`.**
+**42 requirements, all `auto`.**

@@ -26,3 +26,14 @@ NODE_MARKER = '{"name": "x"}\n'
 UNITY_MARKER = "m_EditorVersion: 2022.3.0f1\n"
 MKDOCS_MARKER = "site_name: x\n"
 KOTLIN_MARKER = "plugins { id 'org.jetbrains.kotlin.jvm' }\n"
+
+
+#: Fixture pins, as `(version, sha)`.
+#:
+#: Tuples rather than bare versions on purpose: a bare version sends `adopt`
+#: to its resolver, and the resolver is the network. Passing the resolved pair
+#: keeps every test offline by construction rather than by remembering to
+#: inject a fake each time.
+PIN = ("v0.4.0", "a" * 40)
+OLDER_PIN = ("v0.1.0", "b" * 40)
+NEWER_PIN = ("v0.5.0", "c" * 40)
