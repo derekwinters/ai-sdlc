@@ -1,0 +1,16 @@
+# ai-sdlc's own configuration. It is its first consumer: the checks it
+# publishes run on its own pull requests, so a change that breaks them breaks
+# this repository before it reaches anyone else's.
+#
+# `pipeline` is not enabled yet. It needs the label taxonomy (#16) and a
+# dashboard issue (#18), neither of which exists — and enabling a capability
+# without its dependencies is a configuration error, which is the rule working
+# rather than a limitation.
+
+capabilities:
+  - hygiene
+  - consistency
+
+commands:
+  test: python3 -m unittest discover -s tests
+  verify: python3 -m lib.validators.specs && python3 -m lib.validators.boundaries && python3 -m lib.validators.docs

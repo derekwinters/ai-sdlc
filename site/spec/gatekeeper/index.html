@@ -290,6 +290,26 @@
       
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adoption/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Adoption
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
     
   
   
@@ -307,10 +327,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
             
   
   <span class="md-ellipsis">
@@ -321,8 +341,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_3">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             Specification
           </label>
@@ -646,10 +666,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
         
           
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
             
   
   <span class="md-ellipsis">
@@ -660,8 +680,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             Decisions
           </label>
@@ -1217,7 +1237,9 @@ ordering rather than at the cause.</p>
 <li><strong>GK-101</strong> Closing an issue triggers no action on any other issue.</li>
 <li><strong>GK-102</strong> A merged pull request carrying a closing keyword closes its issue through GitHub,
   which raises <code>issues.closed</code>; GK-100 then applies. The gatekeeper takes no separate action on
-  the merge. <em>(manual: verifies a GitHub platform behaviour, confirmed once in the pilot.)</em></li>
+  the merge. <em>(manual: verifies a GitHub platform behaviour. Confirmed 2026-08-15 against issues
+  #5, #6, #12 and #13 of this repository: each closed with <code>state_reason=completed</code> at the moment
+  its pull request merged, with no action from the gatekeeper.)</em></li>
 <li><strong>GK-103</strong> A merged pull request <strong>without</strong> a closing keyword changes nothing. The issue keeps
   its state, including <code>in-progress</code>. A keyword-less merge is only reachable deliberately — the
   <code>closing-keyword</code> <strong>required</strong> check (see <code>SYS</code>) blocks any pull request lacking one unless it

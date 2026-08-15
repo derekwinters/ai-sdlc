@@ -14,7 +14,7 @@
         <link rel="prev" href="..">
       
       
-        <link rel="next" href="../spec/configuration/">
+        <link rel="next" href="../adoption/">
       
       
       <link rel="icon" href="../assets/images/favicon.png">
@@ -515,6 +515,26 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../adoption/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Adoption
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     
     
     
@@ -528,10 +548,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
             
   
   <span class="md-ellipsis">
@@ -542,8 +562,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             Specification
           </label>
@@ -680,10 +700,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
         
           
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
             
   
   <span class="md-ellipsis">
@@ -694,8 +714,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             Decisions
           </label>
@@ -1101,7 +1121,8 @@ would fork behaviour rather than describe a fact is a sign that a separate capab
   lib/
     github.py            # the only module that performs network I/O
     config.py            # repo-config loading and validation
-  workflows/             # reusable workflow_call definitions
+  .github/workflows/     # reusable-*.yml — workflow_call definitions
+                         # (GitHub requires them here, not at the root)
   schema/
     repo-config.schema.json
   docs/                  # mkdocs source: the spec, published to GitHub Pages
@@ -1230,7 +1251,7 @@ skills, and the published documentation describe the same system.</p>
 </tr>
 <tr>
 <td>Workflows</td>
-<td>reusable <code>workflow_call</code></td>
+<td>reusable <code>workflow_call</code>, in <code>.github/workflows/reusable-*.yml</code></td>
 <td>a thin caller per workflow</td>
 </tr>
 <tr>

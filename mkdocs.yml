@@ -32,6 +32,7 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Design: design.md
+  - Adoption: adoption.md
   - Specification:
       - Configuration: spec/configuration.md
       - Pull request hygiene: spec/hygiene.md

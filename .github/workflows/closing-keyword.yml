@@ -1,0 +1,16 @@
+name: closing-keyword
+
+# The caller. All logic lives in the reusable workflow; this file exists only
+# because a trigger cannot be centralised — `pull_request` must be declared in
+# the repository the pull request is opened against.
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+jobs:
+  closing-keyword:
+    uses: ./.github/workflows/reusable-closing-keyword.yml
