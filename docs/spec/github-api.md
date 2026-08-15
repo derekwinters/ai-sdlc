@@ -99,6 +99,23 @@ The vocabulary is deliberately small. Anything absent here is absent by design.
   that edits an issue body. Milestones are different: a milestone's state is a normal field, and
   closing one is reversible, so `update_milestone` may set it. Nothing deletes a milestone.
 
+## 6. Reaching the module from a workflow
+
+`lib/github.py` is imported by skills that reusable workflows run. A workflow that runs such a
+skill without putting the repository root on `PYTHONPATH` fails on the import, before doing
+anything at all.
+
+- **API-060** A reusable workflow running a skill that imports `lib` sets `PYTHONPATH` to the root
+  it checked out, and refers to that root by variable rather than hard-coding `.ai-sdlc` — which is
+  where a *consumer* checks ai-sdlc out and is not where ai-sdlc itself is.
+
+> **How the spec is changing (#87).** `API` described the module and said nothing about reaching
+> it. The gatekeeper workflow ran `python3 .ai-sdlc/…/main.py` with no `PYTHONPATH` and died on
+> `ModuleNotFoundError: No module named 'lib'` — the pipeline's central workflow, which had never
+> executed anywhere until `connor-multiplying-frogs` adopted it. Its siblings `labels-sync` and
+> `dashboard` set `PYTHONPATH` correctly, so the defect was a difference between siblings, which is
+> the kind of thing a test should hold still.
+
 ## 5. The fake
 
 - **API-050** `FakeGitHub` implements the same interface and is constructed from a plain dictionary
@@ -122,6 +139,7 @@ The vocabulary is deliberately small. Anything absent here is absent by design.
 | Pagination | API-020–026 | `test_github_pagination.py` |
 | Operations | API-030–041 | `test_github_operations.py` |
 | The fake | API-050–055 | `test_fake_github.py` |
+| Reaching it from a workflow | API-060 | `test_reusable_workflows.py` |
 | Invariants | — | `test_architecture.py` |
 
-**50 requirements, 49 `auto` and 1 `manual`.**
+**51 requirements, 50 `auto` and 1 `manual`.**

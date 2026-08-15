@@ -51,4 +51,7 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
           FIRE_ENDPOINT: ${{ secrets.fire_endpoint }}
           FIRE_TOKEN: ${{ secrets.fire_token }}
-        run: python3 .ai-sdlc/skills/pipeline/pipeline-gatekeeper/main.py comment
+          SKILL_ROOT: ${{ inputs.ref != '' && '.ai-sdlc' || '.' }}
+        run: |
+          PYTHONPATH="$SKILL_ROOT" python3 \
+            "$SKILL_ROOT/skills/pipeline/pipeline-gatekeeper/main.py" comment

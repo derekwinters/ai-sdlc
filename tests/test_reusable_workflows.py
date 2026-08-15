@@ -1,0 +1,80 @@
+"""Every reusable workflow can actually import the skill it runs.
+
+The gatekeeper workflow ran `python3 .ai-sdlc/…/main.py` with no PYTHONPATH,
+so the skill died on `from lib.github import …` before doing anything:
+
+    ModuleNotFoundError: No module named 'lib'
+
+It was the pipeline's central workflow and it had never been executed
+anywhere, so nothing had noticed. `labels-sync` and `dashboard` set PYTHONPATH;
+the two gatekeepers did not, and a difference between sibling workflows is
+exactly what a test should hold still.
+
+Sixth defect of the "ships incomplete" shape (#71, #75, #78, #81, #84, #87).
+"""
+
+import re
+import unittest
+
+from _support import ROOT
+
+WORKFLOWS = ROOT / ".github" / "workflows"
+
+#: A step that runs a Python file out of the skills tree. Matched on the script
+#: path rather than on `python3 …`, because the invocation may be split across a
+#: line continuation — which is exactly what the fix for this turned it into.
+RUNS_A_SKILL = re.compile(r"skills/\S+\.py")
+
+
+def _reusable():
+    for path in sorted(WORKFLOWS.glob("reusable-*.yml")):
+        yield path, path.read_text()
+
+
+class TestASkillCanImportItsLibrary(unittest.TestCase):
+    def test_there_are_workflows_running_skills(self):  # API-060
+        running = [p.name for p, t in _reusable() if RUNS_A_SKILL.search(t)]
+        self.assertGreaterEqual(len(running), 3, "the sweep found nothing to check")
+
+    def test_a_workflow_running_a_skill_that_imports_lib_sets_pythonpath(self):  # API-060
+        # Conditional on the import, not on running a script at all: the
+        # closing-keyword and docs-gate skills are deliberately self-contained
+        # stdlib scripts, and requiring PYTHONPATH of them would be cargo cult.
+        for path, text in _reusable():
+            scripts = [ROOT / m for m in RUNS_A_SKILL.findall(text)]
+            needs_lib = any(
+                s.is_file() and re.search(r"^from lib[. ]|^import lib", s.read_text(), re.M)
+                for s in scripts
+            )
+            if not needs_lib:
+                continue
+            with self.subTest(workflow=path.name):
+                self.assertIn(
+                    "PYTHONPATH", text,
+                    f"{path.name} runs a skill that imports `lib`, with no "
+                    f"PYTHONPATH — it dies on ModuleNotFoundError before doing "
+                    f"anything",
+                )
+
+    def test_at_least_one_workflow_runs_a_lib_importing_skill(self):  # API-060
+        # Guards the test above from passing vacuously if the import moves.
+        found = [
+            path.name for path, text in _reusable()
+            for m in RUNS_A_SKILL.findall(text)
+            if (ROOT / m).is_file()
+            and re.search(r"^from lib[. ]|^import lib", (ROOT / m).read_text(), re.M)
+        ]
+        self.assertTrue(found, "no workflow runs a skill importing lib")
+
+    def test_no_workflow_hard_codes_the_checkout_path(self):  # API-060
+        # `.ai-sdlc` is where a *consumer* checks ai-sdlc out. ai-sdlc calling
+        # its own reusable workflow has no such directory, so a hard-coded path
+        # works in exactly one of the two places it has to work.
+        for path, text in _reusable():
+            if not RUNS_A_SKILL.search(text):
+                continue
+            with self.subTest(workflow=path.name):
+                self.assertNotRegex(
+                    text, r"\.ai-sdlc/skills/\S+\.py",
+                    f"{path.name} hard-codes .ai-sdlc/ instead of using SKILL_ROOT",
+                )
