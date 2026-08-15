@@ -43,5 +43,6 @@ nav:
       - Dashboard: spec/dashboard.md
       - Labels: spec/labels.md
       - Milestones: spec/milestones.md
+      - Triage: spec/triage.md
   - Decisions:
       - Migration plan: decisions/migration-plan.md
