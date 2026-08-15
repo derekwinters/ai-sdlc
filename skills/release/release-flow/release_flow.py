@@ -131,6 +131,49 @@ def ready_to_merge(pull, checks):
     return None
 
 
+#: A milestone title that names a version: `v0.5`, `v0.5.0`, and anything
+#: following it — `v0.5 — Fleet`. Anchored and bounded so `v0.50` is not read
+#: as `v0.5`.
+MILESTONE_VERSION = re.compile(r"^v(\d+)\.(\d+)(?:\.(\d+))?(?![\d.])")
+
+
+def reserved_by_milestone(version, milestones):
+    """A Halt when `version` belongs to a milestone still being worked.
+
+    Versions here are named by milestones: `v0.4 — Adoption` closes when 0.4.0
+    releases. Spending that number early takes it permanently — a version
+    cannot be un-released — and leaves the milestone with no number of its own.
+
+    Only the minor is protected, so the escape is a patch release of the
+    *previous* version. A milestone with no open issues is not reserving
+    anything: either its work is done and this release is exactly what should
+    ship, or it is an empty placeholder.
+    """
+    parsed = SEMVER.match(str(version or ""))
+    if not parsed:
+        return None
+    major, minor, _ = (int(part) for part in parsed.groups())
+
+    for milestone in milestones or []:
+        if milestone.get("state") != "open" or not milestone.get("open_issues"):
+            continue
+        named = MILESTONE_VERSION.match(str(milestone.get("title", "")))
+        if not named:
+            continue
+        if (int(named.group(1)), int(named.group(2))) != (major, minor):
+            continue
+
+        title = milestone["title"]
+        return Halt(
+            f"{version} is reserved by the open milestone {title!r}, which still "
+            f"has {milestone['open_issues']} open issue(s)",
+            f"A version milestone closes with its release, and a version spent "
+            f"early cannot be got back. Either finish {title!r} first, or force "
+            f"a patch of the current version with a `Release-As:` footer.",
+        )
+    return None
+
+
 def squash_title(version):
     """The release commit's message, composed rather than inherited."""
     if not version or not SEMVER.match(str(version)):

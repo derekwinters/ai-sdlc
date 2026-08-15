@@ -61,6 +61,28 @@ Every requirement below is `auto` (covered by a named test) unless marked otherw
 - **REL-021** A forced version must be a valid semantic version.
 - **REL-022** A forced version lower than the current one is refused.
 
+> **Invariant — a version milestone reserves its version number until its work is done.** A version
+> cannot be un-released. Spending `0.5.0` on unrelated work leaves `v0.5 — Fleet` with no number of
+> its own, permanently.
+
+- **REL-023** A release whose version matches an **open** milestone that still has open issues is
+  refused, naming the milestone.
+- **REL-024** Only the major and minor are reserved. A patch release of the current version is the
+  escape, and is allowed while a later minor is reserved.
+- **REL-025** A milestone reserves nothing once it has no open issues — either its work is done and
+  this release is exactly what it was named for, or it is an empty placeholder.
+- **REL-026** A milestone whose title names no version is ignored, and a title is matched on its
+  version boundary: `v0.50` is not `v0.5`.
+- **REL-027** The refusal says what to do instead — finish the milestone, or force a patch with a
+  `Release-As:` footer. A halt that does not say how to proceed gets worked around.
+
+> **How the spec is changing (#31).** §4 used to describe forcing a version as a convenience — one
+> half-sentence in REL-020 about making a milestone and a version "match". It now states the rule
+> that convenience existed to serve, and refuses the release that breaks it. The prompt was live:
+> with `v0.5 — Fleet` open and none of its work started, two housekeeping commits made
+> release-please propose `0.5.0`, and nothing in the flow objected. The rule was real but unwritten,
+> which is the same as absent.
+
 ## 5. Verifying afterwards
 
 - **REL-030** After merging, the tag is confirmed to exist.
@@ -116,7 +138,8 @@ into tags.
 | Before merging | REL-005–009 | `test_release_gate.py` |
 | The squash title | REL-010–012 | `test_release_gate.py` |
 | Forcing a version | REL-020–022 | `test_release_version.py` |
+| Reserved milestone versions | REL-023–027 | `test_release_milestone.py` |
 | Verifying afterwards | REL-030–034 | `test_release_verify.py` |
 | Backfilling tags | REL-040–048 | `test_release_backfill.py` |
 
-**32 requirements, all `auto`.**
+**37 requirements, all `auto`.**
