@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.3.0 (2026-08-15)
+
+The working loop. The full issue lifecycle now exists — admit, triage, approve, queue, build,
+watch CI, release — and ai-sdlc has the agent that does the building.
+
+### Features
+
+* **tri:** issue triage, which proposes and never approves ([#55](https://github.com/derekwinters/ai-sdlc/pull/55))
+* **dev:** the development queue and the stack-agnostic `dev` agent ([#56](https://github.com/derekwinters/ai-sdlc/pull/56))
+* **ciw:** CI watch, which reports and never fixes ([#57](https://github.com/derekwinters/ai-sdlc/pull/57))
+* **rel:** the release flow, with the gotchas written down as code ([#58](https://github.com/derekwinters/ai-sdlc/pull/58))
+
+### Notable decisions
+
+* **Triage cannot queue work.** No outcome maps to the approved state, so the constraint is
+  structural rather than an instruction ([#55](https://github.com/derekwinters/ai-sdlc/pull/55))
+* **Blockedness is derived at selection time**, which is what makes the deleted revisit sweep
+  unnecessary ([#56](https://github.com/derekwinters/ai-sdlc/pull/56))
+* **Nothing having run is not the same as everything having passed** — `no-checks` is a distinct
+  outcome in both CI watch and the release gate ([#57](https://github.com/derekwinters/ai-sdlc/pull/57), [#58](https://github.com/derekwinters/ai-sdlc/pull/58))
+* **The release flow is pure**, so no code path can reopen a release pull request to restart
+  parked checks ([#58](https://github.com/derekwinters/ai-sdlc/pull/58))
+
+### At this release
+
+* 416 requirements: 408 covered by a named test, 8 explicitly manual, 0 planned
+* 1064 tests, all offline
+
 ## 0.2.0 (2026-08-15)
 
 Pipeline state and visibility. The pipeline can now describe its own state — milestones, labels
