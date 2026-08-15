@@ -43,6 +43,13 @@ like a release; the branch is release-please's.
 The flow refuses while any check is failing or still running — and refuses when there are **no
 checks at all**. Nothing having run is not the same as everything having passed.
 
+## A milestone reserves its version
+
+`v0.4 — Adoption` closes when 0.4.0 releases, so an open milestone with open issues holds its
+number. A release proposing that version is refused, naming the milestone — a version cannot be
+un-released, and spending `0.5.0` on unrelated work leaves `v0.5 — Fleet` with no number of its
+own. Only the minor is held: the escape is a patch of the current version.
+
 ## Making a tag match a milestone
 
 ```
@@ -70,4 +77,4 @@ that prints the plan and creates nothing, and applying is a second, deliberate r
 from the commit history rather than a list somebody typed, so it stays correct after the next
 release, and an already-tagged version is skipped — running it twice does nothing the second time.
 
-Specification: `docs/spec/release.md` (`REL`), 32 requirements.
+Specification: `docs/spec/release.md` (`REL`), 37 requirements.
