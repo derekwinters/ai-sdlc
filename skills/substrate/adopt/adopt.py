@@ -399,6 +399,22 @@ def _core_labels():
     return source.read_text()
 
 
+#: What each reusable workflow needs the caller to grant. A called workflow
+#: cannot be given more than its caller has, so a caller that grants too little
+#: fails as `startup_failure` — no jobs, no logs, no annotation (#78).
+#:
+#: Read from the workflow files by test, so this cannot drift from what they
+#: actually declare.
+GRANTS = {
+    "reusable-closing-keyword.yml": {"contents": "read"},
+    "reusable-docs-gate.yml": {"contents": "read"},
+    "reusable-labels-sync.yml": {"contents": "read", "issues": "write"},
+    "reusable-gatekeeper-comment.yml": {"contents": "read", "issues": "write"},
+    "reusable-gatekeeper-close.yml": {"contents": "read", "issues": "write"},
+    "reusable-dashboard.yml": {"contents": "read", "issues": "write"},
+}
+
+
 def _caller(name, reusable, pin, trigger):
     """A thin caller. All logic lives in the reusable workflow.
 
@@ -412,6 +428,10 @@ def _caller(name, reusable, pin, trigger):
     code it checks out cannot come from two different commits.
     """
     version, sha = pin
+    grants = "".join(
+        f"  {scope}: {level}\n"
+        for scope, level in sorted(GRANTS[reusable].items())
+    )
     return (
         f"name: {name}\n\n"
         f"# A caller. The logic is in ai-sdlc; this exists because a trigger\n"
@@ -421,7 +441,7 @@ def _caller(name, reusable, pin, trigger):
         f"# with this repository's token. Upgrade with `adopt apply <version>`,\n"
         f"# which rewrites both the SHA and the comment.\n\n"
         f"on:\n{trigger}\n"
-        f"permissions:\n  contents: read\n\n"
+        f"permissions:\n{grants}\n"
         f"jobs:\n"
         f"  {name}:\n"
         f"    uses: {SOURCE}/.github/workflows/{reusable}@{sha} # {version}\n"
