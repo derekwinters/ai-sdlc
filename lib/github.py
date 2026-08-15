@@ -232,6 +232,16 @@ class GitHub:
     def blocked_by(self, issue):
         return self.paginate(f"/issues/{issue}/dependencies/blocked_by")
 
+    def add_blocked_by(self, issue, blocker):
+        return self.request(
+            "POST", f"/issues/{issue}/dependencies/blocked_by", {"issue_id": blocker}
+        )
+
+    def remove_blocked_by(self, issue, blocker):
+        return self.request(
+            "DELETE", f"/issues/{issue}/dependencies/blocked_by/{blocker}"
+        )
+
     def reactions(self, comment):
         return self.paginate(f"/issues/comments/{comment}/reactions")
 

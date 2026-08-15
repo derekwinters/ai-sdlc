@@ -86,3 +86,24 @@ class TestLabelOperations(unittest.TestCase):
         api, transport = client("")
         api.delete_label("x")
         self.assertEqual(transport.requests[0]["method"], "DELETE")
+
+
+class TestDependencyOperations(unittest.TestCase):
+    """API-047 — native blocked-by relationships."""
+
+    def test_adding_posts_the_blocker(self):
+        api, transport = client()
+        api.add_blocked_by(7, 42)
+        self.assertEqual(transport.requests[0]["method"], "POST")
+        self.assertEqual(json.loads(transport.requests[0]["body"]), {"issue_id": 42})
+
+    def test_adding_targets_the_dependency_path(self):
+        api, transport = client()
+        api.add_blocked_by(7, 42)
+        self.assertIn("/issues/7/dependencies/blocked_by", transport.requests[0]["url"])
+
+    def test_removing_issues_a_delete(self):
+        api, transport = client("")
+        api.remove_blocked_by(7, 42)
+        self.assertEqual(transport.requests[0]["method"], "DELETE")
+        self.assertTrue(transport.requests[0]["url"].endswith("/blocked_by/42"))
