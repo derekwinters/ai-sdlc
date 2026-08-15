@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.6](https://github.com/derekwinters/ai-sdlc/compare/v0.4.5...v0.4.6) (2026-08-15)
+
+
+### Fixes
+
+* **adopt:** install a dashboard caller, and gate reachability ([#85](https://github.com/derekwinters/ai-sdlc/issues/85)) ([f02048f](https://github.com/derekwinters/ai-sdlc/commit/f02048ffc6a4b74c56f39d2a6bb69bfa32c8b19d)), closes [#84](https://github.com/derekwinters/ai-sdlc/issues/84)
+
 ## [0.4.5](https://github.com/derekwinters/ai-sdlc/compare/v0.4.4...v0.4.5) (2026-08-15)
 
 
