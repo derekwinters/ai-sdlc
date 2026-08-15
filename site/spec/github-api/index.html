@@ -563,6 +563,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../blockers/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Blockers
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../labels/" class="md-nav__link">
         
   
@@ -855,6 +876,9 @@ method that mutates state.</p>
 <li><strong>API-038</strong> <code>unreact(comment, reaction)</code> removes one.</li>
 <li><strong>API-039</strong> <code>milestones(state)</code> reads milestones, paginated.</li>
 <li><strong>API-040</strong> <code>blocked_by(issue)</code> reads native dependency relationships.</li>
+<li><strong>API-047</strong> <code>add_blocked_by(issue, blocker)</code> and <code>remove_blocked_by(issue, blocker)</code> manage a
+  native dependency relationship. There is no MCP tool for these, which is why dependencies were
+  previously written as prose the pipeline could not read.</li>
 <li><strong>API-044</strong> <code>labels()</code> reads the repository's labels, paginated.</li>
 <li><strong>API-045</strong> <code>create_label(name, color, description)</code> and
   <code>update_label(name, color, description)</code> manage one.</li>
@@ -923,7 +947,7 @@ method that mutates state.</p>
 </tr>
 </tbody>
 </table>
-<p><strong>49 requirements, 48 <code>auto</code> and 1 <code>manual</code>.</strong></p>
+<p><strong>50 requirements, 49 <code>auto</code> and 1 <code>manual</code>.</strong></p>
 
 
 

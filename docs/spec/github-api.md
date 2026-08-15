@@ -83,6 +83,9 @@ The vocabulary is deliberately small. Anything absent here is absent by design.
 - **API-038** `unreact(comment, reaction)` removes one.
 - **API-039** `milestones(state)` reads milestones, paginated.
 - **API-040** `blocked_by(issue)` reads native dependency relationships.
+- **API-047** `add_blocked_by(issue, blocker)` and `remove_blocked_by(issue, blocker)` manage a
+  native dependency relationship. There is no MCP tool for these, which is why dependencies were
+  previously written as prose the pipeline could not read.
 - **API-044** `labels()` reads the repository's labels, paginated.
 - **API-045** `create_label(name, color, description)` and
   `update_label(name, color, description)` manage one.
@@ -121,4 +124,4 @@ The vocabulary is deliberately small. Anything absent here is absent by design.
 | The fake | API-050–055 | `test_fake_github.py` |
 | Invariants | — | `test_architecture.py` |
 
-**49 requirements, 48 `auto` and 1 `manual`.**
+**50 requirements, 49 `auto` and 1 `manual`.**

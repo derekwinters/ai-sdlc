@@ -39,6 +39,7 @@ nav:
       - GitHub access: spec/github-api.md
       - Consistency: spec/validators.md
       - Gatekeeper: spec/gatekeeper.md
+      - Blockers: spec/blockers.md
       - Labels: spec/labels.md
       - Milestones: spec/milestones.md
   - Decisions:

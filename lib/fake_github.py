@@ -160,6 +160,20 @@ class FakeGitHub:
         self._record("blocked_by", issue)
         return self._page([dict(b) for b in self._blocked_by.get(issue, [])])
 
+    def add_blocked_by(self, issue, blocker):
+        self._record("add_blocked_by", issue, blocker)
+        edges = self._blocked_by.setdefault(issue, [])
+        if not any(e["number"] == blocker for e in edges):
+            edges.append({"number": blocker})
+        return {"number": blocker}
+
+    def remove_blocked_by(self, issue, blocker):
+        self._record("remove_blocked_by", issue, blocker)
+        self._blocked_by[issue] = [
+            e for e in self._blocked_by.get(issue, []) if e["number"] != blocker
+        ]
+        return None
+
     def reactions(self, comment):
         self._record("reactions", comment)
         return self._page([dict(r) for r in self._reactions.get(comment, [])])
