@@ -197,6 +197,36 @@ description is invisible to the pipeline that is supposed to consume it.
 convention, with the same refusal discipline the existing operations use (close refuses while open
 work remains). Connor's frozen-milestone concept is carried forward.
 
+### 5.2c Capabilities, not a monolithic core
+
+The original three-layer model had a single "universal core" holding both general machinery
+(distribution, Conventional Commits, spec/test consistency) and the specific issue pipeline. That
+made adoption all-or-nothing: a repository wanting only the consistency gates had to take an
+opinionated issue lifecycle with it.
+
+The core is therefore split into six independently installable **capabilities**, ordered by how
+much each assumes — substrate, hygiene, consistency, labels, release, pipeline. The pipeline, the
+part encoding "AI triages, a human approves, AI builds", is the top layer rather than the centre,
+because it is the most opinionated element and the least likely to suit anyone else.
+
+**A latent defect prompted this.** GK-054 refused `/approve` when a blocker sat in a milestone
+whose title could not be ordered, and GK-061 ordered titles by semantic version. Against a
+standing non-version milestone — `Direct Involvement Needed`, which this project uses — that made
+any issue natively blocked by a human-task issue permanently unapprovable, with a refusal message
+pointing at ordering rather than at the cause. The behaviour exists in both current
+implementations; connor has a test asserting it.
+
+The fix generalises rather than special-cases. Milestone ordering becomes a configured strategy
+(`semver`, `date`, `lexical`, `none`), and the gate refuses only on evidence of inversion, never
+on absence of evidence; unorderable blockers are reported on the dashboard instead. Owner
+authority likewise becomes a list, of which a single owner is a list of one.
+
+That the generalisation also fixed a real bug for the first consumer is the test to apply to any
+further generalisation proposed here. Configuration that describes how a repository differs earns
+its place; configuration that forks behaviour is a sign a separate capability is wanted.
+
+### 5.3 Actor identity
+
 Pipeline writes are authored by a bot, never by Derek's account.
 
 Default: the built-in `GITHUB_TOKEN`, authoring as `github-actions[bot]`. A custom GitHub App is
