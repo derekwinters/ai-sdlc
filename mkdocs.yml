@@ -34,6 +34,7 @@ nav:
   - Design: design.md
   - Adoption: adoption.md
   - Specification:
+      - Adoption: spec/adopt.md
       - Configuration: spec/configuration.md
       - Pull request hygiene: spec/hygiene.md
       - Release flow: spec/release.md
