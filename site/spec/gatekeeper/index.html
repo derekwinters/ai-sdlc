@@ -11,7 +11,7 @@
       
       
       
-        <link rel="prev" href="../github-api/">
+        <link rel="prev" href="../validators/">
       
       
         <link rel="next" href="../../decisions/migration-plan/">
@@ -361,6 +361,27 @@
   
   <span class="md-ellipsis">
     GitHub access
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../validators/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Consistency
   </span>
   
 
@@ -848,6 +869,12 @@
 <p>The gatekeeper is the only component permitted to move an issue through the pipeline state
 machine. It translates the repository owner's commands, written as comments, into label changes,
 and it refuses commands that would violate a pipeline rule.</p>
+<p><code>GK</code> belongs to the <strong>pipeline</strong> capability and may depend on every capability below it.</p>
+<blockquote>
+<p><strong>Status — planned (#5).</strong> Specified ahead of implementation; built one section at a time in
+issues #5 to #13. Requirements here are exempt from the coverage gate until then, and the
+exemption disappears as each section lands.</p>
+</blockquote>
 <p>Every requirement below is <code>auto</code> (covered by a named test) unless marked otherwise.</p>
 <hr />
 <h2 id="invariants">Invariants<a class="headerlink" href="#invariants" title="Permanent link">&para;</a></h2>

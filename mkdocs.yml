@@ -35,6 +35,7 @@ nav:
   - Specification:
       - Configuration: spec/configuration.md
       - GitHub access: spec/github-api.md
+      - Consistency: spec/validators.md
       - Gatekeeper: spec/gatekeeper.md
   - Decisions:
       - Migration plan: decisions/migration-plan.md
