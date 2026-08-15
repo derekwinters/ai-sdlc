@@ -159,3 +159,43 @@ class TestPlannedPages(Tree):
     def test_an_implemented_page_is_still_checked(self):  # VAL-016
         root = self.build({"ex.md": PAGE}, {"t.py": "# EX-001\n"})
         self.assertTrue(any("EX-002" in p for p in validate_specs(root)))
+
+
+class TestMultiLineRequirements(Tree):
+    """A requirement's text runs to the end of its list item.
+
+    Reading only the first line missed every `*(manual: …)*` marker that had
+    wrapped — which was most of them, since the marker goes at the end of a
+    sentence and the sentence is usually long enough to wrap. Six requirements
+    across four pages were silently treated as needing coverage.
+    """
+
+    WRAPPED = """# Specification — Example (`EX`)
+
+Belongs to the **substrate** capability.
+
+- **EX-001** A requirement whose sentence runs on for a while and therefore
+  wraps onto a second line. *(manual: needs a device.)*
+- **EX-002** A short one.
+"""
+
+    def test_a_wrapped_manual_marker_is_seen(self):  # VAL-012
+        root = self.build({"ex.md": self.WRAPPED}, {"t.py": "# EX-002\n"})
+        self.assertEqual(validate_specs(root), [])
+
+    def test_its_reason_is_captured(self):  # VAL-012
+        found = {r.identifier: r for r in collect_requirements(self.build({"ex.md": self.WRAPPED}))}
+        self.assertEqual(found["EX-001"].reason, "needs a device.")
+
+    def test_a_following_requirement_is_still_its_own(self):  # VAL-001
+        found = collect_requirements(self.build({"ex.md": self.WRAPPED}))
+        self.assertEqual({r.identifier for r in found}, {"EX-001", "EX-002"})
+
+    def test_the_second_is_not_marked_manual_by_the_first(self):  # VAL-012
+        found = {r.identifier: r for r in collect_requirements(self.build({"ex.md": self.WRAPPED}))}
+        self.assertFalse(found["EX-002"].manual)
+
+    def test_a_paragraph_after_the_list_does_not_extend_it(self):  # VAL-001
+        page = self.WRAPPED + "\nThis prose is not part of EX-002. *(manual: no.)*\n"
+        found = {r.identifier: r for r in collect_requirements(self.build({"ex.md": page}))}
+        self.assertFalse(found["EX-002"].manual)

@@ -1,0 +1,54 @@
+name: gatekeeper-comment
+
+# Translates the owner's commands into label moves. Every write here is a
+# reaction to a comment; nothing in this pipeline writes on a schedule.
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: The ai-sdlc ref providing the gatekeeper.
+        type: string
+        default: main
+    secrets:
+      fire_endpoint:
+        required: false
+      fire_token:
+        required: false
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  # Per issue: two runs on one issue would race on its labels. Runs on
+  # different issues are independent and must not queue behind each other.
+  group: gatekeeper-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  gatekeeper:
+    # A pull request comment is not an issue comment for these purposes.
+    if: github.event.issue.pull_request == null
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch the gatekeeper
+        uses: actions/checkout@v4
+        with:
+          repository: derekwinters/ai-sdlc
+          ref: ${{ inputs.ref }}
+          path: .ai-sdlc
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Handle the comment
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_EVENT_PATH: ${{ github.event_path }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          FIRE_ENDPOINT: ${{ secrets.fire_endpoint }}
+          FIRE_TOKEN: ${{ secrets.fire_token }}
+        run: python3 .ai-sdlc/skills/pipeline/pipeline-gatekeeper/main.py comment
