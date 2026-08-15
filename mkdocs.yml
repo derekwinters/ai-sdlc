@@ -1,0 +1,38 @@
+site_name: ai-sdlc
+site_description: AI-assisted software development lifecycle — one implementation, adopted by many repositories.
+repo_url: https://github.com/derekwinters/ai-sdlc
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.superfences
+
+nav:
+  - Home: index.md
+  - Design: design.md
+  - Specification:
+      - Gatekeeper: spec/gatekeeper.md
+  - Decisions:
+      - Migration plan: decisions/migration-plan.md

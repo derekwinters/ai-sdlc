@@ -1,0 +1,22 @@
+name: release-please
+
+# Versioning is release-please's, derived from Conventional Commits on main.
+# /VERSION is written by it and by nothing else.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v4
+        with:
+          config-file: .github/release-please/config.json
+          manifest-file: .github/release-please/manifest.json

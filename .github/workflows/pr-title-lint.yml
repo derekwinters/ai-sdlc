@@ -1,0 +1,22 @@
+name: pr-title-lint
+
+# release-please reads the squash-merge commit, and the squash title IS that
+# commit. A non-conventional title is silently invisible to versioning, so the
+# title is checked before it can become history.
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check the pull request title
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: python3 .github/scripts/check_pr_title.py "$PR_TITLE"
