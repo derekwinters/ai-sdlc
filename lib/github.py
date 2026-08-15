@@ -191,6 +191,19 @@ class GitHub:
     def milestones(self, state="all"):
         return self.paginate("/milestones", state=state)
 
+    def create_milestone(self, title, description=None, due_on=None):
+        payload = {"title": title}
+        if description is not None:
+            payload["description"] = description
+        if due_on is not None:
+            payload["due_on"] = due_on
+        return self.request("POST", "/milestones", payload)
+
+    def update_milestone(self, number, **fields):
+        """Change only the fields given. A milestone's state is one of them:
+        unlike an issue, closing a milestone is reversible and loses nothing."""
+        return self.request("PATCH", f"/milestones/{number}", dict(fields))
+
     def blocked_by(self, issue):
         return self.paginate(f"/issues/{issue}/dependencies/blocked_by")
 

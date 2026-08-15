@@ -108,6 +108,30 @@ class FakeGitHub:
             found = [m for m in found if m.get("state", "open") == state]
         return self._page([dict(m) for m in found])
 
+    def create_milestone(self, title, description=None, due_on=None):
+        self._record("create_milestone", title)
+        number = max((m["number"] for m in self._milestones), default=0) + 1
+        created = {
+            "number": number,
+            "title": title,
+            "state": "open",
+            "description": description or "",
+            "due_on": due_on,
+            "open_issues": 0,
+            "closed_issues": 0,
+        }
+        self._milestones.append(created)
+        return dict(created)
+
+    def update_milestone(self, number, **fields):
+        self._record("update_milestone", number, fields)
+        for milestone in self._milestones:
+            if milestone["number"] == number:
+                milestone.update(fields)
+                return dict(milestone)
+        raise GitHubError("Not found.", status=404, method="PATCH",
+                          path=f"/milestones/{number}")
+
     def blocked_by(self, issue):
         self._record("blocked_by", issue)
         return self._page([dict(b) for b in self._blocked_by.get(issue, [])])

@@ -39,5 +39,6 @@ nav:
       - GitHub access: spec/github-api.md
       - Consistency: spec/validators.md
       - Gatekeeper: spec/gatekeeper.md
+      - Milestones: spec/milestones.md
   - Decisions:
       - Migration plan: decisions/migration-plan.md

@@ -83,8 +83,12 @@ The vocabulary is deliberately small. Anything absent here is absent by design.
 - **API-038** `unreact(comment, reaction)` removes one.
 - **API-039** `milestones(state)` reads milestones, paginated.
 - **API-040** `blocked_by(issue)` reads native dependency relationships.
+- **API-042** `create_milestone(title, description, due_on)` creates one and returns it with its
+  assigned number.
+- **API-043** `update_milestone(number, **fields)` changes only the fields it is given.
 - **API-041** The client exposes no operation that closes, reopens, or deletes an issue, and none
-  that edits an issue body.
+  that edits an issue body. Milestones are different: a milestone's state is a normal field, and
+  closing one is reversible, so `update_milestone` may set it. Nothing deletes a milestone.
 
 ## 5. The fake
 
@@ -111,4 +115,4 @@ The vocabulary is deliberately small. Anything absent here is absent by design.
 | The fake | API-050–055 | `test_fake_github.py` |
 | Invariants | — | `test_architecture.py` |
 
-**44 requirements, 43 `auto` and 1 `manual`.**
+**46 requirements, 45 `auto` and 1 `manual`.**
