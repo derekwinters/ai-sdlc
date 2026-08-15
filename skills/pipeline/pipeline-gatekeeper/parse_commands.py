@@ -48,14 +48,20 @@ SUGGESTION_CUTOFF = 0.6
 
 
 class Action:
-    """A recognised command and its argument."""
+    """A recognised command and its argument.
 
-    __slots__ = ("command", "argument", "line")
+    `value` and `milestone` are filled in later, when arguments are resolved
+    against live milestones — the parser cannot know them and does not try.
+    """
+
+    __slots__ = ("command", "argument", "line", "value", "milestone")
 
     def __init__(self, command, argument="", line=0):
         self.command = command
         self.argument = argument
         self.line = line
+        self.value = None
+        self.milestone = None
 
     def __repr__(self):
         return f"<Action /{self.command} {self.argument!r}>"
@@ -68,15 +74,20 @@ class Action:
 
 
 class Skip:
-    """Something command-shaped that was not acted on, and why."""
+    """Something command-shaped that was not acted on, and why.
 
-    __slots__ = ("command", "reason", "suggestion", "line")
+    `detail` carries prose for the reply; `reason` is the internal code and
+    never reaches GitHub.
+    """
 
-    def __init__(self, command, reason, suggestion=None, line=0):
+    __slots__ = ("command", "reason", "suggestion", "line", "detail")
+
+    def __init__(self, command, reason, suggestion=None, line=0, detail=""):
         self.command = command
         self.reason = reason
         self.suggestion = suggestion
         self.line = line
+        self.detail = detail
 
     def __repr__(self):
         return f"<Skip /{self.command} {self.reason}>"
