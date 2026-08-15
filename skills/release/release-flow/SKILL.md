@@ -59,4 +59,15 @@ tagging follows the merge by a moment. A missing tag is reported as an **incompl
 distinct from a failed merge: "the merge succeeded" and "the release happened" are different
 claims.
 
-Specification: `docs/spec/release.md` (`REL`), 23 requirements.
+## When there are no tags at all
+
+A repository can carry `chore(main): release X.Y.Z` commits and no tags — release-please writing
+the version files through merged pull requests, but never getting as far as tagging. With no tag
+to compute from, its next run proposes the entire history as one release.
+
+The `backfill-tags` workflow repairs that. Run it from the Actions tab; it defaults to a dry run
+that prints the plan and creates nothing, and applying is a second, deliberate run. The plan comes
+from the commit history rather than a list somebody typed, so it stays correct after the next
+release, and an already-tagged version is skipped — running it twice does nothing the second time.
+
+Specification: `docs/spec/release.md` (`REL`), 32 requirements.

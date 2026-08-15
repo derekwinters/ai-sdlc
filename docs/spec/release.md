@@ -70,6 +70,42 @@ Every requirement below is `auto` (covered by a named test) unless marked otherw
   failed merge.
 - **REL-034** Verification is retried briefly, because tagging follows the merge by a moment.
 
+## 6. Backfilling tags
+
+A repository can end up with release commits on its default branch and no tags — release-please
+writing `/VERSION`, the manifest and `CHANGELOG.md` through merged pull requests, but never getting
+as far as tagging. ai-sdlc reached 0.4.0 that way, because its action was refused before it ever
+ran (#64). Without tags there is nothing for release-please to compute the next version *from*, so
+it re-proposes the entire history as one release.
+
+The tags are recoverable, because the release commits are still on the branch. This turns them back
+into tags.
+
+> **Invariant — the plan is derived from the commit history, never from a hand-written list.** A
+> list of versions and SHAs is correct on the day it is written and wrong after the next release.
+
+> **Invariant — nothing is created unless the run explicitly asks to create it.** A tag is public
+> and effectively permanent; a dry run is the default, and applying is opted into.
+
+- **REL-040** The plan is derived from the `chore(main): release X.Y.Z` commits on the default
+  branch. Each such commit is the boundary of the version it names.
+- **REL-041** A version that is already tagged is skipped, so the operation is idempotent and safe
+  to re-run.
+- **REL-042** The tag name is `vX.Y.Z` — what release-please writes and what consumers pin.
+- **REL-043** A release commit whose subject carries no valid semantic version is reported and
+  skipped, never guessed at.
+- **REL-044** The plan is ordered oldest version first, so tags are created in version order.
+- **REL-045** A release body is the matching section of `CHANGELOG.md`, ending where the next
+  version's heading begins. A version with no section gets an empty body rather than another
+  version's text.
+- **REL-046** A pre-release or build-metadata suffix is not treated as a release commit here. It is
+  reported and skipped: this recovers a history that was meant to be tagged, and guessing at a
+  channel is not part of that.
+- **REL-047** The plan is printed in full whether or not it is applied, so the log records what
+  happened.
+- **REL-048** The dry run is the default on the workflow's own input, not only inside the script.
+  The default that matters is the one attached to the button someone presses.
+
 ---
 
 ## Traceability
@@ -81,5 +117,6 @@ Every requirement below is `auto` (covered by a named test) unless marked otherw
 | The squash title | REL-010–012 | `test_release_gate.py` |
 | Forcing a version | REL-020–022 | `test_release_version.py` |
 | Verifying afterwards | REL-030–034 | `test_release_verify.py` |
+| Backfilling tags | REL-040–048 | `test_release_backfill.py` |
 
-**23 requirements, all `auto`.**
+**32 requirements, all `auto`.**
