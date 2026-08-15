@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/derekwinters/ai-sdlc/compare/v0.4.8...v0.5.0) (2026-08-15)
+
+
+### Features
+
+* **docs:** publish to a gh-pages branch instead of a Pages artifact ([dcc9015](https://github.com/derekwinters/ai-sdlc/commit/dcc9015abef9403ca67a2ad857a694acfb076fee)), closes [#93](https://github.com/derekwinters/ai-sdlc/issues/93)
+
 ## [0.4.8](https://github.com/derekwinters/ai-sdlc/compare/v0.4.7...v0.4.8) (2026-08-15)
 
 
