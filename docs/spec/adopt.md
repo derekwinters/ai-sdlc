@@ -139,6 +139,13 @@ than a formatting one: a reusable workflow runs with the **caller's** token, on 
 - **ADOPT-066** The recorded pin holds the version and the SHA together, so `verify` at the same
   version needs no network.
 
+> **Invariant — a caller grants exactly the permissions the workflow it calls requests.** Not
+> fewer, or the run cannot start; not more, or adoption quietly widens what the pipeline may do.
+
+- **ADOPT-068** A caller's `permissions:` block is derived from the reusable workflow it calls. A
+  called workflow cannot be granted more than its caller holds, so a caller granting too little
+  fails as `startup_failure` — no jobs, no logs, no annotation, which is close to silent.
+
 > **How the spec is changing (#72).** Callers used to reference a tag — `@v0.4.1` — and §7 did not
 > exist. The reason given was that a tag keeps an upgrade readable, and that a workflow we publish
 > ourselves is not third-party code. The first is true and is now served by the trailing comment;
@@ -159,5 +166,6 @@ than a formatting one: a reusable workflow runs with the **caller's** token, on 
 | Applying | ADOPT-040–047 | `test_adopt_apply.py` |
 | Verifying | ADOPT-050–054 | `test_adopt_verify.py` |
 | Pinning a caller | ADOPT-060–066 | `test_adopt_pin.py` |
+| Caller permissions | ADOPT-068 | `test_adopt_permissions.py` |
 
-**43 requirements, all `auto`.**
+**44 requirements, all `auto`.**
