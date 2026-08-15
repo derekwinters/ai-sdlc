@@ -110,7 +110,8 @@ ai-sdlc/
   lib/
     github.py            # the only module that performs network I/O
     config.py            # repo-config loading and validation
-  workflows/             # reusable workflow_call definitions
+  .github/workflows/     # reusable-*.yml — workflow_call definitions
+                         # (GitHub requires them here, not at the root)
   schema/
     repo-config.schema.json
   docs/                  # mkdocs source: the spec, published to GitHub Pages
@@ -224,7 +225,7 @@ Three channels, each maintaining its logic in one place.
 | What | Mechanism | In the consumer |
 |---|---|---|
 | Skills and agents | `gh skill install derekwinters/ai-sdlc <skill>@<tag> --agent claude-code --scope project` | installed files, pinned |
-| Workflows | reusable `workflow_call` | a thin caller per workflow |
+| Workflows | reusable `workflow_call`, in `.github/workflows/reusable-*.yml` | a thin caller per workflow |
 | House rules | shared CLAUDE.md fragment | one `@import` line plus repo-specific rules |
 
 `gh skill` records provenance in each installed skill's frontmatter — source repository, ref, and

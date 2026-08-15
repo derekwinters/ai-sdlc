@@ -228,7 +228,9 @@ Replaces the removed comment-replay sweep.
 - **GK-101** Closing an issue triggers no action on any other issue.
 - **GK-102** A merged pull request carrying a closing keyword closes its issue through GitHub,
   which raises `issues.closed`; GK-100 then applies. The gatekeeper takes no separate action on
-  the merge. *(manual: verifies a GitHub platform behaviour, confirmed once in the pilot.)*
+  the merge. *(manual: verifies a GitHub platform behaviour. Confirmed 2026-08-15 against issues
+  #5, #6, #12 and #13 of this repository: each closed with `state_reason=completed` at the moment
+  its pull request merged, with no action from the gatekeeper.)*
 - **GK-103** A merged pull request **without** a closing keyword changes nothing. The issue keeps
   its state, including `in-progress`. A keyword-less merge is only reachable deliberately — the
   `closing-keyword` **required** check (see `SYS`) blocks any pull request lacking one unless it

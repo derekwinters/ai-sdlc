@@ -8,9 +8,12 @@ on:
   workflow_call:
     inputs:
       ref:
-        description: The ai-sdlc ref providing the check.
+        description: >-
+          The ai-sdlc ref providing the check. Leave unset when ai-sdlc is
+          itself the caller: the checkout below is skipped and the copy already
+          in the workspace is used.
         type: string
-        default: main
+        default: ""
 
 permissions:
   contents: read
@@ -19,7 +22,11 @@ jobs:
   closing-keyword:
     runs-on: ubuntu-latest
     steps:
+      - name: Check out the calling repository
+        uses: actions/checkout@v4
+
       - name: Fetch the check
+        if: inputs.ref != ''
         uses: actions/checkout@v4
         with:
           repository: derekwinters/ai-sdlc
@@ -30,6 +37,7 @@ jobs:
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
           PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+          SKILL_ROOT: ${{ inputs.ref != '' && '.ai-sdlc' || '.' }}
         run: |
           printf '%s' "$PR_BODY" | python3 \
-            .ai-sdlc/skills/hygiene/closing-keyword/check_closing_keyword.py
+            "$SKILL_ROOT/skills/hygiene/closing-keyword/check_closing_keyword.py"
