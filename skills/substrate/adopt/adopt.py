@@ -257,7 +257,21 @@ def collisions(root, claims=CLAIMED_EVENTS, acknowledged=()):
     for path in sorted(workflows.glob("*.yml")) + sorted(workflows.glob("*.yaml")):
         if path.name in acknowledged:
             continue
-        for event in _triggers(path.read_text()):
+
+        text = path.read_text()
+
+        # Our own caller is not a second handler — it is the handler. Without
+        # this, installing `pipeline` makes every later `apply` refuse, which
+        # would make ADOPT-046 ("upgrading is the same operation") false for
+        # exactly the repositories that took the most (#90).
+        #
+        # Keyed on provenance rather than on the file name: a consumer's
+        # hand-written `dashboard.yml` must still collide, and it is the name
+        # that would match.
+        if _read_provenance(text)[0] is not None:
+            continue
+
+        for event in _triggers(text):
             if event in claims:
                 found.append(Collision(path.name, event))
                 break

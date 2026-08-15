@@ -2,9 +2,9 @@
 
 import unittest
 
-from _adopt import repository
+from _adopt import NEWER_PIN, PIN, repository
 import _adopt  # noqa: F401
-from adopt import CLAIMED_EVENTS, collisions
+from adopt import CLAIMED_EVENTS, AdoptRefused, apply, collisions
 
 EXISTING = """
 name: their-gatekeeper
@@ -94,3 +94,53 @@ class TestTheClaimedEvents(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestOurOwnCallersAreNotCollisions(unittest.TestCase):
+    """ADOPT-036 — a file adoption manages is never a collision with itself.
+
+    The collision check reads workflow triggers, and adoption's own callers
+    listen on the events it claims — so once `pipeline` was installed, the next
+    `apply` refused:
+
+        refused: these workflows already handle events this adoption claims:
+        dashboard.yml (on issues), gatekeeper-close.yml (on issues),
+        gatekeeper-comment.yml (on issue_comment)
+
+    Which makes ADOPT-046 — "upgrading is the same operation" — false for any
+    repository that took the pipeline. Found upgrading
+    `connor-multiplying-frogs` from v0.4.6 to v0.4.7.
+    """
+
+    def _adopted(self):
+        root = repository({
+            ".claude/repo-config.yml":
+                "capabilities:\n  - hygiene\n  - consistency\n  - labels\n"
+                "  - release\n  - pipeline\nowners:\n  - x\ndashboard_issue: 1\n",
+        })
+        apply(root, pin=PIN)
+        return root
+
+    def test_a_second_apply_is_not_refused(self):  # ADOPT-036
+        root = self._adopted()
+        apply(root, pin=PIN)  # must not raise
+
+    def test_an_upgrade_is_not_refused(self):  # ADOPT-036
+        root = self._adopted()
+        apply(root, pin=NEWER_PIN)  # must not raise
+
+    def test_an_upgrade_actually_rewrites_the_callers(self):  # ADOPT-036
+        root = self._adopted()
+        apply(root, pin=NEWER_PIN)
+        text = (root / ".github/workflows/gatekeeper-comment.yml").read_text()
+        self.assertIn(NEWER_PIN[1], text)
+
+    def test_a_foreign_workflow_on_a_claimed_event_still_collides(self):  # ADOPT-036
+        # The exemption is for files carrying our provenance, not for the
+        # event: somebody else's issue_comment handler is still the race the
+        # check exists to prevent.
+        root = self._adopted()
+        (root / ".github/workflows/theirs.yml").write_text(
+            "name: theirs\non:\n  issue_comment:\n    types: [created]\n")
+        with self.assertRaises(AdoptRefused):
+            apply(root, pin=PIN)
