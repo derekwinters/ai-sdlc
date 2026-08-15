@@ -39,4 +39,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_EVENT_PATH: ${{ github.event_path }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-        run: python3 .ai-sdlc/skills/pipeline/pipeline-gatekeeper/main.py closed
+          SKILL_ROOT: ${{ inputs.ref != '' && '.ai-sdlc' || '.' }}
+        run: |
+          PYTHONPATH="$SKILL_ROOT" python3 \
+            "$SKILL_ROOT/skills/pipeline/pipeline-gatekeeper/main.py" closed
