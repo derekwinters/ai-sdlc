@@ -6,7 +6,7 @@ from pathlib import Path
 from _adopt import MKDOCS_MARKER, PYTHON_MARKER, repository, PIN
 import _adopt  # noqa: F401
 from _support import ROOT
-from adopt import detect
+from adopt import apply, detect
 from lib.config import ConfigError, PROFILES, parse_config
 
 MKDOCS_WORKFLOW = ROOT / ".github" / "workflows" / "reusable-docs.yml"
@@ -93,3 +93,51 @@ class TestTheMkdocsWorkflow(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestASelectedProfileInstallsItsFiles(unittest.TestCase):
+    """PROF-005 — selecting a profile installs the profile's files.
+
+    `mkdocs` was specified in full — a strict build check, a documentation
+    reconciliation gate — and installed nothing, because `_files_for` handled
+    capabilities and never looked at profiles. PROF-004 says an absent
+    profile's files are "inert rather than an error", which made a profile that
+    installs nothing indistinguishable from one that is working.
+
+    Fourth instance of a capability or profile shipping incomplete: #71, #75,
+    #78, this.
+    """
+
+    def _apply(self, profiles):
+        root = repository({
+            ".claude/repo-config.yml":
+                "capabilities:\n  - hygiene\nprofiles:\n"
+                + "".join(f"  - {p}\n" for p in profiles),
+        })
+        apply(root, pin=PIN)
+        return root
+
+    def test_mkdocs_installs_the_docs_gate(self):  # PROF-005
+        root = self._apply(["mkdocs"])
+        self.assertTrue((root / ".github/workflows/docs-gate.yml").is_file())
+
+    def test_the_gate_calls_the_shared_workflow(self):  # PROF-005
+        root = self._apply(["mkdocs"])
+        text = (root / ".github/workflows/docs-gate.yml").read_text()
+        self.assertIn("reusable-docs-gate.yml@", text)
+
+    def test_the_gate_runs_on_pull_request(self):  # PROF-005
+        root = self._apply(["mkdocs"])
+        text = (root / ".github/workflows/docs-gate.yml").read_text()
+        self.assertIn("pull_request:", text)
+
+    def test_labeled_is_among_the_triggers(self):  # PROF-005
+        # Load-bearing: adding `skip-docs` to an already-failed pull request
+        # has to start a fresh run, or the escape hatch does not work.
+        root = self._apply(["mkdocs"])
+        text = (root / ".github/workflows/docs-gate.yml").read_text()
+        self.assertIn("labeled", text)
+
+    def test_an_unselected_profile_installs_nothing(self):  # PROF-005
+        root = self._apply([])
+        self.assertFalse((root / ".github/workflows/docs-gate.yml").exists())

@@ -363,6 +363,21 @@ def _files_for(config, pin):
             ),
         )
 
+    # Profiles add on top of capabilities. A profile that installs nothing is
+    # indistinguishable from one that is working, which is how `mkdocs` shipped
+    # fully specified and entirely inert (#81).
+    if "mkdocs" in getattr(config, "profiles", ()):
+        files[".github/workflows/docs-gate.yml"] = _caller(
+            "docs-gate", "reusable-docs-gate.yml", pin,
+            # `labeled` is load-bearing: the gate's verdict depends on the
+            # pull request's labels as well as its files, so adding
+            # `skip-docs` to an already-failed run has to start a fresh one.
+            trigger=(
+                "  pull_request:\n"
+                "    types: [opened, synchronize, reopened, labeled, unlabeled]\n"
+            ),
+        )
+
     if "pipeline" in config.capabilities:
         files[".github/workflows/gatekeeper-comment.yml"] = _caller(
             "gatekeeper-comment", "reusable-gatekeeper-comment.yml", pin,

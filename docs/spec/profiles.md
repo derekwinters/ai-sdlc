@@ -30,6 +30,15 @@ Every requirement below is `auto` (covered by a named test) unless marked otherw
 - **PROF-002** Detection proposes profiles; it never enables one.
 - **PROF-003** An unknown profile name is a configuration error.
 - **PROF-004** A profile whose files are absent is inert rather than an error.
+- **PROF-005** Selecting a profile **installs** that profile's files. PROF-004 makes an absent
+  profile harmless, which is right — but it also made a profile that installs nothing look
+  identical to one that works, and `mkdocs` shipped fully specified and entirely inert.
+
+> **How the spec is changing (#81).** §1 described how a profile is *selected* and said nothing
+> about a selection having any effect. `adopt` accordingly installed capability files and never
+> looked at profiles, so enabling `mkdocs` produced no documentation gate and no error — the
+> failure PROF-004 was written to tolerate, wearing the same face as success. This is the fourth
+> defect of the shape "something ships incomplete", after #71, #75 and #78.
 
 ## 2. The mkdocs profile
 
@@ -56,8 +65,8 @@ Every requirement below is `auto` (covered by a named test) unless marked otherw
 
 | Section | IDs | Tests |
 |---|---|---|
-| Selection | PROF-001–004 | `test_profiles.py` |
+| Selection | PROF-001–005 | `test_profiles.py` |
 | The mkdocs profile | PROF-010–013 | `test_profiles.py` |
 | The documentation gate | PROF-020–025 | `test_docs_gate.py` |
 
-**15 requirements, all `auto`.**
+**16 requirements, all `auto`.**
