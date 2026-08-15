@@ -65,7 +65,7 @@ def _git_ls_remote(version):  # pragma: no cover - the real network path
     return result.stdout
 
 
-def resolve_version(version, resolver=_git_ls_remote):
+def resolve_version(version, resolver=None):
     """The commit a version names.
 
     A SHA is returned as itself, so passing one costs no network at all.
@@ -75,6 +75,8 @@ def resolve_version(version, resolver=_git_ls_remote):
     that does not resolve — the failure that cost an afternoon in #64 — so the
     dereferenced form wins whenever it is present.
     """
+    resolver = resolver or _git_ls_remote
+
     if FULL_SHA.match(version or ""):
         return version.lower()
 
@@ -130,7 +132,7 @@ def _strip_provenance(text):
     return "".join(kept)
 
 
-def as_pin(pin, resolver=_git_ls_remote):
+def as_pin(pin, resolver=None):
     """Normalise to ``(version, sha)``.
 
     A caller may pass a version — the usual case, and what a human knows — or
@@ -418,7 +420,7 @@ def _load_config(root):
     return load(root=root)
 
 
-def plan(root, pin, acknowledged=(), resolver=_git_ls_remote):
+def plan(root, pin, acknowledged=(), resolver=None):
     """What adoption would do. Writes nothing."""
     root = Path(root)
     pin = as_pin(pin, resolver=resolver)
@@ -461,7 +463,7 @@ def _claimed_by(config):
     return claimed
 
 
-def apply(root, pin, acknowledged=(), resolver=_git_ls_remote):
+def apply(root, pin, acknowledged=(), resolver=None):
     """Make the changes. Refuses on an unacknowledged trigger collision."""
     root = Path(root)
     pin = as_pin(pin, resolver=resolver)
@@ -534,7 +536,7 @@ class Verified:
         self.ok = not problems
 
 
-def verify(root, pin, resolver=_git_ls_remote):
+def verify(root, pin, resolver=None):
     """Whether the repository still matches its pin. Writes nothing.
 
     Reports rather than repairs, for the same reason everything else here does:

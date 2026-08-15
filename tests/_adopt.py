@@ -37,3 +37,26 @@ KOTLIN_MARKER = "plugins { id 'org.jetbrains.kotlin.jvm' }\n"
 PIN = ("v0.4.0", "a" * 40)
 OLDER_PIN = ("v0.1.0", "b" * 40)
 NEWER_PIN = ("v0.5.0", "c" * 40)
+
+
+def _no_network(version):
+    """The resolver every test gets, so none can reach GitHub.
+
+    `adopt` resolves a bare version over the network. That makes any test
+    passing a bare version quietly network-dependent — it passes on a laptop
+    and fails in CI, which is precisely how ten of them got through review
+    (#72). Replacing the default here turns that into a loud, local failure
+    naming the fix, rather than a red build twenty minutes later.
+
+    A test that genuinely exercises resolution injects its own `resolver=`.
+    """
+    raise AssertionError(
+        f"a test asked adopt to resolve {version!r} over the network. Pass a "
+        f"(version, sha) pair — PIN, OLDER_PIN, NEWER_PIN — or inject "
+        f"resolver=... if resolution is what you are testing."
+    )
+
+
+import adopt as _adopt  # noqa: E402 - the path is set up above
+
+_adopt._git_ls_remote = _no_network
