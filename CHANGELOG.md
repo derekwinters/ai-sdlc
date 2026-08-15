@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.4](https://github.com/derekwinters/ai-sdlc/compare/v0.4.3...v0.4.4) (2026-08-15)
+
+
+### Fixes
+
+* **adopt:** grant callers the permissions their workflows request ([#79](https://github.com/derekwinters/ai-sdlc/issues/79)) ([dca777b](https://github.com/derekwinters/ai-sdlc/commit/dca777b9a6dafae034099f4027a7a3eaa8c8c6cc)), closes [#78](https://github.com/derekwinters/ai-sdlc/issues/78)
+
 ## [0.4.3](https://github.com/derekwinters/ai-sdlc/compare/v0.4.2...v0.4.3) (2026-08-15)
 
 
