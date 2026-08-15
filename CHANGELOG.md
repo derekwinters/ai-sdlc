@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.4.1](https://github.com/derekwinters/ai-sdlc/compare/v0.4.0...v0.4.1) (2026-08-15)
+
+
+### Features
+
+* **rel:** add a workflow-dispatch backfill for missing release tags ([#67](https://github.com/derekwinters/ai-sdlc/issues/67)) ([e1698f3](https://github.com/derekwinters/ai-sdlc/commit/e1698f366506f063e825be257fe446682b59b711)), closes [#49](https://github.com/derekwinters/ai-sdlc/issues/49)
+* **rel:** refuse a release that spends an open milestone's version ([#68](https://github.com/derekwinters/ai-sdlc/issues/68)) ([4644c2a](https://github.com/derekwinters/ai-sdlc/commit/4644c2a372745cf5d2a9da25999451fb3b56f332)), closes [#31](https://github.com/derekwinters/ai-sdlc/issues/31)
+
+
+### Fixes
+
+* **ci:** pin every action to a commit SHA and gate it ([#65](https://github.com/derekwinters/ai-sdlc/issues/65)) ([604cd01](https://github.com/derekwinters/ai-sdlc/commit/604cd0116c818406347b449f702faa412eca1086)), closes [#64](https://github.com/derekwinters/ai-sdlc/issues/64)
+
 ## 0.4.0 (2026-08-15)
 
 Adoption. A repository can now join ai-sdlc — or move between versions — through one reviewable
