@@ -1,0 +1,103 @@
+name: backfill-tags
+
+# Recover the tags a release history should already have.
+#
+# A repository can accumulate `chore(main): release X.Y.Z` commits with no tags
+# — release-please writing the version files through merged pull requests, but
+# never getting as far as tagging. Without a tag to compute from, its next run
+# proposes the whole history as one release.
+#
+# Run this once to repair that. It is idempotent: an already-tagged version is
+# skipped, so a second run does nothing.
+#
+# The plan is derived from the commit history, never from a list typed here — a
+# list of versions and SHAs is right the day it is written and wrong after the
+# next release.
+#
+# Specification: docs/spec/release.md (`REL`), §6.
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "Actually create and push the tags. Leave false to see the plan first."
+        type: boolean
+        required: false
+        default: false
+      publish_releases:
+        description: "Also publish a GitHub Release per tag, from its CHANGELOG.md section."
+        type: boolean
+        required: false
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: backfill-tags
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    steps:
+      # Full history and existing tags: the plan is computed from both, and a
+      # shallow clone would silently find no release commits.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+
+      - name: Work out which tags are missing
+        id: plan
+        run: |
+          set -euo pipefail
+          git log --format='%H%x09%s' "origin/${GITHUB_REF_NAME}" \
+            | python3 skills/release/release-flow/backfill_tags.py "$(git tag -l | tr '\n' ' ')" \
+            > plan.tsv
+          echo "--- plan ---"
+          cat plan.tsv
+          echo "count=$(wc -l < plan.tsv)" >> "$GITHUB_OUTPUT"
+
+      - name: Stop here unless asked to apply
+        if: ${{ !inputs.apply }}
+        run: |
+          echo "::notice::Dry run. Re-run with apply=true to create the tags above."
+
+      - name: Create and push the tags
+        if: ${{ inputs.apply && steps.plan.outputs.count != '0' }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          while IFS=$'\t' read -r _ tag sha; do
+            echo "tagging $tag at $sha"
+            git tag -a "$tag" "$sha" -m "$tag"
+          done < plan.tsv
+          # One push: either every tag lands or none does, so a failure part-way
+          # through does not leave a half-tagged history.
+          cut -f2 plan.tsv | xargs git push origin
+
+      - name: Publish a release per tag
+        if: ${{ inputs.apply && inputs.publish_releases && steps.plan.outputs.count != '0' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          while IFS=$'\t' read -r _ tag sha; do
+            version="${tag#v}"
+            python3 - "$version" <<'PY' > notes.md
+          import sys, pathlib
+          sys.path.insert(0, "skills/release/release-flow")
+          from backfill_tags import changelog_section
+          print(changelog_section(pathlib.Path("CHANGELOG.md").read_text(), sys.argv[1]))
+          PY
+            if gh release view "$tag" >/dev/null 2>&1; then
+              echo "release $tag already exists, leaving it alone"
+            else
+              gh release create "$tag" --title "$tag" --notes-file notes.md --verify-tag
+            fi
+          done < plan.tsv
