@@ -14,7 +14,7 @@
         <link rel="prev" href="../design/">
       
       
-        <link rel="next" href="../spec/adopt/">
+        <link rel="next" href="../house-rules/">
       
       
       <link rel="icon" href="../assets/images/favicon.png">
@@ -375,6 +375,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#the-shared-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      The shared rules
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#ai-sdlcs-own-adoption" class="md-nav__link">
     <span class="md-ellipsis">
       ai-sdlc's own adoption
@@ -387,6 +396,26 @@
   
 </nav>
       
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../house-rules/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    House rules
+  </span>
+  
+
+      </a>
     </li>
   
 
@@ -410,10 +439,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
         
           
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
             
   
   <span class="md-ellipsis">
@@ -424,8 +453,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             Specification
           </label>
@@ -485,6 +514,27 @@
   
   <span class="md-ellipsis">
     Profiles
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../spec/house-rules/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    House rules
   </span>
   
 
@@ -772,10 +822,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
             
   
   <span class="md-ellipsis">
@@ -786,8 +836,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             Decisions
           </label>
@@ -878,6 +928,15 @@
   <a href="#4-make-the-checks-required" class="md-nav__link">
     <span class="md-ellipsis">
       4. Make the checks required
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-shared-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      The shared rules
     </span>
   </a>
   
@@ -996,6 +1055,12 @@ default branch and require the checks you added.</p>
 <p><strong>Do not add an <code>if:</code> that skips a required check.</strong> A skipped required check stays pending forever
 and blocks the merge it was meant to permit. Escape hatches — the <code>no-closing-keyword</code> label, the
 <code>skip-docs</code> label — make a check <em>pass</em>, never absent.</p>
+<h2 id="the-shared-rules">The shared rules<a class="headerlink" href="#the-shared-rules" title="Permanent link">&para;</a></h2>
+<p>Adoption installs <a href="../house-rules/"><code>house-rules.md</code></a> into <code>.claude/ai-sdlc/</code> and appends one import
+line to your <code>CLAUDE.md</code>. Your own file is never rewritten — it is usually the most carefully
+considered file a repository has, and everything specific to your repository stays in it.</p>
+<p>A repository with no <code>CLAUDE.md</code> gets one reported rather than created. What that file should say
+is your decision.</p>
 <h2 id="ai-sdlcs-own-adoption">ai-sdlc's own adoption<a class="headerlink" href="#ai-sdlcs-own-adoption" title="Permanent link">&para;</a></h2>
 <p>ai-sdlc is its first consumer. <code>.claude/repo-config.yml</code> in this repository enables <code>hygiene</code> and
 <code>consistency</code>, and the closing-keyword check runs on its own pull requests — so a change that
