@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.4.0 (2026-08-15)
+
+Adoption. A repository can now join ai-sdlc — or move between versions — through one reviewable
+pull request, taking only the capabilities it wants.
+
+### Features
+
+* **adopt:** the adopt command — plan, apply, verify ([#60](https://github.com/derekwinters/ai-sdlc/pull/60))
+* **prof:** the mkdocs profile and the documentation gate ([#61](https://github.com/derekwinters/ai-sdlc/pull/61))
+* **rules:** the shared house-rules fragment ([#62](https://github.com/derekwinters/ai-sdlc/pull/62))
+
+### Notable decisions
+
+* **`adopt` never overwrites what it did not write.** Provenance carries a content hash, so a
+  locally-edited managed file is a conflict rather than a stale one ([#60](https://github.com/derekwinters/ai-sdlc/pull/60))
+* **`pull_request` is not a claimed event.** Flagging every repository's test workflow would train
+  the owner to acknowledge collisions without reading them ([#60](https://github.com/derekwinters/ai-sdlc/pull/60))
+* **A profile is inert when not selected** — a repository that merely has a docs directory is not
+  thereby gated ([#61](https://github.com/derekwinters/ai-sdlc/pull/61))
+* **The house rules name the gate where one exists**, rather than restating an enforced rule as
+  advice ([#62](https://github.com/derekwinters/ai-sdlc/pull/62))
+
+### At this release
+
+* 481 requirements: 473 covered by a named test, 8 explicitly manual, 0 planned
+* 1214 tests, all offline
+* 6 capabilities, 3 distribution channels, 13 specification areas
+
 ## 0.3.0 (2026-08-15)
 
 The working loop. The full issue lifecycle now exists — admit, triage, approve, queue, build,
