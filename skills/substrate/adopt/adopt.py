@@ -387,6 +387,20 @@ def _files_for(config, pin):
             "gatekeeper-close", "reusable-gatekeeper-close.yml", pin,
             trigger="  issues:\n    types: [closed]\n",
         )
+        # The other half of report-rather-than-repair: nothing silently fixes
+        # drift, so the board has to show it. A pipeline with no dashboard is
+        # the half that repairs nothing without the half that reports it (#84).
+        files[".github/workflows/dashboard.yml"] = _caller(
+            "dashboard", "reusable-dashboard.yml", pin,
+            trigger=(
+                "  issues:\n"
+                "    types: [opened, closed, reopened, labeled, unlabeled, milestoned,"
+                " demilestoned]\n"
+                "  schedule:\n"
+                "    - cron: \"0 12 * * *\"\n"
+                "  workflow_dispatch:\n"
+            ),
+        )
 
     return files
 

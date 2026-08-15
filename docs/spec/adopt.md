@@ -145,6 +145,17 @@ than a formatting one: a reusable workflow runs with the **caller's** token, on 
 - **ADOPT-068** A caller's `permissions:` block is derived from the reusable workflow it calls. A
   called workflow cannot be granted more than its caller holds, so a caller granting too little
   fails as `startup_failure` — no jobs, no logs, no annotation, which is close to silent.
+- **ADOPT-069** Every reusable workflow ai-sdlc ships is reachable: some capability or profile
+  installs a caller for it. A workflow nothing can install is indistinguishable from one that does
+  not exist, and this is the gate that makes the next such omission fail here rather than in a
+  consumer's repository.
+
+> **How the spec is changing (#84).** Five defects of one shape reached a consumer before ADOPT-069
+> existed — an import with no file (#71), a workflow with no manifest (#75), a permissions block too
+> narrow to start (#78), a profile that installed nothing (#81), and a dashboard nothing could
+> install (#84). Each was fixed on its own. ADOPT-047 states that a capability installs what it
+> *references*; ADOPT-069 states the converse, that everything shipped is installable, which is the
+> half that catches an omission rather than a dangling pointer.
 
 > **How the spec is changing (#72).** Callers used to reference a tag — `@v0.4.1` — and §7 did not
 > exist. The reason given was that a tag keeps an upgrade readable, and that a workflow we publish
@@ -166,6 +177,6 @@ than a formatting one: a reusable workflow runs with the **caller's** token, on 
 | Applying | ADOPT-040–047 | `test_adopt_apply.py` |
 | Verifying | ADOPT-050–054 | `test_adopt_verify.py` |
 | Pinning a caller | ADOPT-060–066 | `test_adopt_pin.py` |
-| Caller permissions | ADOPT-068 | `test_adopt_permissions.py` |
+| Caller permissions | ADOPT-068–069 | `test_adopt_permissions.py` |
 
-**44 requirements, all `auto`.**
+**45 requirements, all `auto`.**

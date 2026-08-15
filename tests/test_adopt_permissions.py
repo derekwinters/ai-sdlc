@@ -21,6 +21,7 @@ PERMISSIONS = re.compile(r"^permissions:\n((?:  \S+: \S+\n)+)", re.MULTILINE)
 CALLS = re.compile(r"uses: derekwinters/ai-sdlc/\.github/workflows/(\S+?\.yml)@")
 
 ALL_CAPABILITIES = ["hygiene", "consistency", "labels", "release", "pipeline"]
+ALL_PROFILES = ["unity", "mkdocs", "python", "node", "kotlin"]
 
 
 def _grants(text):
@@ -37,6 +38,7 @@ def _callers():
     """Every caller adoption would write, with the workflow each one calls."""
     class Config:
         capabilities = ALL_CAPABILITIES
+        profiles = ALL_PROFILES
 
     for path, body in _files_for(Config(), PIN).items():
         called = CALLS.search(body)
@@ -88,3 +90,36 @@ class TestTheLabelsCaller(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestEveryReusableWorkflowIsReachable(unittest.TestCase):
+    """ADOPT-069 — every reusable workflow ai-sdlc ships can be installed.
+
+    Five defects of one shape reached a consumer before this test existed: an
+    import with no file (#71), a workflow with no manifest (#75), a permissions
+    block too narrow to start (#78), a profile that installed nothing (#81),
+    and a dashboard nothing could install (#84).
+
+    Each was fixed individually. This is the gate that makes a sixth fail here
+    rather than in someone's repository: a reusable workflow that no capability
+    or profile installs a caller for is unreachable, and unreachable is
+    indistinguishable from absent.
+    """
+
+    def test_every_reusable_workflow_has_a_caller(self):  # ADOPT-069
+        shipped = {
+            path.name for path in (ROOT / ".github" / "workflows").glob("reusable-*.yml")
+        }
+        called = {called for _, _, called in _callers()}
+
+        # `reusable-docs.yml` builds and publishes ai-sdlc's own site through
+        # GitHub Pages. It is deliberately not installed: a consumer with its
+        # own publisher should not have a second one put underneath it, and
+        # how a consumer says "I already have one" is undecided (#82).
+        undecided = {"reusable-docs.yml"}
+
+        self.assertEqual(
+            shipped - called - undecided, set(),
+            "these reusable workflows are shipped but nothing installs a caller "
+            "for them, so no consumer can reach them",
+        )
