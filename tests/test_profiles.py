@@ -141,3 +141,59 @@ class TestASelectedProfileInstallsItsFiles(unittest.TestCase):
     def test_an_unselected_profile_installs_nothing(self):  # PROF-005
         root = self._apply([])
         self.assertFalse((root / ".github/workflows/docs-gate.yml").exists())
+
+
+class TestTheDocsArePublishedFromABranch(unittest.TestCase):
+    """PROF-014 — the site is published by pushing `gh-pages`, not an artifact.
+
+    Three third-party actions became none. That matters here because this
+    repository requires actions to be SHA-pinned *and the policy reaches inside
+    composite actions*: `upload-pages-artifact@v3` calls
+    `actions/upload-artifact@v4` unpinned in its own `action.yml`, so the step
+    was refused before it ran (#64, #93). Moving to v5 fixed it by depending on
+    someone else's pinning discipline. A branch push has no such surface.
+    """
+
+    WORKFLOW = ROOT / ".github" / "workflows" / "docs.yml"
+
+    def setUp(self):
+        raw = self.WORKFLOW.read_text()
+        # Comments are stripped before asserting. The comment explaining *why*
+        # the Pages actions were removed names them, and a test that cannot
+        # tell an explanation from a dependency would forbid explaining
+        # anything — which is worse than the rule it enforces.
+        self.text = "\n".join(
+            line for line in raw.splitlines() if not line.lstrip().startswith("#")
+        )
+
+    def test_no_pages_action_is_used(self):  # PROF-014
+        for action in ("upload-pages-artifact", "configure-pages", "deploy-pages"):
+            with self.subTest(action=action):
+                self.assertNotIn(action, self.text)
+
+    def test_it_pushes_gh_pages(self):  # PROF-014
+        self.assertIn("gh-pages", self.text)
+
+    def test_it_can_write_to_the_repository(self):  # PROF-014
+        # Pushing a branch needs it; the artifact pipeline did not.
+        self.assertIn("contents: write", self.text)
+
+    def test_it_no_longer_asks_for_pages_or_id_token(self):  # PROF-014
+        # Grants that only the artifact pipeline needed. Leaving them behind
+        # would be a permission nobody can explain a year from now.
+        self.assertNotIn("pages: write", self.text)
+        self.assertNotIn("id-token: write", self.text)
+
+    def test_publication_is_restricted_to_main(self):  # PROF-012
+        self.assertIn("github.ref == 'refs/heads/main'", self.text)
+
+    def test_the_strict_build_still_runs(self):  # PROF-011
+        self.assertIn("mkdocs build --strict", self.text)
+
+    def test_publishing_cannot_precede_the_build(self):  # PROF-013
+        # A deploy that ran before, or instead of, the strict build would
+        # publish exactly the broken site the gate exists to catch.
+        self.assertLess(
+            self.text.index("mkdocs build --strict"),
+            self.text.index("mkdocs gh-deploy"),
+        )

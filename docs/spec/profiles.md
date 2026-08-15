@@ -47,6 +47,19 @@ Every requirement below is `auto` (covered by a named test) unless marked otherw
   broken page, and a warning nobody sees is a broken page shipped.
 - **PROF-012** It publishes on merge to the default branch, and never from a pull request.
 - **PROF-013** Publication is skipped when the build fails.
+- **PROF-014** Publication is a push to a **`gh-pages` branch**, not an upload to GitHub's Pages
+  artifact pipeline. It therefore needs `contents: write` and no other grant — no `pages: write`,
+  no OIDC token exchange — and depends on no third-party action.
+
+> **How the spec is changing (#93).** `PROF-012` said the profile publishes on merge and left the
+> mechanism open, and the implementation used `upload-pages-artifact`, `configure-pages` and
+> `deploy-pages`. It now names the mechanism, because the mechanism turned out to matter: this
+> repository requires actions to be SHA-pinned and the policy reaches *inside* composite actions, so
+> `upload-pages-artifact@v3` — which calls `actions/upload-artifact@v4` unpinned in its own
+> `action.yml` — was refused before it ran (#64). Moving to v5 fixed it by relying on someone else's
+> pinning discipline, rechecked at every bump. A branch push has no such surface. `PROF-011`,
+> `PROF-012` and `PROF-013` are unchanged: the build is still strict, still runs on every pull
+> request, and still gates the publish.
 
 ## 3. The documentation gate
 
@@ -66,7 +79,7 @@ Every requirement below is `auto` (covered by a named test) unless marked otherw
 | Section | IDs | Tests |
 |---|---|---|
 | Selection | PROF-001–005 | `test_profiles.py` |
-| The mkdocs profile | PROF-010–013 | `test_profiles.py` |
+| The mkdocs profile | PROF-010–014 | `test_profiles.py` |
 | The documentation gate | PROF-020–025 | `test_docs_gate.py` |
 
-**16 requirements, all `auto`.**
+**17 requirements, all `auto`.**
