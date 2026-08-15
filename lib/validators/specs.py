@@ -77,15 +77,17 @@ def _planned_pages(root):
 
 
 def collect_requirements(root):
-    """Every requirement declared across the specification pages."""
+    """Every requirement declared across the specification pages.
+
+    A requirement's text runs to the end of its list item, not the end of its
+    first line. Reading only the first line missed every `*(manual: …)*` marker
+    that had wrapped — which is most of them, since the marker goes at the end
+    of the sentence and the sentence is usually long enough to wrap.
+    """
     found = []
     for page in spec_pages(root):
         relative = str(page.relative_to(root))
-        for line in page.read_text().splitlines():
-            match = DECLARATION.match(line)
-            if not match:
-                continue
-            area, number, text = match.groups()
+        for area, number, text in _declarations(page.read_text()):
             manual_match = MANUAL.search(text)
             bare = MANUAL_BARE.search(text)
             found.append(
@@ -97,6 +99,39 @@ def collect_requirements(root):
                 )
             )
     return found
+
+
+def _declarations(text):
+    """Yield (area, number, full text) for each requirement in a page.
+
+    Continuation lines — indented, and not themselves a list item — belong to
+    the requirement above them.
+    """
+    current = None
+    for line in text.splitlines():
+        match = DECLARATION.match(line)
+        if match:
+            if current:
+                yield current
+            area, number, first = match.groups()
+            current = (area, number, first)
+            continue
+
+        if current is None:
+            continue
+
+        stripped = line.strip()
+        if line.startswith((" ", "\t")) and stripped and not stripped.startswith(("-", "*", "|")):
+            area, number, so_far = current
+            current = (area, number, f"{so_far} {stripped}")
+        elif not stripped:
+            continue
+        else:
+            yield current
+            current = None
+
+    if current:
+        yield current
 
 
 def _cited_identifiers(root):

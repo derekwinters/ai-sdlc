@@ -1,0 +1,42 @@
+name: gatekeeper-close
+
+# Strips pipeline-state labels from a closed issue, and does nothing else.
+# It deliberately does not touch any other issue: blockedness is derived at
+# selection time, so an issue blocked by this one becomes eligible on its own.
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        default: main
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: gatekeeper-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  gatekeeper:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: derekwinters/ai-sdlc
+          ref: ${{ inputs.ref }}
+          path: .ai-sdlc
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Strip stale state labels
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_EVENT_PATH: ${{ github.event_path }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: python3 .ai-sdlc/skills/pipeline/pipeline-gatekeeper/main.py closed
