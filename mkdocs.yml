@@ -41,6 +41,7 @@ nav:
       - Gatekeeper: spec/gatekeeper.md
       - Blockers: spec/blockers.md
       - Dashboard: spec/dashboard.md
+      - Development queue: spec/development.md
       - Labels: spec/labels.md
       - Milestones: spec/milestones.md
       - Triage: spec/triage.md
