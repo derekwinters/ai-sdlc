@@ -3,7 +3,7 @@
 import unittest
 from pathlib import Path
 
-from _adopt import MKDOCS_MARKER, PYTHON_MARKER, repository
+from _adopt import MKDOCS_MARKER, PYTHON_MARKER, repository, PIN
 import _adopt  # noqa: F401
 from _support import ROOT
 from adopt import detect
@@ -48,7 +48,7 @@ class TestInertness(unittest.TestCase):
         from adopt import plan
 
         root = repository({".claude/repo-config.yml": "capabilities:\n  - hygiene\n"})
-        planned = plan(root, pin="v0.4.0")
+        planned = plan(root, pin=PIN)
         self.assertFalse([p for p in planned.creates if "docs" in p])
 
     def test_a_repository_with_a_docs_directory_is_still_not_gated(self):
@@ -58,7 +58,7 @@ class TestInertness(unittest.TestCase):
             ".claude/repo-config.yml": "capabilities:\n  - hygiene\n",
             "docs/index.md": "# x\n",
         })
-        planned = plan(root, pin="v0.4.0")
+        planned = plan(root, pin=PIN)
         self.assertFalse([p for p in planned.creates if "docs" in p])
 
 

@@ -9,7 +9,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path.cwd()))
 
-from adopt import AdoptRefused, apply, plan, verify  # noqa: E402
+from adopt import AdoptRefused, apply, as_pin, plan, verify  # noqa: E402
 
 
 def _report_plan(result):
@@ -38,9 +38,19 @@ def main(argv):
     if len(argv) < 3:
         raise SystemExit(f"usage: {argv[0]} plan|apply|verify <pin> [--ack <workflow>...]")
 
-    command, pin = argv[1], argv[2]
+    command, version = argv[1], argv[2]
     acknowledged = [a for a in argv[4:]] if "--ack" in argv else []
     root = Path.cwd()
+
+    # Resolved once, here, so a version reaches the network at most once per
+    # run and every later step works from the same commit.
+    try:
+        pin = as_pin(version)
+    except AdoptRefused as error:
+        print(f"refused: {error}", file=sys.stderr)
+        return 1
+
+    print(f"ai-sdlc {pin[0]} = {pin[1]}")
 
     if command == "plan":
         _report_plan(plan(root, pin, acknowledged=acknowledged))

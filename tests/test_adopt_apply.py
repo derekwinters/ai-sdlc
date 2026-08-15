@@ -2,11 +2,10 @@
 
 import unittest
 
-from _adopt import repository
+from _adopt import repository, NEWER_PIN, OLDER_PIN, PIN
 import _adopt  # noqa: F401
 from adopt import AdoptRefused, apply, plan
 
-PIN = "v0.4.0"
 CONFIG = "capabilities:\n  - hygiene\n"
 PIPELINE_CONFIG = (
     "capabilities:\n  - hygiene\n  - consistency\n  - labels\n  - release\n"
@@ -44,7 +43,9 @@ class TestWriting(unittest.TestCase):
 
     def test_it_records_the_version(self):  # ADOPT-045
         _, root = applied()
-        self.assertIn(PIN, (root / ".claude/ai-sdlc.pin").read_text())
+        recorded = (root / ".claude/ai-sdlc.pin").read_text()
+        self.assertIn(PIN[0], recorded)
+        self.assertIn(PIN[1], recorded)
 
     def test_it_reports_what_it_wrote(self):  # ADOPT-040
         result, _ = applied()
@@ -67,19 +68,19 @@ class TestIdempotence(unittest.TestCase):
 class TestUpgrading(unittest.TestCase):
     def test_a_higher_pin_updates_managed_files(self):  # ADOPT-046
         _, root = applied()
-        result = apply(root, pin="v0.5.0")
+        result = apply(root, pin=NEWER_PIN)
         self.assertTrue(result.written)
 
     def test_the_new_pin_is_recorded(self):  # ADOPT-046
         _, root = applied()
-        apply(root, pin="v0.5.0")
+        apply(root, pin=NEWER_PIN)
         self.assertIn("v0.5.0", (root / ".claude/ai-sdlc.pin").read_text())
 
     def test_a_conflict_is_left_alone_on_upgrade(self):  # ADOPT-046
         _, root = applied()
         target = root / ".github/workflows/closing-keyword.yml"
         target.write_text("hand edited")
-        apply(root, pin="v0.5.0")
+        apply(root, pin=NEWER_PIN)
         self.assertEqual(target.read_text(), "hand edited")
 
 

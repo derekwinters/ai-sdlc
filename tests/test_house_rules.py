@@ -7,7 +7,7 @@ being followed with no failing test anywhere.
 
 import unittest
 
-from _adopt import repository
+from _adopt import repository, PIN
 import _adopt  # noqa: F401
 from _support import ROOT
 from adopt import IMPORT_LINE, apply
@@ -16,7 +16,6 @@ FRAGMENT = ROOT / "house-rules" / "house-rules.md"
 TEXT = FRAGMENT.read_text()
 BODY = TEXT.lower()
 
-PIN = "v0.4.0"
 CONFIG = "capabilities:\n  - hygiene\n"
 
 

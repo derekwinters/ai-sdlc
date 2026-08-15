@@ -50,6 +50,53 @@ MARKERS = (
     ("kotlin", "build.gradle"),
 )
 
+FULL_SHA = re.compile(r"^[0-9a-f]{40}$", re.IGNORECASE)
+
+
+def _git_ls_remote(version):  # pragma: no cover - the real network path
+    """Ask GitHub what a version resolves to. Injected everywhere else."""
+    import subprocess
+
+    result = subprocess.run(
+        ["git", "ls-remote", f"https://github.com/{SOURCE}",
+         f"refs/tags/{version}", f"refs/tags/{version}^{{}}"],
+        capture_output=True, text=True, check=False,
+    )
+    return result.stdout
+
+
+def resolve_version(version, resolver=None):
+    """The commit a version names.
+
+    A SHA is returned as itself, so passing one costs no network at all.
+
+    For an **annotated** tag `refs/tags/v4` is the tag *object* and only
+    `refs/tags/v4^{}` is the commit. Pinning the tag object yields a reference
+    that does not resolve — the failure that cost an afternoon in #64 — so the
+    dereferenced form wins whenever it is present.
+    """
+    resolver = resolver or _git_ls_remote
+
+    if FULL_SHA.match(version or ""):
+        return version.lower()
+
+    wanted = {f"refs/tags/{version}": None, f"refs/tags/{version}^{{}}": None}
+    for line in (resolver(version) or "").splitlines():
+        sha, _, ref = line.partition("\t")
+        if ref.strip() in wanted:
+            wanted[ref.strip()] = sha.strip()
+
+    # The dereferenced commit first; the bare ref only when there is no tag
+    # object to dereference (a lightweight tag).
+    found = wanted[f"refs/tags/{version}^{{}}"] or wanted[f"refs/tags/{version}"]
+    if not found:
+        raise AdoptRefused(
+            f"{version!r} does not resolve to a commit in {SOURCE}. Check the "
+            f"version exists and has been released."
+        )
+    return found.lower()
+
+
 _PROVENANCE = re.compile(
     r"^#\s*ai-sdlc:\s*(?P<source>\S+)@(?P<ref>\S+)\s+hash=(?P<hash>\S+)\s*$",
     re.MULTILINE,
@@ -85,6 +132,38 @@ def _strip_provenance(text):
     return "".join(kept)
 
 
+def as_pin(pin, resolver=None):
+    """Normalise to ``(version, sha)``.
+
+    A caller may pass a version — the usual case, and what a human knows — or
+    an already-resolved pair, which costs no network. Resolution happens once
+    per command rather than once per file.
+    """
+    if isinstance(pin, (tuple, list)):
+        version, sha = pin
+        return (version, sha.lower())
+    return (pin, resolve_version(pin, resolver=resolver))
+
+
+def _pin_line(pin):
+    """What `.claude/ai-sdlc.pin` records: the version and the commit.
+
+    Both, so `verify` at the same version needs no network — and so a human
+    reading the file can tell what is installed without resolving a SHA.
+    """
+    version, sha = pin
+    return f"{version} {sha}\n"
+
+
+def read_pin(root):
+    """The recorded ``(version, sha)``, or None if nothing is recorded."""
+    path = Path(root) / PIN_FILE
+    if not path.is_file():
+        return None
+    parts = path.read_text().split()
+    return (parts[0], parts[1]) if len(parts) >= 2 else None
+
+
 def classify(root, path, wanted, pin):
     """What may be done with this path."""
     full = Path(root) / path
@@ -103,7 +182,11 @@ def classify(root, path, wanted, pin):
         # the edit silently, which is worse than refusing.
         return CONFLICT
 
-    return CURRENT if (ref == pin and body == wanted) else STALE
+    # Provenance records the *version*, which is what a human reads. A tag that
+    # moved is still caught: the caller's body carries the SHA, so the content
+    # would differ from what this version now says it should be.
+    version = pin[0] if isinstance(pin, (tuple, list)) else pin
+    return CURRENT if (ref == version and body == wanted) else STALE
 
 
 # ---------------------------------------------------------------- detection
@@ -301,19 +384,33 @@ def _house_rules():
 
 
 def _caller(name, reusable, pin, trigger):
-    """A thin caller. All logic lives in the reusable workflow."""
+    """A thin caller. All logic lives in the reusable workflow.
+
+    ``pin`` is ``(version, sha)``. The reference is the **SHA**, with the
+    version as a trailing comment: a reusable workflow runs with the caller's
+    token, on `issue_comment` and `issues`, inside the consumer's repository, so
+    a mutable ref there is the same exposure as a mutable action. Publishing it
+    ourselves says who could move the tag, not that it cannot move.
+
+    `ref:` is that same SHA rather than the version, so the workflow and the
+    code it checks out cannot come from two different commits.
+    """
+    version, sha = pin
     return (
         f"name: {name}\n\n"
         f"# A caller. The logic is in ai-sdlc; this exists because a trigger\n"
         f"# cannot be centralised — it must be declared in the repository it\n"
-        f"# fires for.\n\n"
+        f"# fires for.\n#\n"
+        f"# Pinned to a commit rather than a tag: a tag can move, and this runs\n"
+        f"# with this repository's token. Upgrade with `adopt apply <version>`,\n"
+        f"# which rewrites both the SHA and the comment.\n\n"
         f"on:\n{trigger}\n"
         f"permissions:\n  contents: read\n\n"
         f"jobs:\n"
         f"  {name}:\n"
-        f"    uses: {SOURCE}/.github/workflows/{reusable}@{pin}\n"
+        f"    uses: {SOURCE}/.github/workflows/{reusable}@{sha} # {version}\n"
         f"    with:\n"
-        f"      ref: {pin}\n"
+        f"      ref: {sha}\n"
     )
 
 
@@ -323,9 +420,10 @@ def _load_config(root):
     return load(root=root)
 
 
-def plan(root, pin, acknowledged=()):
+def plan(root, pin, acknowledged=(), resolver=None):
     """What adoption would do. Writes nothing."""
     root = Path(root)
+    pin = as_pin(pin, resolver=resolver)
     config = _load_config(root)
     wanted = _files_for(config, pin)
 
@@ -340,7 +438,7 @@ def plan(root, pin, acknowledged=()):
             conflicts.append(path)
 
     if (root / PIN_FILE).is_file():
-        if (root / PIN_FILE).read_text().strip() != pin:
+        if (root / PIN_FILE).read_text().strip() != _pin_line(pin).strip():
             updates.append(PIN_FILE)
     else:
         creates.append(PIN_FILE)
@@ -365,9 +463,10 @@ def _claimed_by(config):
     return claimed
 
 
-def apply(root, pin, acknowledged=()):
+def apply(root, pin, acknowledged=(), resolver=None):
     """Make the changes. Refuses on an unacknowledged trigger collision."""
     root = Path(root)
+    pin = as_pin(pin, resolver=resolver)
     proposed = plan(root, pin, acknowledged=acknowledged)
 
     if proposed.collisions:
@@ -387,15 +486,15 @@ def apply(root, pin, acknowledged=()):
         if state in (ABSENT, STALE):
             full = root / path
             full.parent.mkdir(parents=True, exist_ok=True)
-            full.write_text(provenance_header(pin, content_hash(body)) + body)
+            full.write_text(provenance_header(pin[0], content_hash(body)) + body)
             written.append(path)
         elif state == CONFLICT:
             skipped.append(path)
 
     pin_file = root / PIN_FILE
-    if not pin_file.is_file() or pin_file.read_text().strip() != pin:
+    if not pin_file.is_file() or pin_file.read_text().strip() != _pin_line(pin).strip():
         pin_file.parent.mkdir(parents=True, exist_ok=True)
-        pin_file.write_text(pin + "\n")
+        pin_file.write_text(_pin_line(pin))
         written.append(PIN_FILE)
 
     if _add_import(root):
@@ -437,7 +536,7 @@ class Verified:
         self.ok = not problems
 
 
-def verify(root, pin):
+def verify(root, pin, resolver=None):
     """Whether the repository still matches its pin. Writes nothing.
 
     Reports rather than repairs, for the same reason everything else here does:
@@ -445,6 +544,7 @@ def verify(root, pin):
     non-standard, not silently corrected back.
     """
     root = Path(root)
+    pin = as_pin(pin, resolver=resolver)
     problems = []
 
     try:
@@ -453,9 +553,10 @@ def verify(root, pin):
         return Verified([f"the configuration could not be read: {error}"])
 
     recorded = (root / PIN_FILE).read_text().strip() if (root / PIN_FILE).is_file() else None
-    if recorded != pin:
+    if recorded != _pin_line(pin).strip():
         problems.append(
-            f"installed at {recorded or '(no pin recorded)'}, current is {pin}"
+            f"installed at {recorded or '(no pin recorded)'}, current is "
+            f"{_pin_line(pin).strip()}"
         )
 
     for path, body in sorted(_files_for(config, pin).items()):

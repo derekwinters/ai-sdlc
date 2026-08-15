@@ -38,15 +38,13 @@ def _exempt(reference):
     Not `actions/*`: the repository's policy exempts nobody, GitHub included.
     Assuming otherwise is a mistake this validator made on the first attempt.
 
-    A reusable *workflow* is exempt, though — that is a different thing from an
-    action, and ai-sdlc distributes its own by tag on purpose. `adopt` writes
-    those callers; a rule flagging the line its own skill generates would be a
-    rule at war with itself.
+    Not a reusable workflow either. That exemption existed because `adopt` wrote
+    tag-pinned callers and a gate flagging its own skill's output looked
+    self-contradictory — but the contradiction was `adopt`'s to resolve, and it
+    now writes a SHA. A reusable workflow runs with the *caller's* token, so a
+    mutable ref there is the same exposure as a mutable action (#72).
     """
-    if reference.startswith("./") or reference.startswith("docker://"):
-        return True
-    path, _, _ = reference.partition("@")
-    return "/.github/workflows/" in path and path.endswith((".yml", ".yaml"))
+    return reference.startswith("./") or reference.startswith("docker://")
 
 
 def validate_actions(root):

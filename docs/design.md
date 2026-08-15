@@ -136,7 +136,7 @@ installs a capability by installing its scope.
     labels.core.yml      # installed, pinned — the pipeline state vocabulary
     labels.repo.yml      # hand-written — this repository's domain labels
     scripts/sync_labels.py
-    workflows/           # thin callers: uses: derekwinters/ai-sdlc/workflows/<x>.yml@<tag>
+    workflows/           # thin callers: uses: …/reusable-<x>.yml@<sha> # <version>
   CLAUDE.md              # @import of the shared fragment + repo-specific rules
 ```
 

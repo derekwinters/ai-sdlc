@@ -67,18 +67,20 @@ class TestExemptions(Tree):
         root = self.build(a=f"      - uses: actions/checkout@{PINNED} # v4\n")
         self.assertEqual(validate_actions(root), [])
 
-    def test_a_reusable_workflow_reference_is_exempt(self):  # VAL-056
-        # ai-sdlc distributes its reusable workflows by tag, and `adopt` writes
-        # exactly this line into every consuming repository. A rule that flags
-        # the caller its own skill generates is a rule at war with itself.
+    def test_a_reusable_workflow_reference_is_not_exempt(self):  # VAL-056
+        # It runs with the caller's token, so a moving ref is the same exposure
+        # as a moving action. `adopt` now writes a SHA, so there is no longer a
+        # contradiction between this gate and the skill (#72).
         root = self.build(
             a="    uses: derekwinters/ai-sdlc/.github/workflows/reusable-x.yml@v0.1.0\n"
         )
-        self.assertEqual(validate_actions(root), [])
-
-    def test_an_action_in_a_repository_subdirectory_is_not_exempt(self):  # VAL-056
-        root = self.build(a="      - uses: owner/repo/sub/action@v1\n")
         self.assertTrue(validate_actions(root))
+
+    def test_a_reusable_workflow_pinned_to_a_sha_passes(self):  # VAL-056
+        root = self.build(
+            a=f"    uses: derekwinters/ai-sdlc/.github/workflows/x.yml@{PINNED} # v0.1.0\n"
+        )
+        self.assertEqual(validate_actions(root), [])
 
     def test_a_docker_reference_is_exempt(self):  # VAL-052
         root = self.build(a="      - uses: docker://alpine:3.19\n")

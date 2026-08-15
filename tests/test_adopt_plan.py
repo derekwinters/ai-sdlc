@@ -2,11 +2,10 @@
 
 import unittest
 
-from _adopt import PYTHON_MARKER, repository
+from _adopt import PYTHON_MARKER, repository, NEWER_PIN, OLDER_PIN, PIN
 import _adopt  # noqa: F401
 from adopt import CONFLICT, plan
 
-PIN = "v0.4.0"
 CONFIG = "capabilities:\n  - hygiene\n"
 PIPELINE_CONFIG = (
     "capabilities:\n  - hygiene\n  - consistency\n  - labels\n  - release\n"
