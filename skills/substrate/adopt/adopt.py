@@ -347,6 +347,10 @@ def _files_for(config, pin):
         )
 
     if "labels" in config.capabilities:
+        # The manifest the sync reads, not only the workflow that calls it. A
+        # capability that installs half of itself fails when something runs,
+        # long after the review that would have caught it (#75).
+        files[".github/labels.core.yml"] = _core_labels()
         files[".github/workflows/labels-sync.yml"] = _caller(
             "labels-sync", "reusable-labels-sync.yml", pin,
             trigger=(
@@ -380,6 +384,18 @@ def _house_rules():
     invisible.
     """
     source = Path(__file__).resolve().parents[3] / "house-rules" / "house-rules.md"
+    return source.read_text()
+
+
+def _core_labels():
+    """The shared taxonomy, as installed.
+
+    Read from the skill so there is one copy: a second embedded here would
+    drift from the one the sync applies, and the drift would be invisible —
+    the same reason `_house_rules()` reads rather than embeds.
+    """
+    source = (Path(__file__).resolve().parents[2]
+              / "labels" / "label-sync" / "labels.core.yml")
     return source.read_text()
 
 

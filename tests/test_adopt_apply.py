@@ -152,3 +152,40 @@ class TestLabelsAndDashboard(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestACapabilityInstallsWhatItNeeds(unittest.TestCase):
+    """A capability's workflow and the files that workflow reads land together.
+
+    Twice now a capability has installed half of itself: the `CLAUDE.md` import
+    without `house-rules.md` (#71), and `labels-sync.yml` without
+    `labels.core.yml` (#75). Both fail only when something runs, which is long
+    after the pull request that introduced them was reviewed.
+    """
+
+    def test_enabling_labels_installs_the_core_manifest(self):  # ADOPT-047
+        root = repository({".claude/repo-config.yml": "capabilities:\n  - labels\n"})
+        apply(root, pin=PIN)
+        self.assertTrue((root / ".github/labels.core.yml").is_file())
+
+    def test_the_core_manifest_is_managed_not_hand_written(self):  # ADOPT-047
+        root = repository({".claude/repo-config.yml": "capabilities:\n  - labels\n"})
+        apply(root, pin=PIN)
+        text = (root / ".github/labels.core.yml").read_text()
+        self.assertIn("ai-sdlc:", text)
+
+    def test_it_is_the_manifest_the_sync_actually_reads(self):  # ADOPT-047
+        # Not a second copy that can drift — the same file the skill ships.
+        from _support import ROOT
+
+        source = (ROOT / "skills" / "labels" / "label-sync" / "labels.core.yml").read_text()
+        root = repository({".claude/repo-config.yml": "capabilities:\n  - labels\n"})
+        apply(root, pin=PIN)
+        installed = (root / ".github/labels.core.yml").read_text()
+        self.assertIn("ready-for-work", installed)
+        self.assertTrue(installed.endswith(source))
+
+    def test_labels_off_installs_no_manifest(self):  # ADOPT-047
+        root = repository({".claude/repo-config.yml": "capabilities:\n  - hygiene\n"})
+        apply(root, pin=PIN)
+        self.assertFalse((root / ".github/labels.core.yml").exists())
