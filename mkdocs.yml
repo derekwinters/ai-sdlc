@@ -40,6 +40,7 @@ nav:
       - Consistency: spec/validators.md
       - Gatekeeper: spec/gatekeeper.md
       - Blockers: spec/blockers.md
+      - CI watch: spec/ci-watch.md
       - Dashboard: spec/dashboard.md
       - Development queue: spec/development.md
       - Labels: spec/labels.md
