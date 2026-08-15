@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.2](https://github.com/derekwinters/ai-sdlc/compare/v0.4.1...v0.4.2) (2026-08-15)
+
+
+### Fixes
+
+* **adopt:** pin caller workflows to a commit SHA, not a tag ([#73](https://github.com/derekwinters/ai-sdlc/issues/73)) ([2ac874e](https://github.com/derekwinters/ai-sdlc/commit/2ac874e51f66b68699f4c16044c41665c454d062)), closes [#72](https://github.com/derekwinters/ai-sdlc/issues/72)
+
 ## [0.4.1](https://github.com/derekwinters/ai-sdlc/compare/v0.4.0...v0.4.1) (2026-08-15)
 
 
