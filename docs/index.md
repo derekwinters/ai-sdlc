@@ -9,8 +9,10 @@ identically without holding a copy of the logic.
 
 - **[Design](design.md)** — what ai-sdlc is: capabilities, the spec format, the testing
   architecture, the CI gates, distribution, and adoption.
-- **[Gatekeeper specification](spec/gatekeeper.md)** — the first area specified, and the model for
-  the rest.
+- **[GitHub access](spec/github-api.md)** — the one module that touches the network, and the fake
+  that stands in for it everywhere else.
+- **[Gatekeeper specification](spec/gatekeeper.md)** — the first pipeline area specified, and the
+  model for the rest.
 - **[Migration plan](decisions/migration-plan.md)** — why it is being built, the evidence, and the
   decisions taken.
 

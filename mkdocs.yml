@@ -33,6 +33,7 @@ nav:
   - Home: index.md
   - Design: design.md
   - Specification:
+      - GitHub access: spec/github-api.md
       - Gatekeeper: spec/gatekeeper.md
   - Decisions:
       - Migration plan: decisions/migration-plan.md
