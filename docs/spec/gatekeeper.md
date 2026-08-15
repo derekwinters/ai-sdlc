@@ -60,17 +60,20 @@ configurable; the defaults are given here.
 
 ## 2. Authority and identity
 
-- **GK-010** A command is honoured only when the comment author's login equals the configured
-  owner login.
+- **GK-010** A command is honoured only when the comment author's login appears in the configured
+  owner list. A single-owner repository is a list of one, not a special case.
 - **GK-011** The owner comparison is case-insensitive.
 - **GK-012** Authority is determined by login, never by `author_association`.
-- **GK-013** A non-owner's command is dropped silently: no labels, no reaction, no reply.
+- **GK-013** A command from a login outside the owner list is dropped silently: no labels, no
+  reaction, no reply.
 - **GK-014** Comments authored by the configured bot identity are never treated as commands.
 - **GK-015** Comments authored by any account whose login ends in `[bot]` are never treated as
   commands.
 - **GK-016** Comments on pull requests are ignored; the gatekeeper acts on issues only.
 - **GK-017** All writes are authored by the configured bot identity, never by the owner's account.
 - **GK-018** The bot identity is read from configuration and defaults to `github-actions[bot]`.
+- **GK-019** An empty owner list honours nothing. Authority is never inferred from repository
+  permissions when configuration is missing.
 
 ---
 
@@ -140,7 +143,7 @@ A gate may refuse a command. Gates run before any write.
 - **GK-053** `/approve` does not accept an inline milestone argument. `/milestone` then `/approve`
   are separate comments.
 - **GK-054** `/approve` is refused when a hard blocker sits in a **later** milestone than the
-  issue, or in no milestone, or in a milestone whose title does not order.
+  issue.
 - **GK-055** A blocker in an earlier or the same milestone does not refuse.
 - **GK-056** A closed blocker is ignored by every gate.
 - **GK-057** A soft `Depends on:` reference is subject to the same ordering rule as a hard blocker.
@@ -148,9 +151,29 @@ A gate may refuse a command. Gates run before any write.
 - **GK-059** `/milestone` is subject to the ordering gate; the milestone-presence gate does not
   apply to it.
 - **GK-060** `/park` is never gated.
-- **GK-061** Milestone titles order by semantic version (`v0.4` before `v0.16`); a non-version
-  title is unordered.
 - **GK-062** A gate refusal never alters the milestone.
+
+### Milestone ordering
+
+The ordering gate exists to stop work being approved ahead of a prerequisite scheduled later. It
+requires milestones to be *comparable*, which is a property of how a repository names them, not a
+universal fact.
+
+- **GK-061** The ordering strategy is configuration: `semver` (`v0.4` before `v0.16`), `date`,
+  `lexical`, or `none`.
+- **GK-063** Under `none`, the ordering gate does not run at all. Milestone presence (GK-050) is
+  unaffected.
+- **GK-064** A blocker in a milestone the strategy cannot order, or in no milestone, **does not
+  refuse**. An unorderable milestone is an absence of information, not evidence of inversion.
+- **GK-065** A blocker whose milestone cannot be ordered is reported on the dashboard as an
+  unverifiable dependency, so the gap is visible rather than silently permissive.
+
+> **Invariant — the ordering gate refuses only on evidence of inversion, never on absence of
+> evidence.** A repository whose milestones are dates, themes, or a mix — including a standing
+> milestone such as `Direct Involvement Needed` that names no version at all — must not find every
+> approval blocked by a gate that cannot read its scheme. Refusing on unknown made any issue
+> blocked by a human-task issue permanently unapprovable, with a refusal message pointing at
+> ordering rather than at the cause.
 
 ---
 
@@ -242,10 +265,13 @@ Replaces the removed comment-replay sweep.
 - **GK-132** Paginated reads follow pages until short, preserve item order, and stop at a
   configured page cap.
 - **GK-133** An empty or null page is an empty result, not an error.
-- **GK-134** A failing sub-request degrades the snapshot rather than discarding it; an
-  unreadable dependency edge counts as unscheduled and therefore refuses.
-- **GK-135** Owner login, bot identity, dashboard issue number, label vocabulary, and the fire
-  endpoint are read from `repo-config.yml` and validated against the schema.
+- **GK-134** A failing sub-request degrades the snapshot rather than discarding it. An unreadable
+  dependency edge is reported as unverifiable (GK-065) and does not refuse.
+- **GK-135** Owner list, bot identity, milestone ordering strategy, dashboard issue number, label
+  vocabulary, and the fire endpoint are read from `repo-config.yml` and validated against the
+  schema.
+- **GK-137** The gatekeeper belongs to the `pipeline` capability and may import from `substrate`,
+  `hygiene`, `consistency`, `labels`, and `release`. No lower capability imports from it.
 - **GK-136** No test performs network I/O.
 
 ---
@@ -255,15 +281,15 @@ Replaces the removed comment-replay sweep.
 | Section | IDs | Tests |
 |---|---|---|
 | State machine | GK-001–005 | `test_state_machine.py` |
-| Authority | GK-010–018 | `test_authority.py` |
+| Authority | GK-010–019 | `test_authority.py` |
 | Parsing | GK-020–028 | `test_parse_commands.py` |
 | Scope | GK-030–035 | `test_scope.py` |
 | Arguments | GK-040–043 | `test_arguments.py` |
-| Gates | GK-050–062 | `test_gates.py` |
+| Gates | GK-050–065 | `test_gates.py` |
 | Reactions | GK-070–080 | `test_reactions.py` |
 | Catch-up | GK-090–095 | `test_catchup.py` |
 | Lifecycle | GK-100–106 | `test_lifecycle.py` |
 | Downstream | GK-110–119 | `test_downstream.py` |
-| Architecture | GK-130–136 | `test_architecture.py`, `test_github_api.py` |
+| Architecture | GK-130–137 | `test_architecture.py`, `test_github_api.py` |
 
-**104 requirements, 102 `auto` and 2 `manual`.**
+**92 requirements, 90 `auto` and 2 `manual`.**

@@ -37,18 +37,38 @@ separately in `docs/decisions/`.
 
 ## 3. Structure
 
-### 3.1 Three layers
+### 3.1 Capabilities
 
-Every capability sits in exactly one layer.
+ai-sdlc is a set of **capabilities**, not a single block. A repository adopts the ones it wants.
+Each capability is independently installable, independently specified, and independently useful.
 
-**Universal core.** Present in every consuming repository: the issue lifecycle and its label state
-machine, the gatekeeper that moves issues through it, triage, the development queue, the
-dashboard, the reconciliation sweep, blockers, milestones, release flow, CI watching, the generic
-`dev` agent, Conventional Commits enforcement, the docs-as-contract gate, and the
-"Deviations and Decisions" pull-request requirement.
+They are ordered by how much they assume about how a repository works. Lower ones assume almost
+nothing; higher ones encode a particular way of working.
 
-**Profiles.** Opt-in, shared by a family of repositories. A profile adds capability; it never
-alters core behaviour.
+| Capability | Assumes | Depends on |
+|---|---|---|
+| **substrate** — distribution, `adopt`, `repo-config.yml` | a GitHub repository | — |
+| **hygiene** — Conventional Commits, closing-keyword check, "Deviations and Decisions" | pull requests are how change lands | substrate |
+| **consistency** — spec↔test traceability, spec↔skill parity, docs build gate | the repository has specs and tests | substrate |
+| **labels** — taxonomy as code, sync workflow | nothing; the taxonomy itself is configuration | substrate |
+| **release** — release-please flow, version as source of truth | release-please | substrate, hygiene |
+| **pipeline** — gatekeeper, triage, development queue, dashboard, blockers, milestones, CI watch, `dev` agent | a specific way of working: issues are triaged, approved by a human, then built | all of the above |
+
+**Invariant — a capability may depend only on capabilities below it, never above.** This is what
+makes partial adoption real rather than aspirational, and it is checked: `verify` fails when an
+installed capability's dependencies are absent, and the consistency gate fails when a lower
+capability's code imports a higher one's.
+
+The **pipeline** capability is the most opinionated thing here, which is why it is deliberately
+the top layer rather than the centre. It encodes one way of working — AI triages, a human
+approves, AI builds — that suits a single owner working with agents. A repository wanting only
+Conventional Commits enforcement and spec traceability takes `hygiene` and `consistency` and never
+installs it.
+
+### 3.1a Profiles
+
+Opt-in, shared by a family of repositories, layered on whichever capabilities are installed. A
+profile adds behaviour; it never alters a capability's behaviour.
 
 | Profile | Contents | Consumers |
 |---|---|---|
@@ -56,22 +76,34 @@ alters core behaviour.
 | `mkdocs` | docs build/publish workflows, strict-mode gate, versioned publishing | documentation sites |
 | `python`, `node`, `kotlin` | test/lint/typecheck workflow modules | by runtime |
 
-**Per-repository configuration.** Small values only, in `.claude/repo-config.yml`, validated
-against a published JSON schema: test command, verify command, spec validator, owner login, label
-vocabulary, dashboard issue number, domain terms, enabled profiles.
+### 3.1b Per-repository configuration
+
+Small values only, in `.claude/repo-config.yml`, validated against a published JSON schema:
+enabled capabilities and profiles, test and verify commands, spec validator, owner logins, bot
+identity, label vocabulary, milestone ordering strategy, dashboard issue number, domain terms.
 
 **Invariant — a difference between repositories is expressed as configuration, never as a
 modified copy of a skill.** A skill edited in place in a consumer is overwritten on the next
-update and its change is lost. Anything that must vary is a config key or it is a change to the
-core.
+update and its change is lost. Anything that must vary is a config key, or it is a change to the
+capability.
+
+**Configuration describes a repository; it does not switch behaviour on and off.** A key exists
+because repositories genuinely differ — how many owners, what a milestone means, what the test
+command is — not to make one implementation serve two incompatible designs. A proposed key that
+would fork behaviour rather than describe a fact is a sign that a separate capability is wanted.
 
 ### 3.2 Repository layout
 
 ```
 ai-sdlc/
   skills/
-    core/<skill>/SKILL.md, *.py, tests/
-    unity/<skill>/…
+    substrate/<skill>/SKILL.md, *.py, tests/
+    hygiene/<skill>/…
+    consistency/<skill>/…
+    labels/<skill>/…
+    release/<skill>/…
+    pipeline/<skill>/…          # the opinionated capability
+    unity/<skill>/…             # profiles share the same {scope} mechanism
     mkdocs/<skill>/…
   agents/
     dev.md
@@ -87,8 +119,9 @@ ai-sdlc/
   mkdocs.yml
 ```
 
-The `skills/{scope}/` layout is a native `gh skill` discovery convention, so the profile layer is
-expressed by directory position and requires no registry file.
+The `skills/{scope}/` layout is a native `gh skill` discovery convention, so both capability and
+profile membership are expressed by directory position and require no registry file. A consumer
+installs a capability by installing its scope.
 
 ### 3.3 A consuming repository
 
@@ -118,11 +151,17 @@ The spec is the contract. It lives in `docs/spec/`, is published to GitHub Pages
 document a reader consults to learn what the system does.
 
 - Every behaviour carries a requirement ID of the form `AREA-NNN`.
-- Areas: `SYS` (lifecycle and state machine), `CFG` (configuration), `API` (GitHub access),
-  `DIST` (distribution and versioning), `ADOPT` (adoption and upgrade), `LBL` (label taxonomy),
-  `GK` (gatekeeper), `TRI` (triage), `DEV` (development queue), `DASH` (dashboard),
-  `REL` (release flow), `BLK` (blockers), `MS` (milestones), `CIW` (CI watch),
-  `SC` (scaffolding).
+- Areas, grouped by the capability that owns them:
+  - *substrate*: `CFG` (configuration), `API` (GitHub access), `DIST` (distribution and
+    versioning), `ADOPT` (adoption and upgrade)
+  - *hygiene*: `SYS` (commit and pull-request rules)
+  - *consistency*: `VAL` (validators and gates)
+  - *labels*: `LBL`
+  - *release*: `REL`
+  - *pipeline*: `GK` (gatekeeper), `TRI` (triage), `DEV` (development queue), `DASH` (dashboard),
+    `BLK` (blockers), `MS` (milestones), `CIW` (CI watch)
+  - *profiles*: `SC` (scaffolding, unity)
+- A requirement never references an area belonging to a capability above its own.
 - Each requirement is `auto` — covered by a named test — or explicitly `manual` with a stated
   reason. There is no third state.
 - Where a component could be built in a way that is technically correct but wrong, the spec states
