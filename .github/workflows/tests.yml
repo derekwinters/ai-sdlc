@@ -1,0 +1,28 @@
+name: tests
+
+# The suite runs offline, with no credentials and no network. That is a
+# property of the design, not a happy accident, so it is checked here.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run the suite
+        run: python3 -m unittest discover -s tests -v
