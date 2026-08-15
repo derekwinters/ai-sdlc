@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.5](https://github.com/derekwinters/ai-sdlc/compare/v0.4.4...v0.4.5) (2026-08-15)
+
+
+### Fixes
+
+* **adopt:** install a selected profile's files ([#82](https://github.com/derekwinters/ai-sdlc/issues/82)) ([36b180d](https://github.com/derekwinters/ai-sdlc/commit/36b180df01383b6d0dcfc37ddabca273282635af)), closes [#81](https://github.com/derekwinters/ai-sdlc/issues/81)
+
 ## [0.4.4](https://github.com/derekwinters/ai-sdlc/compare/v0.4.3...v0.4.4) (2026-08-15)
 
 
