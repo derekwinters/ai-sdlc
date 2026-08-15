@@ -1,0 +1,64 @@
+name: docs
+
+# The mkdocs profile's documentation build and publish.
+#
+# Strict mode is the point: a warning is a broken link, and a broken link is a
+# broken page. A warning nobody sees is a broken page shipped.
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        default: ""
+      requirements:
+        description: Where the documentation dependencies are listed.
+        type: string
+        default: docs/requirements.txt
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: ${{ inputs.requirements }}
+
+      - run: pip install -r ${{ inputs.requirements }}
+
+      - name: Build the site (strict)
+        run: mkdocs build --strict
+
+      - uses: actions/upload-pages-artifact@v3
+        if: github.ref == 'refs/heads/main'
+        with:
+          path: site
+
+  publish:
+    # Only after a successful build: publishing a site that failed to build
+    # would replace a working one with a broken one.
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - id: deploy
+        uses: actions/deploy-pages@v4
