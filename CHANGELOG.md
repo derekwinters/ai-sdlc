@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.7](https://github.com/derekwinters/ai-sdlc/compare/v0.4.6...v0.4.7) (2026-08-15)
+
+
+### Fixes
+
+* **gk:** give the gatekeeper workflows a PYTHONPATH and a SKILL_ROOT ([#88](https://github.com/derekwinters/ai-sdlc/issues/88)) ([a88c9c2](https://github.com/derekwinters/ai-sdlc/commit/a88c9c26361bb50e5ec87b3f92fb9067864a989b)), closes [#87](https://github.com/derekwinters/ai-sdlc/issues/87)
+
 ## [0.4.6](https://github.com/derekwinters/ai-sdlc/compare/v0.4.5...v0.4.6) (2026-08-15)
 
 
