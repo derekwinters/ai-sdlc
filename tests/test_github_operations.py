@@ -91,12 +91,21 @@ class TestTheVocabularyIsSmall(unittest.TestCase):
         for name in self.FORBIDDEN:
             self.assertFalse(hasattr(api, name), name)
 
-    def test_no_public_method_mentions_those_verbs(self):
+    def test_no_public_method_closes_or_deletes_an_issue(self):
+        """Narrowed deliberately.
+
+        An earlier version banned any method whose name contained "delete",
+        which was over-broad: `delete_label` is legitimate and guarded by the
+        manifest's explicit delete list (see `LBL`). The rule is about issues —
+        closing one is a decision the gatekeeper must not make, and deleting one
+        loses work irrecoverably.
+        """
         api, _ = client()
         public = [n for n in dir(api) if not n.startswith("_")]
         for name in public:
-            self.assertNotIn("delete", name)
-            self.assertNotIn("close", name)
+            if "issue" in name:
+                self.assertNotIn("delete", name)
+                self.assertNotIn("close", name)
 
 
 if __name__ == "__main__":
