@@ -88,6 +88,20 @@ Every path adoption owns falls into exactly one class.
 - **ADOPT-046** Upgrading is the same operation: `apply` at a higher version updates managed files
   and leaves conflicts alone.
 
+> **Invariant — a capability installs everything it references.** A workflow and the files that
+> workflow reads land together, or neither lands.
+
+- **ADOPT-047** Enabling a capability installs every file its workflows require, not only the
+  workflows. `labels` installs `labels.core.yml` as well as `labels-sync.yml`; `hygiene` installs
+  `house-rules.md` alongside the import line that points at it.
+
+> **How the spec is changing (#75).** §5 described what `apply` writes without saying that the set
+> has to be *complete*. Twice a capability then shipped half of itself: the `CLAUDE.md` import with
+> no `house-rules.md` (#71), and `labels-sync.yml` with no `labels.core.yml` (#75). Both fail only
+> when something runs — long after the review that should have caught them — and both were found by
+> the first real consumer rather than by this repository. ADOPT-047 states the completeness rule
+> that was assumed and unwritten.
+
 ## 6. Verifying
 
 - **ADOPT-050** `verify` reports whether the repository matches its recorded version.
@@ -142,8 +156,8 @@ than a formatting one: a reusable workflow runs with the **caller's** token, on 
 | Planning | ADOPT-010–015 | `test_adopt_plan.py` |
 | Classification | ADOPT-020–025 | `test_adopt_classify.py` |
 | Trigger collisions | ADOPT-030–035 | `test_adopt_collision.py` |
-| Applying | ADOPT-040–046 | `test_adopt_apply.py` |
+| Applying | ADOPT-040–047 | `test_adopt_apply.py` |
 | Verifying | ADOPT-050–054 | `test_adopt_verify.py` |
 | Pinning a caller | ADOPT-060–066 | `test_adopt_pin.py` |
 
-**42 requirements, all `auto`.**
+**43 requirements, all `auto`.**
