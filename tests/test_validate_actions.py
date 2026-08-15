@@ -56,14 +56,28 @@ class TestExemptions(Tree):
         root = self.build(a="      - uses: ./.github/workflows/reusable-x.yml\n")
         self.assertEqual(validate_actions(root), [])
 
-    def test_a_github_owned_action_is_exempt(self):  # VAL-053
+    def test_a_github_owned_action_is_not_exempt(self):  # VAL-053
+        # The repository's policy makes no exception for `actions/*`, so
+        # neither does this. Assuming otherwise is what produced the second
+        # round of failures on the very PR that added this validator.
+        root = self.build(a="      - uses: actions/checkout@v4\n")
+        self.assertTrue(validate_actions(root))
+
+    def test_a_pinned_github_owned_action_passes(self):  # VAL-053
+        root = self.build(a=f"      - uses: actions/checkout@{PINNED} # v4\n")
+        self.assertEqual(validate_actions(root), [])
+
+    def test_a_reusable_workflow_reference_is_exempt(self):  # VAL-056
+        # ai-sdlc distributes its reusable workflows by tag, and `adopt` writes
+        # exactly this line into every consuming repository. A rule that flags
+        # the caller its own skill generates is a rule at war with itself.
         root = self.build(
-            a="      - uses: actions/checkout@v4\n      - uses: github/codeql-action/init@v3\n"
+            a="    uses: derekwinters/ai-sdlc/.github/workflows/reusable-x.yml@v0.1.0\n"
         )
         self.assertEqual(validate_actions(root), [])
 
-    def test_an_owner_that_merely_starts_with_actions_is_not_exempt(self):  # VAL-053
-        root = self.build(a="      - uses: actionsfoo/x@v4\n")
+    def test_an_action_in_a_repository_subdirectory_is_not_exempt(self):  # VAL-056
+        root = self.build(a="      - uses: owner/repo/sub/action@v1\n")
         self.assertTrue(validate_actions(root))
 
     def test_a_docker_reference_is_exempt(self):  # VAL-052
@@ -85,7 +99,7 @@ class TestReadability(Tree):
 class TestScope(Tree):
     def test_every_workflow_file_is_read(self):  # VAL-050
         root = self.build(
-            a="      - uses: actions/checkout@v4\n",
+            a=f"      - uses: actions/checkout@{PINNED} # v4\n",
             b="      - uses: googleapis/x@v4\n",
         )
         problems = validate_actions(root)
@@ -96,7 +110,7 @@ class TestScope(Tree):
         self.assertEqual(validate_actions(Path(tempfile.mkdtemp())), [])
 
     def test_yaml_and_yml_are_both_read(self):  # VAL-050
-        root = self.build(a="      - uses: actions/checkout@v4\n")
+        root = self.build(a=f"      - uses: actions/checkout@{PINNED} # v4\n")
         (root / ".github" / "workflows" / "c.yaml").write_text(
             "      - uses: googleapis/x@v4\n"
         )

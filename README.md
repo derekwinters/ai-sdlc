@@ -36,7 +36,7 @@ python3 -m unittest discover -s tests      # the suite: offline, no credentials
 python3 -m lib.validators.specs            # every requirement has a test
 python3 -m lib.validators.boundaries       # no capability imports from above it
 python3 -m lib.validators.docs             # spec pages and site navigation agree
-python3 -m lib.validators.actions          # third-party actions are pinned to a SHA
+python3 -m lib.validators.actions          # every action is pinned to a commit SHA
 
 pip install -r docs/requirements.txt
 mkdocs build --strict                      # the docs gate, as CI runs it

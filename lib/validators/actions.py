@@ -13,8 +13,9 @@ that from `release-please.yml`: it referenced
 all actions must be pinned to a full-length commit SHA", and no gate here
 noticed because no gate read workflow files at all.
 
-Actions owned by GitHub itself are exempt, matching the platform's own
-allow-list; a local `./…` reference is not a third-party action.
+Nothing is exempt on the strength of who publishes it — `actions/checkout@v4`
+is refused exactly like anyone else's action. Only a reference that resolves
+to no external ref is: a local `./…` workflow, or a `docker://` image.
 
 Specification: docs/spec/validators.md (`VAL`), §6.
 """
@@ -25,10 +26,6 @@ import re
 import sys
 from pathlib import Path
 
-#: Owners the platform's own pinning policy exempts. Matched as whole owner
-#: segments, so `actionsfoo/x` is not mistaken for one of them.
-GITHUB_OWNED = ("actions", "github")
-
 #: `uses: owner/repo@ref` with whatever trails it, comment included.
 USES = re.compile(r"^\s*(?:-\s*)?uses:\s*(?P<ref>\S+)(?P<rest>.*)$")
 
@@ -36,9 +33,20 @@ SHA = re.compile(r"^[0-9a-f]{40}$")
 
 
 def _exempt(reference):
+    """Only a reference that resolves to no external ref at all.
+
+    Not `actions/*`: the repository's policy exempts nobody, GitHub included.
+    Assuming otherwise is a mistake this validator made on the first attempt.
+
+    A reusable *workflow* is exempt, though — that is a different thing from an
+    action, and ai-sdlc distributes its own by tag on purpose. `adopt` writes
+    those callers; a rule flagging the line its own skill generates would be a
+    rule at war with itself.
+    """
     if reference.startswith("./") or reference.startswith("docker://"):
         return True
-    return reference.split("/", 1)[0] in GITHUB_OWNED
+    path, _, _ = reference.partition("@")
+    return "/.github/workflows/" in path and path.endswith((".yml", ".yaml"))
 
 
 def validate_actions(root):
@@ -82,7 +90,7 @@ def main(root="."):
     if problems:
         print(f"actions: {len(problems)} problem(s)", file=sys.stderr)
         return 1
-    print("actions: every third-party action is pinned to a commit SHA")
+    print("actions: every action is pinned to a commit SHA")
     return 0
 
 

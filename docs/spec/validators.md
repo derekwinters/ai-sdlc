@@ -93,28 +93,35 @@ Every requirement below is `auto` (covered by a named test) unless marked otherw
 
 ## 6. Workflow actions
 
-> **Invariant — a third-party action is referenced by commit SHA, never by tag or branch.** A tag
-> is a moving pointer to code published by someone else, running with the workflow's token.
+> **Invariant — every action is referenced by commit SHA, never by tag or branch.** A tag is a
+> moving pointer to code that runs with the workflow's token. Who publishes it makes no difference.
 
 - **VAL-050** Every `uses:` reference in every `.yml` and `.yaml` file under `.github/workflows/`
   is checked. A repository with no workflows is clean.
-- **VAL-051** A third-party action names a full 40-character commit SHA. A tag, a branch, or an
+- **VAL-051** An action reference names a full 40-character commit SHA. A tag, a branch, or an
   abbreviated SHA is reported.
 - **VAL-052** A local reference (`./…`) and a container reference (`docker://…`) are exempt: neither
-  is a third-party action resolved from a moving ref.
-- **VAL-053** An action owned by GitHub itself is exempt, matching the platform's own allow policy.
-  The owner is matched as a whole segment, so `actionsfoo/x` is not mistaken for `actions/x`.
+  resolves through a moving ref.
+- **VAL-053** No publisher is exempt. `actions/checkout@v4` is reported exactly as anyone else's
+  action is — the platform's policy makes no exception for GitHub's own actions, and neither does
+  this.
 - **VAL-054** A SHA pin carries a trailing comment naming the version it pins, so a reader can tell
   what forty characters of hexadecimal mean. A pin with no comment is reported.
 - **VAL-055** A problem names the workflow file and the line number.
+- **VAL-056** A reusable-workflow reference — a path under `/.github/workflows/` ending `.yml` or
+  `.yaml` — is exempt. That is a workflow, not an action, and ai-sdlc distributes its own by tag
+  deliberately: `adopt` writes those callers, and a rule that flagged the line its own skill
+  generates would be a rule at war with itself. A subdirectory *action* (`owner/repo/sub/action`)
+  is not a workflow and is not exempt.
 
 > **How the spec is changing (#64).** The consistency capability previously checked only the
 > specification, the tests, the site and the capability boundaries — everything *inside* the Python.
 > It now also checks the workflow files, because a defect that lives in a `uses:` line is invisible
 > to all of the above and only shows up as a failing run. `release-please.yml` referenced
-> `googleapis/release-please-action@v4`, this repository requires third-party actions to be pinned
-> to a full-length SHA, and every release run failed at the point of starting the step while the
-> whole suite stayed green.
+> `googleapis/release-please-action@v4`, this repository requires actions to be pinned to a
+> full-length SHA, and every release run failed at the point of starting the step while the whole
+> suite stayed green. The policy turned out to exempt nobody — `actions/checkout@v4` is refused
+> too — which is why the rule here is about references rather than about publishers.
 
 ---
 
@@ -127,6 +134,6 @@ Every requirement below is `auto` (covered by a named test) unless marked otherw
 | Specification and documentation | VAL-020–023 | `test_validate_docs.py` |
 | Capability boundaries | VAL-030–033 | `test_validate_boundaries.py` |
 | Running | VAL-040–044 | `test_validators_run.py` |
-| Workflow actions | VAL-050–055 | `test_validate_actions.py` |
+| Workflow actions | VAL-050–056 | `test_validate_actions.py` |
 
-**35 requirements, 34 `auto` and 1 `manual`.**
+**36 requirements, 35 `auto` and 1 `manual`.**
