@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.8](https://github.com/derekwinters/ai-sdlc/compare/v0.4.7...v0.4.8) (2026-08-15)
+
+
+### Fixes
+
+* **adopt:** do not treat our own callers as collisions ([#91](https://github.com/derekwinters/ai-sdlc/issues/91)) ([cb58740](https://github.com/derekwinters/ai-sdlc/commit/cb58740d57985ab8d4a5798a39d37b45317ca25c)), closes [#90](https://github.com/derekwinters/ai-sdlc/issues/90)
+
 ## [0.4.7](https://github.com/derekwinters/ai-sdlc/compare/v0.4.6...v0.4.7) (2026-08-15)
 
 
