@@ -69,6 +69,15 @@ default branch and require the checks you added.
 and blocks the merge it was meant to permit. Escape hatches — the `no-closing-keyword` label, the
 `skip-docs` label — make a check *pass*, never absent.
 
+## The shared rules
+
+Adoption installs [`house-rules.md`](house-rules.md) into `.claude/ai-sdlc/` and appends one import
+line to your `CLAUDE.md`. Your own file is never rewritten — it is usually the most carefully
+considered file a repository has, and everything specific to your repository stays in it.
+
+A repository with no `CLAUDE.md` gets one reported rather than created. What that file should say
+is your decision.
+
 ## ai-sdlc's own adoption
 
 ai-sdlc is its first consumer. `.claude/repo-config.yml` in this repository enables `hygiene` and

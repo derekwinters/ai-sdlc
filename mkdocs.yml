@@ -33,10 +33,12 @@ nav:
   - Home: index.md
   - Design: design.md
   - Adoption: adoption.md
+  - House rules: house-rules.md
   - Specification:
       - Adoption: spec/adopt.md
       - Configuration: spec/configuration.md
       - Profiles: spec/profiles.md
+      - House rules: spec/house-rules.md
       - Pull request hygiene: spec/hygiene.md
       - Release flow: spec/release.md
       - GitHub access: spec/github-api.md

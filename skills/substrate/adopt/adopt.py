@@ -254,6 +254,7 @@ def _files_for(config, pin):
     files = {}
 
     if "hygiene" in config.capabilities:
+        files[".claude/ai-sdlc/house-rules.md"] = _house_rules()
         files[".github/workflows/closing-keyword.yml"] = _caller(
             "closing-keyword", "reusable-closing-keyword.yml", pin,
             trigger=(
@@ -286,6 +287,17 @@ def _files_for(config, pin):
         )
 
     return files
+
+
+def _house_rules():
+    """The shared rules fragment, as installed.
+
+    Read from this repository so there is one copy: a second copy embedded here
+    would drift from the one the site publishes, and the drift would be
+    invisible.
+    """
+    source = Path(__file__).resolve().parents[3] / "house-rules" / "house-rules.md"
+    return source.read_text()
 
 
 def _caller(name, reusable, pin, trigger):
