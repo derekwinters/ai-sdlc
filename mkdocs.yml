@@ -36,6 +36,7 @@ nav:
   - Specification:
       - Adoption: spec/adopt.md
       - Configuration: spec/configuration.md
+      - Profiles: spec/profiles.md
       - Pull request hygiene: spec/hygiene.md
       - Release flow: spec/release.md
       - GitHub access: spec/github-api.md
