@@ -1,0 +1,45 @@
+name: dashboard
+
+# The pipeline's only scheduled job, and it writes to no issue but the
+# dashboard's own body. A renderer that repairs things is a sweep by another
+# name, and the sweep was removed on purpose.
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: dashboard
+  cancel-in-progress: true
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - if: inputs.ref != ''
+        uses: actions/checkout@v4
+        with:
+          repository: derekwinters/ai-sdlc
+          ref: ${{ inputs.ref }}
+          path: .ai-sdlc
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Render the dashboard
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          SKILL_ROOT: ${{ inputs.ref != '' && '.ai-sdlc' || '.' }}
+        run: |
+          PYTHONPATH="$SKILL_ROOT" python3 \
+            "$SKILL_ROOT/skills/pipeline/pipeline-dashboard/main.py"

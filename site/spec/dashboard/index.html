@@ -11,10 +11,10 @@
       
       
       
-        <link rel="prev" href="../../adoption/">
+        <link rel="prev" href="../blockers/">
       
       
-        <link rel="next" href="../hygiene/">
+        <link rel="next" href="../labels/">
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
@@ -22,7 +22,7 @@
     
     
       
-        <title>Configuration - ai-sdlc</title>
+        <title>Dashboard - ai-sdlc</title>
       
     
     
@@ -74,7 +74,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#specification-configuration-cfg" class="md-skip">
+        <a href="#specification-dashboard-dash" class="md-skip">
           Skip to content
         </a>
       
@@ -110,7 +110,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Configuration
+              Dashboard
             
           </span>
         </div>
@@ -352,30 +352,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    Configuration
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -384,98 +364,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#invariants" class="md-nav__link">
-    <span class="md-ellipsis">
-      Invariants
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#1-loading" class="md-nav__link">
-    <span class="md-ellipsis">
-      1. Loading
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#2-validation" class="md-nav__link">
-    <span class="md-ellipsis">
-      2. Validation
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#3-capabilities" class="md-nav__link">
-    <span class="md-ellipsis">
-      3. Capabilities
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#4-identity-and-authority" class="md-nav__link">
-    <span class="md-ellipsis">
-      4. Identity and authority
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#5-pipeline-settings" class="md-nav__link">
-    <span class="md-ellipsis">
-      5. Pipeline settings
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#6-the-yaml-subset" class="md-nav__link">
-    <span class="md-ellipsis">
-      6. The YAML subset
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#traceability" class="md-nav__link">
-    <span class="md-ellipsis">
-      Traceability
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -590,10 +478,30 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../dashboard/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Dashboard
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -602,6 +510,80 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#invariants" class="md-nav__link">
+    <span class="md-ellipsis">
+      Invariants
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-fetching-and-rendering-are-separate" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Fetching and rendering are separate
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-what-it-shows" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. What it shows
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-fault-flags" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Fault flags
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-overrides" class="md-nav__link">
+    <span class="md-ellipsis">
+      4. Overrides
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#traceability" class="md-nav__link">
+    <span class="md-ellipsis">
+      Traceability
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -760,54 +742,36 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#1-loading" class="md-nav__link">
+  <a href="#1-fetching-and-rendering-are-separate" class="md-nav__link">
     <span class="md-ellipsis">
-      1. Loading
+      1. Fetching and rendering are separate
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-validation" class="md-nav__link">
+  <a href="#2-what-it-shows" class="md-nav__link">
     <span class="md-ellipsis">
-      2. Validation
+      2. What it shows
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-capabilities" class="md-nav__link">
+  <a href="#3-fault-flags" class="md-nav__link">
     <span class="md-ellipsis">
-      3. Capabilities
+      3. Fault flags
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#4-identity-and-authority" class="md-nav__link">
+  <a href="#4-overrides" class="md-nav__link">
     <span class="md-ellipsis">
-      4. Identity and authority
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#5-pipeline-settings" class="md-nav__link">
-    <span class="md-ellipsis">
-      5. Pipeline settings
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#6-the-yaml-subset" class="md-nav__link">
-    <span class="md-ellipsis">
-      6. The YAML subset
+      4. Overrides
     </span>
   </a>
   
@@ -840,97 +804,67 @@
   
 
 
-<h1 id="specification-configuration-cfg">Specification — Configuration (<code>CFG</code>)<a class="headerlink" href="#specification-configuration-cfg" title="Permanent link">&para;</a></h1>
-<p>A consuming repository describes itself in <code>.claude/repo-config.yml</code>. Nothing else varies between
-repositories: the skills, workflows and specs are identical everywhere, and this file is how one
-repository differs from another.</p>
-<p><code>CFG</code> belongs to the <strong>substrate</strong> capability and depends only on <code>API</code>.</p>
+<h1 id="specification-dashboard-dash">Specification — Dashboard (<code>DASH</code>)<a class="headerlink" href="#specification-dashboard-dash" title="Permanent link">&para;</a></h1>
+<p>One issue rendered from live state, showing what the pipeline is doing and what has gone wrong
+with it. The only scheduled job in the pipeline, and it never writes to any issue but its own.</p>
+<p>It is also where every fault the pipeline deliberately does not repair becomes visible. The
+reconcile sweep was removed because auto-repair hid problems and occasionally caused them; the
+bargain was that faults would be <em>reported</em> instead. This page is that half of the bargain.</p>
+<p><code>DASH</code> belongs to the <strong>pipeline</strong> capability.</p>
 <p>Every requirement below is <code>auto</code> (covered by a named test) unless marked otherwise.</p>
 <hr />
 <h2 id="invariants">Invariants<a class="headerlink" href="#invariants" title="Permanent link">&para;</a></h2>
 <blockquote>
-<p><strong>Invariant — configuration describes a repository; it does not switch behaviour on and off.</strong>
-A key exists because repositories genuinely differ — how many owners, what a milestone means,
-what the test command is. A proposed key that would fork behaviour rather than describe a fact
-is a sign that a separate capability is wanted.</p>
-<p><strong>Invariant — every key the code reads exists in the schema.</strong> A key that is read but
-undocumented is a private setting nobody can discover, and it drifts.</p>
-<p><strong>Invariant — a capability may depend only on capabilities below it.</strong> Enabling one without its
-dependencies is a configuration error, refused at load, not a runtime surprise.</p>
+<p><strong>Invariant — the dashboard never writes to an issue other than itself.</strong> It reports; it does not
+repair. A renderer that fixes things is a sweep by another name.</p>
+<p><strong>Invariant — rendering is pure.</strong> Given the same state it produces the same text, so the output
+is diffable and a re-render that changes nothing is visible as such.</p>
+<p><strong>Invariant — a fault the pipeline chose not to repair appears here.</strong> Every "reported, not
+fixed" decision elsewhere is a promise that this page keeps.</p>
 </blockquote>
 <hr />
-<h2 id="1-loading">1. Loading<a class="headerlink" href="#1-loading" title="Permanent link">&para;</a></h2>
+<h2 id="1-fetching-and-rendering-are-separate">1. Fetching and rendering are separate<a class="headerlink" href="#1-fetching-and-rendering-are-separate" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>CFG-001</strong> Configuration is read from <code>.claude/repo-config.yml</code> relative to the repository root.</li>
-<li><strong>CFG-002</strong> The path is injectable, so tests and <code>adopt</code> can load a candidate file.</li>
-<li><strong>CFG-003</strong> A missing file is an error naming the expected path, not an empty configuration.</li>
-<li><strong>CFG-004</strong> Unparseable YAML is an error naming the file and the parse problem.</li>
-<li><strong>CFG-005</strong> The loader is pure: given a path it returns a value or raises. It performs no network
-  I/O and never mutates the file.</li>
-<li><strong>CFG-006</strong> Parsing uses no third-party library. The subset of YAML accepted is documented in
-  §6 and is a deliberate restriction, not an accident.</li>
+<li><strong>DASH-001</strong> Fetching gathers state through the client and returns plain data.</li>
+<li><strong>DASH-002</strong> Rendering takes that data and returns Markdown, touching no client.</li>
+<li><strong>DASH-003</strong> Rendering is deterministic: identical state gives identical text.</li>
+<li><strong>DASH-004</strong> Ordering is by issue number throughout, so a diff shows changes rather than
+  shuffling.</li>
+<li><strong>DASH-005</strong> A fetch failure for one section degrades that section rather than losing the page.</li>
 </ul>
-<h2 id="2-validation">2. Validation<a class="headerlink" href="#2-validation" title="Permanent link">&para;</a></h2>
+<h2 id="2-what-it-shows">2. What it shows<a class="headerlink" href="#2-what-it-shows" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>CFG-010</strong> A loaded configuration is validated in code, and <code>schema/repo-config.schema.json</code>
-  publishes the same contract for editors and <code>adopt</code>. The two are compared by test — same keys,
-  same enums, same defaults — because two descriptions of one thing drift unless something
-  compares them.</li>
-<li><strong>CFG-011</strong> An unknown top-level key is an error, not ignored. A typo that silently does nothing
-  is worse than a refusal.</li>
-<li><strong>CFG-012</strong> A key of the wrong type is an error naming the key, the expected type, and what was
-  found.</li>
-<li><strong>CFG-013</strong> Every error names the key path, so a nested mistake is findable.</li>
-<li><strong>CFG-014</strong> Validation reports every problem it can find, not only the first.</li>
-<li><strong>CFG-015</strong> A valid configuration exposes defaults for every optional key, so a caller never
-  writes <code>config.get(..., fallback)</code>.</li>
+<li><strong>DASH-010</strong> The focus milestone, with its open and closed counts.</li>
+<li><strong>DASH-011</strong> Issues by pipeline state, each linked and titled.</li>
+<li><strong>DASH-012</strong> The ready queue, in the order the builder would take it.</li>
+<li><strong>DASH-013</strong> An issue's blockers are named where it is blocked.</li>
+<li><strong>DASH-014</strong> The concurrency cap and how many issues are in progress against it.</li>
+<li><strong>DASH-015</strong> Every issue needing attention, not only those in the focus milestone. An issue
+  parked in an unrelated milestone is still stuck.</li>
 </ul>
-<h2 id="3-capabilities">3. Capabilities<a class="headerlink" href="#3-capabilities" title="Permanent link">&para;</a></h2>
+<h2 id="3-fault-flags">3. Fault flags<a class="headerlink" href="#3-fault-flags" title="Permanent link">&para;</a></h2>
+<p>Each of these corresponds to a repair the pipeline deliberately does not perform.</p>
 <ul>
-<li><strong>CFG-020</strong> <code>capabilities</code> is a list drawn from <code>substrate</code>, <code>hygiene</code>, <code>consistency</code>, <code>labels</code>,
-  <code>release</code>, <code>pipeline</code>.</li>
-<li><strong>CFG-021</strong> An unknown capability name is an error listing the valid names.</li>
-<li><strong>CFG-022</strong> <code>substrate</code> is implied and need not be listed.</li>
-<li><strong>CFG-023</strong> Enabling a capability whose dependencies are absent is an error naming the missing
-  ones.</li>
-<li><strong>CFG-024</strong> The dependency table is declared once in code and is the same table the design
-  documents. <em>(manual: kept in step by the consistency gate in #4.)</em></li>
-<li><strong>CFG-025</strong> <code>profiles</code> is a list; an unknown profile name is an error.</li>
+<li><strong>DASH-020</strong> <strong>Stalled command</strong> — a comment carrying a bare 👀 by the bot, whose run died
+  mid-flight.</li>
+<li><strong>DASH-021</strong> <strong>Stalled work</strong> — an issue <code>in-progress</code> with no open pull request.</li>
+<li><strong>DASH-022</strong> <strong>Blocked but approved</strong> — an approved issue whose blockers are unresolved, with
+  them named.</li>
+<li><strong>DASH-023</strong> <strong>Unverifiable dependency</strong> — a blocker whose milestone the configured ordering
+  strategy cannot compare, so the ordering gate could not check it.</li>
+<li><strong>DASH-024</strong> <strong>Untracked</strong> — an open issue carrying no pipeline state at all.</li>
+<li><strong>DASH-025</strong> <strong>Stale state</strong> — a closed issue still carrying a pipeline label, meaning a close
+  event was missed.</li>
+<li><strong>DASH-026</strong> <strong>Prose dependency</strong> — a <code>Blocked by #N</code> written as text, invisible to the queue.</li>
+<li><strong>DASH-027</strong> A section with no faults is omitted rather than shown empty, so the page is short
+  when things are well.</li>
+<li><strong>DASH-028</strong> A count of all faults appears near the top, so the page can be judged at a glance.</li>
 </ul>
-<h2 id="4-identity-and-authority">4. Identity and authority<a class="headerlink" href="#4-identity-and-authority" title="Permanent link">&para;</a></h2>
+<h2 id="4-overrides">4. Overrides<a class="headerlink" href="#4-overrides" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>CFG-030</strong> <code>owners</code> is a non-empty list of GitHub logins when <code>pipeline</code> is enabled.</li>
-<li><strong>CFG-031</strong> A single owner is expressed as a list of one; there is no scalar form.</li>
-<li><strong>CFG-032</strong> <code>bot.identity</code> is <code>github-actions</code> or <code>app</code>, defaulting to <code>github-actions</code>.</li>
-<li><strong>CFG-033</strong> <code>bot.app_id_secret</code> and <code>bot.private_key_secret</code> are required when identity is <code>app</code>
-  and forbidden otherwise.</li>
-<li><strong>CFG-034</strong> <code>bot.login</code> is the login whose reactions count as the watermark, defaulting to
-  <code>github-actions[bot]</code>.</li>
-</ul>
-<h2 id="5-pipeline-settings">5. Pipeline settings<a class="headerlink" href="#5-pipeline-settings" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>CFG-040</strong> <code>milestone_ordering</code> is <code>semver</code>, <code>date</code>, <code>lexical</code> or <code>none</code>, defaulting to
-  <code>semver</code>.</li>
-<li><strong>CFG-041</strong> <code>dashboard_issue</code> is a positive integer when <code>pipeline</code> is enabled.</li>
-<li><strong>CFG-042</strong> <code>labels</code> maps each pipeline state name to the label used for it, defaulting to the
-  canonical vocabulary.</li>
-<li><strong>CFG-043</strong> Every canonical state has a mapping after defaults are applied; a partial mapping
-  overrides only what it names.</li>
-<li><strong>CFG-044</strong> Two states may not map to the same label.</li>
-<li><strong>CFG-045</strong> <code>commands.test</code>, <code>commands.verify</code> and <code>commands.spec_validator</code> are shell strings,
-  each optional.</li>
-<li><strong>CFG-046</strong> <code>fire.endpoint_secret</code> and <code>fire.token_secret</code> name secrets, never values. A literal
-  that looks like a credential is an error.</li>
-</ul>
-<h2 id="6-the-yaml-subset">6. The YAML subset<a class="headerlink" href="#6-the-yaml-subset" title="Permanent link">&para;</a></h2>
-<p>Parsing is stdlib-only, so the accepted subset is stated rather than inherited.</p>
-<ul>
-<li><strong>CFG-050</strong> Mappings, lists, strings, integers, booleans and <code>null</code> are supported.</li>
-<li><strong>CFG-051</strong> Nesting is by indentation, two spaces per level.</li>
-<li><strong>CFG-052</strong> Comments begin with <code>#</code> and run to end of line.</li>
-<li><strong>CFG-053</strong> Quoted strings preserve <code>#</code> and <code>:</code> inside them.</li>
-<li><strong>CFG-054</strong> Anchors, aliases, multi-document files and flow style are not supported, and using
-  one is an error that says so rather than misreading the file.</li>
+<li><strong>DASH-030</strong> <code>focus</code> and <code>cap</code> set by the gatekeeper are read as render overrides.</li>
+<li><strong>DASH-031</strong> An override takes precedence over the milestone description marker for that render.</li>
+<li><strong>DASH-032</strong> The dashboard issue's body is the render target; no other issue body is patched.</li>
 </ul>
 <hr />
 <h2 id="traceability">Traceability<a class="headerlink" href="#traceability" title="Permanent link">&para;</a></h2>
@@ -944,43 +878,28 @@ dependencies is a configuration error, refused at load, not a runtime surprise.<
 </thead>
 <tbody>
 <tr>
-<td>Loading</td>
-<td>CFG-001–006</td>
-<td><code>test_config_loading.py</code></td>
+<td>Fetching and rendering</td>
+<td>DASH-001–005</td>
+<td><code>test_dashboard_fetch.py</code></td>
 </tr>
 <tr>
-<td>Validation</td>
-<td>CFG-010–015</td>
-<td><code>test_config_validation.py</code></td>
+<td>What it shows</td>
+<td>DASH-010–015</td>
+<td><code>test_dashboard_render.py</code></td>
 </tr>
 <tr>
-<td>Capabilities</td>
-<td>CFG-020–025</td>
-<td><code>test_config_capabilities.py</code></td>
+<td>Fault flags</td>
+<td>DASH-020–028</td>
+<td><code>test_dashboard_faults.py</code></td>
 </tr>
 <tr>
-<td>Identity</td>
-<td>CFG-030–034</td>
-<td><code>test_config_identity.py</code></td>
-</tr>
-<tr>
-<td>Pipeline settings</td>
-<td>CFG-040–046</td>
-<td><code>test_config_pipeline.py</code></td>
-</tr>
-<tr>
-<td>The YAML subset</td>
-<td>CFG-050–054</td>
-<td><code>test_yaml_subset.py</code></td>
-</tr>
-<tr>
-<td>Schema agreement</td>
-<td>CFG-010</td>
-<td><code>test_config_schema.py</code></td>
+<td>Overrides</td>
+<td>DASH-030–032</td>
+<td><code>test_dashboard_fetch.py</code></td>
 </tr>
 </tbody>
 </table>
-<p><strong>39 requirements, 38 <code>auto</code> and 1 <code>manual</code>.</strong></p>
+<p><strong>24 requirements, all <code>auto</code>.</strong></p>
 
 
 
