@@ -11,10 +11,10 @@
       
       
       
-        <link rel="prev" href="../gatekeeper/">
+        <link rel="prev" href="../hygiene/">
       
       
-        <link rel="next" href="../ci-watch/">
+        <link rel="next" href="../github-api/">
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
@@ -22,7 +22,7 @@
     
     
       
-        <title>Blockers - ai-sdlc</title>
+        <title>Release flow - ai-sdlc</title>
       
     
     
@@ -74,7 +74,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#specification-blockers-blk" class="md-skip">
+        <a href="#specification-release-flow-rel" class="md-skip">
           Skip to content
         </a>
       
@@ -110,7 +110,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Blockers
+              Release flow
             
           </span>
         </div>
@@ -394,10 +394,30 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../release/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Release flow
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -406,6 +426,89 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#invariants" class="md-nav__link">
+    <span class="md-ellipsis">
+      Invariants
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-finding-the-release-pull-request" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Finding the release pull request
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-before-merging" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Before merging
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-the-squash-title" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. The squash title
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-forcing-a-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      4. Forcing a version
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-verifying-afterwards" class="md-nav__link">
+    <span class="md-ellipsis">
+      5. Verifying afterwards
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#traceability" class="md-nav__link">
+    <span class="md-ellipsis">
+      Traceability
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -478,30 +581,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    Blockers
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../blockers/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -510,89 +593,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#invariants" class="md-nav__link">
-    <span class="md-ellipsis">
-      Invariants
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#1-reading" class="md-nav__link">
-    <span class="md-ellipsis">
-      1. Reading
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#2-soft-dependencies" class="md-nav__link">
-    <span class="md-ellipsis">
-      2. Soft dependencies
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#3-prose-blockers-are-drift" class="md-nav__link">
-    <span class="md-ellipsis">
-      3. Prose blockers are drift
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#4-writing" class="md-nav__link">
-    <span class="md-ellipsis">
-      4. Writing
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#5-eligibility" class="md-nav__link">
-    <span class="md-ellipsis">
-      5. Eligibility
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#traceability" class="md-nav__link">
-    <span class="md-ellipsis">
-      Traceability
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -835,45 +835,45 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#1-reading" class="md-nav__link">
+  <a href="#1-finding-the-release-pull-request" class="md-nav__link">
     <span class="md-ellipsis">
-      1. Reading
+      1. Finding the release pull request
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-soft-dependencies" class="md-nav__link">
+  <a href="#2-before-merging" class="md-nav__link">
     <span class="md-ellipsis">
-      2. Soft dependencies
+      2. Before merging
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-prose-blockers-are-drift" class="md-nav__link">
+  <a href="#3-the-squash-title" class="md-nav__link">
     <span class="md-ellipsis">
-      3. Prose blockers are drift
+      3. The squash title
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#4-writing" class="md-nav__link">
+  <a href="#4-forcing-a-version" class="md-nav__link">
     <span class="md-ellipsis">
-      4. Writing
+      4. Forcing a version
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#5-eligibility" class="md-nav__link">
+  <a href="#5-verifying-afterwards" class="md-nav__link">
     <span class="md-ellipsis">
-      5. Eligibility
+      5. Verifying afterwards
     </span>
   </a>
   
@@ -906,73 +906,68 @@
   
 
 
-<h1 id="specification-blockers-blk">Specification — Blockers (<code>BLK</code>)<a class="headerlink" href="#specification-blockers-blk" title="Permanent link">&para;</a></h1>
-<p>Dependency relationships between issues: which must finish before which may start.</p>
-<p>GitHub's issue-dependency API has no MCP tool, so without this there is no way to create or read a
-native relationship from an agent — which is why dependencies in these repositories have been
-written as prose in issue bodies, where the pipeline cannot see them.</p>
-<p><code>BLK</code> belongs to the <strong>pipeline</strong> capability.</p>
+<h1 id="specification-release-flow-rel">Specification — Release flow (<code>REL</code>)<a class="headerlink" href="#specification-release-flow-rel" title="Permanent link">&para;</a></h1>
+<p>Driving release-please's release pull request to a tagged release.</p>
+<p>Two things make this worth specifying rather than doing by hand. Releases are rare enough that
+nobody remembers the gotchas, and the gotchas are the kind that produce a silently wrong version
+rather than an error.</p>
+<p><code>REL</code> belongs to the <strong>release</strong> capability and depends on the substrate and hygiene.</p>
 <p>Every requirement below is <code>auto</code> (covered by a named test) unless marked otherwise.</p>
 <hr />
 <h2 id="invariants">Invariants<a class="headerlink" href="#invariants" title="Permanent link">&para;</a></h2>
 <blockquote>
-<p><strong>Invariant — a hard blocker is a native relationship, never prose.</strong> Prose is invisible to the
-queue, so an issue "blocked by #42" in its body is one the builder will start anyway.</p>
-<p><strong>Invariant — blockedness is derived, never stored.</strong> There is no blocked label. An issue's
-eligibility is computed from the graph at selection time, which is what makes the state correct
-without anything having to maintain it.</p>
-<p><strong>Invariant — an unreadable dependency is reported, not assumed resolved.</strong> Failing to read the
-graph must not silently make work eligible.</p>
+<p><strong>Invariant — the release pull request's state is never toggled to influence CI.</strong> Closing and
+reopening a pull request to restart parked checks looks harmless and loses the review, the
+approval, and sometimes the pull request's association with its release. If checks need
+attention, the flow halts and says so.</p>
+<p><strong>Invariant — the squash title is the release commit.</strong> It is the one commit release-please
+parses for the next version, so it is composed here rather than taken from whatever the pull
+request happens to be called.</p>
+<p><strong>Invariant — a release is verified after the fact.</strong> Tag, release and version are checked to
+exist, because "the merge succeeded" and "the release happened" are different claims.</p>
 </blockquote>
 <hr />
-<h2 id="1-reading">1. Reading<a class="headerlink" href="#1-reading" title="Permanent link">&para;</a></h2>
+<h2 id="1-finding-the-release-pull-request">1. Finding the release pull request<a class="headerlink" href="#1-finding-the-release-pull-request" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>BLK-001</strong> <code>blockers_of(issue)</code> returns the issues blocking it, from the native graph.</li>
-<li><strong>BLK-002</strong> Each carries its number, state and milestone, so a caller can judge without a second
-  read.</li>
-<li><strong>BLK-003</strong> A closed blocker is marked resolved.</li>
-<li><strong>BLK-004</strong> A merged blocker is marked resolved.</li>
-<li><strong>BLK-005</strong> An open blocker is not resolved.</li>
-<li><strong>BLK-006</strong> An issue with no blockers returns an empty list, not an error.</li>
-<li><strong>BLK-007</strong> A failing read raises rather than returning empty. Empty means "nothing blocks
-  this", and a failed read must never be mistaken for it.</li>
+<li><strong>REL-001</strong> The release pull request is identified by its head branch, not by its title. A title
+  can be edited; the branch is release-please's.</li>
+<li><strong>REL-002</strong> No release pull request open is a clean outcome, not an error. There may be nothing
+  to release.</li>
+<li><strong>REL-003</strong> More than one is refused, naming them. Guessing which to merge is not acceptable.</li>
+<li><strong>REL-004</strong> The version being released is read from the pull request, not inferred from the
+  title.</li>
 </ul>
-<h2 id="2-soft-dependencies">2. Soft dependencies<a class="headerlink" href="#2-soft-dependencies" title="Permanent link">&para;</a></h2>
-<p>An ordering hint rather than a gate. GitHub has no native form, so these stay structured text.</p>
+<h2 id="2-before-merging">2. Before merging<a class="headerlink" href="#2-before-merging" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>BLK-010</strong> <code>depends_on(body)</code> reads <code>Depends on: #N</code> lines from an issue body.</li>
-<li><strong>BLK-011</strong> Several numbers on one line are all read.</li>
-<li><strong>BLK-012</strong> Several lines are all read.</li>
-<li><strong>BLK-013</strong> The reference is case-insensitive and tolerates surrounding punctuation.</li>
-<li><strong>BLK-014</strong> A mention of <code>#N</code> in ordinary prose is not a dependency.</li>
-<li><strong>BLK-015</strong> A <code>Depends on:</code> inside a fenced code block is ignored.</li>
-<li><strong>BLK-016</strong> Soft dependencies order the queue; they never gate it.</li>
+<li><strong>REL-005</strong> The flow refuses to merge while any check is failing.</li>
+<li><strong>REL-006</strong> The flow refuses to merge while any check is still running.</li>
+<li><strong>REL-007</strong> A pull request with no checks at all is refused, not merged. Nothing having run is
+  not the same as everything having passed.</li>
+<li><strong>REL-008</strong> The flow halts for the owner rather than toggling the pull request's state to
+  restart checks.</li>
+<li><strong>REL-009</strong> A halt says exactly what is wrong and what would resolve it.</li>
 </ul>
-<h2 id="3-prose-blockers-are-drift">3. Prose blockers are drift<a class="headerlink" href="#3-prose-blockers-are-drift" title="Permanent link">&para;</a></h2>
+<h2 id="3-the-squash-title">3. The squash title<a class="headerlink" href="#3-the-squash-title" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>BLK-020</strong> <code>prose_blockers(body)</code> finds <code>Blocked by #N</code> written as text.</li>
-<li><strong>BLK-021</strong> Finding one is reported as drift, with the issue and the numbers.</li>
-<li><strong>BLK-022</strong> A prose blocker is never treated as a real blocker. Honouring it would make the
-  invisible-to-tooling form work, and it would stay.</li>
+<li><strong>REL-010</strong> The title is <code>chore(main): release X.Y.Z</code>, composed from the version.</li>
+<li><strong>REL-011</strong> The title is never taken from the pull request's own title.</li>
+<li><strong>REL-012</strong> A title that is not a valid Conventional Commit is refused before merging.</li>
 </ul>
-<h2 id="4-writing">4. Writing<a class="headerlink" href="#4-writing" title="Permanent link">&para;</a></h2>
+<h2 id="4-forcing-a-version">4. Forcing a version<a class="headerlink" href="#4-forcing-a-version" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>BLK-030</strong> <code>block(issue, by)</code> creates a native blocked-by relationship.</li>
-<li><strong>BLK-031</strong> Creating one that already exists is a no-op, not an error.</li>
-<li><strong>BLK-032</strong> <code>unblock(issue, by)</code> removes one.</li>
-<li><strong>BLK-033</strong> Removing one that does not exist is a no-op, not an error.</li>
-<li><strong>BLK-034</strong> An issue may not block itself; the attempt is refused.</li>
-<li><strong>BLK-035</strong> A cycle is refused, naming the path. Two issues each waiting for the other are both
-  permanently ineligible.</li>
+<li><strong>REL-020</strong> A release may be forced to a specific version with a <code>Release-As:</code> footer, so a
+  milestone boundary and a version can be made to match.</li>
+<li><strong>REL-021</strong> A forced version must be a valid semantic version.</li>
+<li><strong>REL-022</strong> A forced version lower than the current one is refused.</li>
 </ul>
-<h2 id="5-eligibility">5. Eligibility<a class="headerlink" href="#5-eligibility" title="Permanent link">&para;</a></h2>
+<h2 id="5-verifying-afterwards">5. Verifying afterwards<a class="headerlink" href="#5-verifying-afterwards" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>BLK-040</strong> <code>is_eligible(issue, blockers)</code> is true when every hard blocker is resolved.</li>
-<li><strong>BLK-041</strong> An issue with no blockers is eligible.</li>
-<li><strong>BLK-042</strong> One unresolved blocker is enough to make it ineligible.</li>
-<li><strong>BLK-043</strong> An unknown blocker — one whose state could not be read — is treated as unresolved.
-  Not knowing whether the thing you depend on is finished is not the same as it being finished.</li>
-<li><strong>BLK-044</strong> The reason an issue is ineligible names the blockers responsible.</li>
+<li><strong>REL-030</strong> After merging, the tag is confirmed to exist.</li>
+<li><strong>REL-031</strong> The GitHub release is confirmed to exist.</li>
+<li><strong>REL-032</strong> The recorded version is confirmed to match what was released.</li>
+<li><strong>REL-033</strong> A missing tag or release is reported as an incomplete release, distinctly from a
+  failed merge.</li>
+<li><strong>REL-034</strong> Verification is retried briefly, because tagging follows the merge by a moment.</li>
 </ul>
 <hr />
 <h2 id="traceability">Traceability<a class="headerlink" href="#traceability" title="Permanent link">&para;</a></h2>
@@ -986,33 +981,33 @@ graph must not silently make work eligible.</p>
 </thead>
 <tbody>
 <tr>
-<td>Reading</td>
-<td>BLK-001–007</td>
-<td><code>test_blockers_read.py</code></td>
+<td>Finding the release pull request</td>
+<td>REL-001–004</td>
+<td><code>test_release_find.py</code></td>
 </tr>
 <tr>
-<td>Soft dependencies</td>
-<td>BLK-010–016</td>
-<td><code>test_blockers_text.py</code></td>
+<td>Before merging</td>
+<td>REL-005–009</td>
+<td><code>test_release_gate.py</code></td>
 </tr>
 <tr>
-<td>Prose blockers are drift</td>
-<td>BLK-020–022</td>
-<td><code>test_blockers_text.py</code></td>
+<td>The squash title</td>
+<td>REL-010–012</td>
+<td><code>test_release_gate.py</code></td>
 </tr>
 <tr>
-<td>Writing</td>
-<td>BLK-030–035</td>
-<td><code>test_blockers_write.py</code></td>
+<td>Forcing a version</td>
+<td>REL-020–022</td>
+<td><code>test_release_version.py</code></td>
 </tr>
 <tr>
-<td>Eligibility</td>
-<td>BLK-040–044</td>
-<td><code>test_blockers_read.py</code></td>
+<td>Verifying afterwards</td>
+<td>REL-030–034</td>
+<td><code>test_release_verify.py</code></td>
 </tr>
 </tbody>
 </table>
-<p><strong>29 requirements, all <code>auto</code>.</strong></p>
+<p><strong>23 requirements, all <code>auto</code>.</strong></p>
 
 
 

@@ -36,6 +36,7 @@ nav:
   - Specification:
       - Configuration: spec/configuration.md
       - Pull request hygiene: spec/hygiene.md
+      - Release flow: spec/release.md
       - GitHub access: spec/github-api.md
       - Consistency: spec/validators.md
       - Gatekeeper: spec/gatekeeper.md
