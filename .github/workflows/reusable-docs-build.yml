@@ -1,9 +1,17 @@
-name: docs
+name: docs-build
 
-# The mkdocs profile's documentation build and publish.
+# The mkdocs profile's strict documentation build, as a pull request check.
 #
 # Strict mode is the point: a warning is a broken link, and a broken link is a
 # broken page. A warning nobody sees is a broken page shipped.
+#
+# This workflow builds and stops. It does not publish, and a consumer adopting
+# the profile does not get a publisher — publishing is the most
+# repository-specific thing there is (Pages or a branch, versioned or not,
+# which alias scheme), and installing a second one underneath a repository's
+# working publisher is not a migration (#100). `mkdocs build --strict` is
+# identical everywhere; only the requirements path varies, and that is an
+# input.
 
 on:
   workflow_call:
@@ -20,7 +28,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: docs-${{ github.ref }}
+  group: docs-build-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -28,6 +36,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.ref }}
+
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
@@ -38,27 +49,3 @@ jobs:
 
       - name: Build the site (strict)
         run: mkdocs build --strict
-
-      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
-        if: github.ref == 'refs/heads/main'
-        with:
-          path: site
-
-  publish:
-    # Only after a successful build: publishing a site that failed to build
-    # would replace a working one with a broken one.
-    needs: build
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
-    steps:
-      - uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
-        with:
-          enablement: true
-      - id: deploy
-        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5

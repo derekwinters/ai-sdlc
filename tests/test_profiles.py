@@ -9,7 +9,7 @@ from _support import ROOT
 from adopt import apply, detect
 from lib.config import ConfigError, PROFILES, parse_config
 
-MKDOCS_WORKFLOW = ROOT / ".github" / "workflows" / "reusable-docs.yml"
+MKDOCS_WORKFLOW = ROOT / ".github" / "workflows" / "reusable-docs-build.yml"
 
 
 class TestSelection(unittest.TestCase):
@@ -62,7 +62,14 @@ class TestInertness(unittest.TestCase):
         self.assertFalse([p for p in planned.creates if "docs" in p])
 
 
-class TestTheMkdocsWorkflow(unittest.TestCase):
+class TestTheMkdocsBuildWorkflow(unittest.TestCase):
+    """PROF-010, PROF-011 — the profile's strict build.
+
+    It builds and stops. The publisher it used to be bundled with is gone
+    (#100): publishing is repository-specific, and bundling the two meant the
+    build could not be installed without the publisher, so neither was.
+    """
+
     def setUp(self):
         self.text = MKDOCS_WORKFLOW.read_text()
 
@@ -81,18 +88,27 @@ class TestTheMkdocsWorkflow(unittest.TestCase):
         """
         self.assertNotIn("pull_request:", self.text)
 
-    def test_it_publishes_only_from_the_default_branch(self):  # PROF-012
-        self.assertIn("refs/heads/main", self.text)
-
-    def test_publication_needs_the_build(self):  # PROF-013
-        self.assertIn("needs: build", self.text)
-
     def test_it_is_a_reusable_workflow(self):  # PROF-010
         self.assertIn("workflow_call", self.text)
 
+    def test_it_publishes_nothing(self):  # PROF-012
+        """The profile installs no publisher.
 
-if __name__ == "__main__":
-    unittest.main()
+        Asserted on the mechanisms rather than the intent, because every one of
+        these is a way to publish that a reviewer might add back without
+        thinking of it as adding a publisher.
+        """
+        for mechanism in (
+            "gh-deploy", "mike deploy", "gh-pages",
+            "upload-pages-artifact", "configure-pages", "deploy-pages",
+        ):
+            self.assertNotIn(mechanism, self.text)
+
+    def test_it_asks_for_no_write_access(self):  # PROF-012
+        """A build needs to read. Anything more is a publisher in waiting."""
+        self.assertIn("contents: read", self.text)
+        for grant in ("contents: write", "pages: write", "id-token: write"):
+            self.assertNotIn(grant, self.text)
 
 
 class TestASelectedProfileInstallsItsFiles(unittest.TestCase):
@@ -138,9 +154,40 @@ class TestASelectedProfileInstallsItsFiles(unittest.TestCase):
         text = (root / ".github/workflows/docs-gate.yml").read_text()
         self.assertIn("labeled", text)
 
+    def test_mkdocs_installs_the_strict_build(self):  # PROF-005, PROF-010
+        root = self._apply(["mkdocs"])
+        self.assertTrue((root / ".github/workflows/docs-build.yml").is_file())
+
+    def test_the_build_calls_the_shared_workflow(self):  # PROF-005
+        root = self._apply(["mkdocs"])
+        text = (root / ".github/workflows/docs-build.yml").read_text()
+        self.assertIn("reusable-docs-build.yml@", text)
+
+    def test_the_build_runs_on_pull_request(self):  # PROF-005, PROF-010
+        root = self._apply(["mkdocs"])
+        text = (root / ".github/workflows/docs-build.yml").read_text()
+        self.assertIn("pull_request:", text)
+
+    def test_the_build_caller_grants_only_read(self):  # PROF-005
+        """ADOPT-068 — exactly what the called workflow asks for.
+
+        Too little and the run fails as `startup_failure`, with no jobs and no
+        annotation. Too much and adoption quietly widens what a caller may do.
+        """
+        root = self._apply(["mkdocs"])
+        text = (root / ".github/workflows/docs-build.yml").read_text()
+        self.assertIn("contents: read", text)
+        # Asserted on the grants themselves rather than on the bare substring
+        # "write", which also occurs in the prose explaining that `apply`
+        # rewrites the pin.
+        for grant in ("contents: write", "pages: write", "id-token: write",
+                      "issues: write"):
+            self.assertNotIn(grant, text)
+
     def test_an_unselected_profile_installs_nothing(self):  # PROF-005
         root = self._apply([])
         self.assertFalse((root / ".github/workflows/docs-gate.yml").exists())
+        self.assertFalse((root / ".github/workflows/docs-build.yml").exists())
 
 
 class TestTheDocsArePublishedFromABranch(unittest.TestCase):
@@ -184,10 +231,10 @@ class TestTheDocsArePublishedFromABranch(unittest.TestCase):
         self.assertNotIn("pages: write", self.text)
         self.assertNotIn("id-token: write", self.text)
 
-    def test_publication_is_restricted_to_main(self):  # PROF-012
+    def test_publication_is_restricted_to_main(self):  # PROF-013
         self.assertIn("github.ref == 'refs/heads/main'", self.text)
 
-    def test_the_strict_build_still_runs(self):  # PROF-011
+    def test_the_strict_build_still_runs(self):  # PROF-013
         self.assertIn("mkdocs build --strict", self.text)
 
     def test_publishing_cannot_precede_the_build(self):  # PROF-013
@@ -242,5 +289,9 @@ class TestTheDocsAreVersioned(unittest.TestCase):
     def test_the_version_comes_from_the_release_manifest(self):  # PROF-015
         self.assertIn("release-please/manifest.json", self.text)
 
-    def test_it_still_publishes_only_from_main(self):  # PROF-012
+    def test_it_still_publishes_only_from_main(self):  # PROF-013
         self.assertIn("github.ref == 'refs/heads/main'", self.text)
+
+
+if __name__ == "__main__":
+    unittest.main()
