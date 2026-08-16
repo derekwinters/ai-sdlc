@@ -248,6 +248,15 @@ class GitHub:
     def set_labels(self, issue, labels):
         return self.request("PUT", f"/issues/{issue}/labels", {"labels": list(labels)})
 
+    def set_body(self, issue, body):
+        """Replace an issue's body.
+
+        A named operation rather than a raw request, so the fake can record it
+        and a test can assert it happened. The dashboard's only write goes
+        through here.
+        """
+        return self.request("PATCH", f"/issues/{issue}", {"body": body})
+
     def set_milestone(self, issue, number):
         return self.request("PATCH", f"/issues/{issue}", {"milestone": number})
 

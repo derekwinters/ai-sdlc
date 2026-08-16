@@ -198,6 +198,12 @@ class FakeGitHub:
         self._issues[issue]["labels"] = [{"name": name} for name in labels]
         return list(self._issues[issue]["labels"])
 
+    def set_body(self, issue, body):
+        self._record("set_body", issue, body)
+        if issue in self._issues:
+            self._issues[issue] = dict(self._issues[issue], body=body)
+        return dict(self._issues.get(issue) or {"number": issue, "body": body})
+
     def set_milestone(self, issue, number):
         self._record("set_milestone", issue, number)
         self._require(issue)

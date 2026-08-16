@@ -250,10 +250,25 @@ Replaces the removed comment-replay sweep.
   fire it.
 - **GK-112** Removing the triage label does not fire it.
 - **GK-113** A refused command fires nothing.
-- **GK-114** The dashboard is re-rendered once after a run that changed at least one label.
-- **GK-115** A run that changed no label does not re-render.
-- **GK-116** `/focus` and `/cap` persist as dashboard render overrides; the issue body is never
-  patched directly.
+- **GK-114** The dashboard is re-rendered once after a run that changed at least one label, or
+  that carried `/focus` or `/cap`. The run performs the render; returning a flag saying it should
+  happen is not the same thing.
+- **GK-115** A run that changed nothing does not re-render.
+- **GK-116** `/focus` and `/cap` persist by being carried into that render, which writes them into
+  the dashboard's own body as markers. The board's body is their only store, so **the render is
+  the write** — there is nowhere else the value is kept between this run and the dashboard's own.
+- **GK-120** A failed re-render degrades the board, never the run. The commands are already
+  applied and acknowledged by then, and the next scheduled render redraws; losing the run over a
+  stale board is the worse trade.
+
+> **How the spec is changing (#112).** `GK-116` used to end *"the issue body is never patched
+> directly"*, and `GK-114` said the dashboard "is re-rendered" without saying by whom. Both were
+> satisfied by a flag and a dictionary on the returned result that **nothing ever acted on** — the
+> entry point printed what was applied and returned. So `/focus` replied `Done` and changed
+> nothing, for as long as the command has existed (#105). The "never patch the body" clause was
+> the cause rather than a safeguard: the body is exactly where the value has to live, because the
+> renderer re-emits the marker it read and that is what carries it between two separate workflow
+> runs. Found by issuing `/focus v0.5` on a live board and watching nothing happen.
 - **GK-117** A fire failure is reported but never raised, and never fails the run.
 - **GK-118** The fire request never logs its URL or its secret.
 - **GK-119** An unconfigured fire endpoint is a notice, not an error.
