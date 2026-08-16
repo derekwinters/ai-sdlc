@@ -680,6 +680,39 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="2. What it shows">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#charts" class="md-nav__link">
+    <span class="md-ellipsis">
+      Charts
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sections" class="md-nav__link">
+    <span class="md-ellipsis">
+      Sections
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-is-counted" class="md-nav__link">
+    <span class="md-ellipsis">
+      What is counted
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -692,9 +725,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#4-overrides" class="md-nav__link">
+  <a href="#4-focus-and-cap" class="md-nav__link">
     <span class="md-ellipsis">
-      4. Overrides
+      4. Focus and cap
     </span>
   </a>
   
@@ -928,6 +961,39 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="2. What it shows">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#charts" class="md-nav__link">
+    <span class="md-ellipsis">
+      Charts
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sections" class="md-nav__link">
+    <span class="md-ellipsis">
+      Sections
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-is-counted" class="md-nav__link">
+    <span class="md-ellipsis">
+      What is counted
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -940,9 +1006,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#4-overrides" class="md-nav__link">
+  <a href="#4-focus-and-cap" class="md-nav__link">
     <span class="md-ellipsis">
-      4. Overrides
+      4. Focus and cap
     </span>
   </a>
   
@@ -1004,14 +1070,60 @@ fixed" decision elsewhere is a promise that this page keeps.</p>
 <li><strong>DASH-005</strong> A fetch failure for one section degrades that section rather than losing the page.</li>
 </ul>
 <h2 id="2-what-it-shows">2. What it shows<a class="headerlink" href="#2-what-it-shows" title="Permanent link">&para;</a></h2>
+<p>The page is two charts and then five sections, in that order.</p>
+<h3 id="charts">Charts<a class="headerlink" href="#charts" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>DASH-010</strong> The focus milestone, with its open and closed counts.</li>
-<li><strong>DASH-011</strong> Issues by pipeline state, each linked and titled.</li>
-<li><strong>DASH-012</strong> The ready queue, in the order the builder would take it.</li>
-<li><strong>DASH-013</strong> An issue's blockers are named where it is blocked.</li>
-<li><strong>DASH-014</strong> The concurrency cap and how many issues are in progress against it.</li>
-<li><strong>DASH-015</strong> Every issue needing attention, not only those in the focus milestone. An issue
-  parked in an unrelated milestone is still stuck.</li>
+<li><strong>DASH-010</strong> A chart of open issues per <strong>open milestone</strong>, including milestones with none.
+  An empty milestone is the signal that more planning runway exists; hiding it hides the thing
+  the chart is for.</li>
+<li><strong>DASH-011</strong> A chart of the focus milestone's issues by bucket, ordered <strong>Unplanned → In
+  planning → Ready → Done</strong>, so it reads as a flow. Done is closed; Ready is approved or being
+  built; In planning is any of the three planning states; Unplanned is everything left — the
+  issues nobody has decided about yet.</li>
+</ul>
+<p>A <strong>parked</strong> issue appears in no bucket at all. Work deliberately set aside is not work waiting
+  to be planned, and counting it as Unplanned put the same issue in two places in two different
+  senses, when it already has a section of its own. The chart therefore counts fewer issues than
+  the milestone holds, which is the honest reading: it shows the work in play.
+- <strong>DASH-012</strong> Where no focus milestone resolves, the second chart is replaced by a line saying
+  so. An empty chart is worse than a sentence: it looks like a finished milestone.</p>
+<blockquote>
+<p><strong>Invariant — a chart never hides a value behind another.</strong> Mermaid's <code>xychart-beta</code> draws
+multiple <code>bar</code> series <em>overlaid from zero</em> rather than stacked, so a taller series conceals a
+shorter one entirely. Every chart is single-series.</p>
+</blockquote>
+<ul>
+<li><strong>DASH-013</strong> Charts are horizontal. Labels then sit on the vertical axis with room to render in
+  full; mermaid neither wraps nor rotates axis labels, so a horizontal chart is what removes the
+  need to truncate them.</li>
+<li><strong>DASH-014</strong> Chart height is derived from the number of bars, so the same chart is compact with
+  three milestones and legible with twelve.</li>
+<li><strong>DASH-015</strong> A label is escaped before it reaches the chart, so a milestone title containing a
+  quote cannot break the syntax.</li>
+</ul>
+<h3 id="sections">Sections<a class="headerlink" href="#sections" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>DASH-016</strong> Five sections — ready for work, pending approval, needs clarification, waiting for
+  triage, parked — each collapsible, each carrying its count, each containing exactly one table.</li>
+<li><strong>DASH-017</strong> A section renders even when empty, showing zero. The board's shape is then
+  constant, and a missing section means a defect rather than an empty queue.</li>
+<li><strong>DASH-018</strong> Every row links the issue, its milestone and its blockers, and shows <code>-</code> where
+  there is no milestone or no blocker.</li>
+<li><strong>DASH-019</strong> Ready for work holds both approved and in-progress issues, and is the only section
+  carrying a status column. Merging two states into one section makes it the only place where a
+  row is otherwise ambiguous.</li>
+</ul>
+<h3 id="what-is-counted">What is counted<a class="headerlink" href="#what-is-counted" title="Permanent link">&para;</a></h3>
+<blockquote>
+<p><strong>Invariant — a pull request is not an issue.</strong> GitHub's issues endpoint returns both, and
+counting them together inflates every section and every chart.</p>
+</blockquote>
+<ul>
+<li><strong>DASH-006</strong> Pull requests are excluded from every count, section and chart.</li>
+<li><strong>DASH-007</strong> Closed issues are fetched, not only open ones. The Done bucket is closed issues by
+  definition, and a fault about closed issues cannot fire against a list that never contains one.</li>
+<li><strong>DASH-008</strong> Done is counted from the issues themselves, never from a milestone's
+  <code>closed_issues</code> field, which counts pull requests too.</li>
 </ul>
 <h2 id="3-fault-flags">3. Fault flags<a class="headerlink" href="#3-fault-flags" title="Permanent link">&para;</a></h2>
 <p>Each of these corresponds to a repair the pipeline deliberately does not perform.</p>
@@ -1023,20 +1135,60 @@ fixed" decision elsewhere is a promise that this page keeps.</p>
   them named.</li>
 <li><strong>DASH-023</strong> <strong>Unverifiable dependency</strong> — a blocker whose milestone the configured ordering
   strategy cannot compare, so the ordering gate could not check it.</li>
-<li><strong>DASH-024</strong> <strong>Untracked</strong> — an open issue carrying no pipeline state at all.</li>
 <li><strong>DASH-025</strong> <strong>Stale state</strong> — a closed issue still carrying a pipeline label, meaning a close
   event was missed.</li>
+</ul>
+<blockquote>
+<p><strong>How the spec is changing (#106).</strong> <code>DASH-024</code> flagged an open issue carrying no pipeline
+state as a fault, under <em>Open issues outside the pipeline</em>. That list is now exactly the
+<strong>Waiting for triage</strong> section — which is defined as the complement of the five claimed states,
+so it already contains every untracked issue — and printing it twice made the fault count read
+as 28 problems when the real answer was none. The requirement is removed rather than reworded:
+the section is where an untriaged issue belongs, and a fault report should hold things that need
+a decision the board cannot show on its own.</p>
+</blockquote>
+<ul>
 <li><strong>DASH-026</strong> <strong>Prose dependency</strong> — a <code>Blocked by #N</code> written as text, invisible to the queue.</li>
-<li><strong>DASH-027</strong> A section with no faults is omitted rather than shown empty, so the page is short
-  when things are well.</li>
+<li><strong>DASH-027</strong> A fault section with nothing in it is omitted rather than shown empty, so a page
+  with nothing wrong carries no fault report at all. The charts and the five issue sections are a
+  fixed skeleton and always render (<code>DASH-017</code>), so it is the presence of a fault heading, not the
+  page's length, that signals attention is needed.</li>
 <li><strong>DASH-028</strong> A count of all faults appears near the top, so the page can be judged at a glance.</li>
 </ul>
-<h2 id="4-overrides">4. Overrides<a class="headerlink" href="#4-overrides" title="Permanent link">&para;</a></h2>
+<h2 id="4-focus-and-cap">4. Focus and cap<a class="headerlink" href="#4-focus-and-cap" title="Permanent link">&para;</a></h2>
+<blockquote>
+<p><strong>Invariant — the dashboard's own body is where focus and cap are stored.</strong> The renderer writes
+the marker it just read, which is what makes the value survive between two independent workflow
+runs with no storage anywhere else.</p>
+</blockquote>
 <ul>
-<li><strong>DASH-030</strong> <code>focus</code> and <code>cap</code> set by the gatekeeper are read as render overrides.</li>
-<li><strong>DASH-031</strong> An override takes precedence over the milestone description marker for that render.</li>
+<li><strong>DASH-030</strong> Focus and cap are recorded as markers in the dashboard issue's body, and re-emitted
+  by every render.</li>
+<li><strong>DASH-031</strong> Precedence is override, then marker, then fallback. The override exists only to
+  carry a command's value into the render that persists it.</li>
 <li><strong>DASH-032</strong> The dashboard issue's body is the render target; no other issue body is patched.</li>
+<li><strong>DASH-033</strong> The focus fallback is the lowest open version milestone with ready work, under the
+  configured milestone ordering, so a repository that has never set a focus still has one.</li>
+<li><strong>DASH-034</strong> An override naming no live milestone is refused rather than stored. A mistyped
+  focus otherwise renders a board where every section is empty, which is indistinguishable from a
+  finished milestone.</li>
 </ul>
+<blockquote>
+<p><strong>How the spec is changing (#106).</strong> §4 used to say focus and cap were read from a marker on the
+<strong>milestone's description</strong>, and that an override applied for one render. Neither worked: nothing
+ever wrote the milestone marker — <code>set_focus()</code> has a passing test and no production caller — and
+the override was an in-memory value discarded when the gatekeeper's run ended, which cannot reach
+the dashboard's separate run. <code>/focus</code> therefore replied <code>Done</code> and changed nothing (#105). The
+store is now the dashboard's own body, which is what both <code>lucas-doggiehood</code> and
+<code>connor-multiplying-frogs</code> do, and the reason it works is that the renderer re-emits the marker
+rather than treating it as something a render would overwrite.</p>
+<p><strong>How the spec is changing (#106) — §2.</strong> What the page showed was previously described as a
+focus headline, a board grouped by label, and a ready queue. It is now two charts and five
+collapsible sections with linked tables. The parts about <em>what is counted</em> — <code>DASH-005a</code> to
+<code>DASH-007</code> — are new rules rather than changed ones: the fetch counted pull requests as issues
+and never asked for closed issues at all, so <code>DASH-025</code> could not fire and a Done count was not
+derivable.</p>
+</blockquote>
 <hr />
 <h2 id="traceability">Traceability<a class="headerlink" href="#traceability" title="Permanent link">&para;</a></h2>
 <table>
@@ -1054,9 +1206,19 @@ fixed" decision elsewhere is a promise that this page keeps.</p>
 <td><code>test_dashboard_fetch.py</code></td>
 </tr>
 <tr>
-<td>What it shows</td>
+<td>What it shows — charts</td>
 <td>DASH-010–015</td>
 <td><code>test_dashboard_render.py</code></td>
+</tr>
+<tr>
+<td>What it shows — sections</td>
+<td>DASH-016–019</td>
+<td><code>test_dashboard_render.py</code></td>
+</tr>
+<tr>
+<td>What is counted</td>
+<td>DASH-006–008</td>
+<td><code>test_dashboard_fetch.py</code></td>
 </tr>
 <tr>
 <td>Fault flags</td>
@@ -1064,13 +1226,13 @@ fixed" decision elsewhere is a promise that this page keeps.</p>
 <td><code>test_dashboard_faults.py</code></td>
 </tr>
 <tr>
-<td>Overrides</td>
-<td>DASH-030–032</td>
+<td>Focus and cap</td>
+<td>DASH-030–034</td>
 <td><code>test_dashboard_fetch.py</code></td>
 </tr>
 </tbody>
 </table>
-<p><strong>24 requirements, all <code>auto</code>.</strong></p>
+<p><strong>31 requirements, all <code>auto</code>.</strong></p>
 
 
 
