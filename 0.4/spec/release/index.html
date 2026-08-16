@@ -1,0 +1,1244 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="AI-assisted software development lifecycle — one implementation, adopted by many repositories.">
+      
+      
+      
+      
+        <link rel="prev" href="../hygiene/">
+      
+      
+        <link rel="next" href="../github-api/">
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.44">
+    
+    
+      
+        <title>Release flow - ai-sdlc</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.0253249f.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#specification-release-flow-rel" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="ai-sdlc" class="md-header__button md-logo" aria-label="ai-sdlc" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            ai-sdlc
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Release flow
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/derekwinters/ai-sdlc" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="ai-sdlc" class="md-nav__button md-logo" aria-label="ai-sdlc" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    ai-sdlc
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/derekwinters/ai-sdlc" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Design
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adoption/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Adoption
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../house-rules/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    House rules
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    Specification
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            Specification
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adopt/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Adoption
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Configuration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../profiles/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Profiles
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../house-rules/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    House rules
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hygiene/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Pull request hygiene
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Release flow
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Release flow
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#invariants" class="md-nav__link">
+    <span class="md-ellipsis">
+      Invariants
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-finding-the-release-pull-request" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Finding the release pull request
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-before-merging" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Before merging
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-the-squash-title" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. The squash title
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-forcing-a-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      4. Forcing a version
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-verifying-afterwards" class="md-nav__link">
+    <span class="md-ellipsis">
+      5. Verifying afterwards
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-backfilling-tags" class="md-nav__link">
+    <span class="md-ellipsis">
+      6. Backfilling tags
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#traceability" class="md-nav__link">
+    <span class="md-ellipsis">
+      Traceability
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../github-api/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    GitHub access
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../validators/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Consistency
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gatekeeper/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Gatekeeper
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../blockers/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Blockers
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ci-watch/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    CI watch
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dashboard/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Dashboard
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Development queue
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../labels/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Labels
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../milestones/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Milestones
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../triage/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Triage
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    Decisions
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            Decisions
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/migration-plan/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Migration plan
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#invariants" class="md-nav__link">
+    <span class="md-ellipsis">
+      Invariants
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-finding-the-release-pull-request" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Finding the release pull request
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-before-merging" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Before merging
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-the-squash-title" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. The squash title
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-forcing-a-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      4. Forcing a version
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-verifying-afterwards" class="md-nav__link">
+    <span class="md-ellipsis">
+      5. Verifying afterwards
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-backfilling-tags" class="md-nav__link">
+    <span class="md-ellipsis">
+      6. Backfilling tags
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#traceability" class="md-nav__link">
+    <span class="md-ellipsis">
+      Traceability
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<h1 id="specification-release-flow-rel">Specification — Release flow (<code>REL</code>)<a class="headerlink" href="#specification-release-flow-rel" title="Permanent link">&para;</a></h1>
+<p>Driving release-please's release pull request to a tagged release.</p>
+<p>Two things make this worth specifying rather than doing by hand. Releases are rare enough that
+nobody remembers the gotchas, and the gotchas are the kind that produce a silently wrong version
+rather than an error.</p>
+<p><code>REL</code> belongs to the <strong>release</strong> capability and depends on the substrate and hygiene.</p>
+<p>Every requirement below is <code>auto</code> (covered by a named test) unless marked otherwise.</p>
+<hr />
+<h2 id="invariants">Invariants<a class="headerlink" href="#invariants" title="Permanent link">&para;</a></h2>
+<blockquote>
+<p><strong>Invariant — the release pull request's state is never toggled to influence CI.</strong> Closing and
+reopening a pull request to restart parked checks looks harmless and loses the review, the
+approval, and sometimes the pull request's association with its release. If checks need
+attention, the flow halts and says so.</p>
+<p><strong>Invariant — the squash title is the release commit.</strong> It is the one commit release-please
+parses for the next version, so it is composed here rather than taken from whatever the pull
+request happens to be called.</p>
+<p><strong>Invariant — a release is verified after the fact.</strong> Tag, release and version are checked to
+exist, because "the merge succeeded" and "the release happened" are different claims.</p>
+</blockquote>
+<hr />
+<h2 id="1-finding-the-release-pull-request">1. Finding the release pull request<a class="headerlink" href="#1-finding-the-release-pull-request" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>REL-001</strong> The release pull request is identified by its head branch, not by its title. A title
+  can be edited; the branch is release-please's.</li>
+<li><strong>REL-002</strong> No release pull request open is a clean outcome, not an error. There may be nothing
+  to release.</li>
+<li><strong>REL-003</strong> More than one is refused, naming them. Guessing which to merge is not acceptable.</li>
+<li><strong>REL-004</strong> The version being released is read from the pull request, not inferred from the
+  title.</li>
+</ul>
+<h2 id="2-before-merging">2. Before merging<a class="headerlink" href="#2-before-merging" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>REL-005</strong> The flow refuses to merge while any check is failing.</li>
+<li><strong>REL-006</strong> The flow refuses to merge while any check is still running.</li>
+<li><strong>REL-007</strong> A pull request with no checks at all is refused, not merged. Nothing having run is
+  not the same as everything having passed.</li>
+<li><strong>REL-008</strong> The flow halts for the owner rather than toggling the pull request's state to
+  restart checks.</li>
+<li><strong>REL-009</strong> A halt says exactly what is wrong and what would resolve it.</li>
+</ul>
+<h2 id="3-the-squash-title">3. The squash title<a class="headerlink" href="#3-the-squash-title" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>REL-010</strong> The title is <code>chore(main): release X.Y.Z</code>, composed from the version.</li>
+<li><strong>REL-011</strong> The title is never taken from the pull request's own title.</li>
+<li><strong>REL-012</strong> A title that is not a valid Conventional Commit is refused before merging.</li>
+</ul>
+<h2 id="4-forcing-a-version">4. Forcing a version<a class="headerlink" href="#4-forcing-a-version" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>REL-020</strong> A release may be forced to a specific version with a <code>Release-As:</code> footer, so a
+  milestone boundary and a version can be made to match.</li>
+<li><strong>REL-021</strong> A forced version must be a valid semantic version.</li>
+<li><strong>REL-022</strong> A forced version lower than the current one is refused.</li>
+</ul>
+<blockquote>
+<p><strong>Invariant — a version milestone reserves its version number until its work is done.</strong> A version
+cannot be un-released. Spending <code>0.5.0</code> on unrelated work leaves <code>v0.5 — Fleet</code> with no number of
+its own, permanently.</p>
+</blockquote>
+<ul>
+<li><strong>REL-023</strong> A release whose version matches an <strong>open</strong> milestone that still has open issues is
+  refused, naming the milestone.</li>
+<li><strong>REL-024</strong> Only the major and minor are reserved. A patch release of the current version is the
+  escape, and is allowed while a later minor is reserved.</li>
+<li><strong>REL-025</strong> A milestone reserves nothing once it has no open issues — either its work is done and
+  this release is exactly what it was named for, or it is an empty placeholder.</li>
+<li><strong>REL-026</strong> A milestone whose title names no version is ignored, and a title is matched on its
+  version boundary: <code>v0.50</code> is not <code>v0.5</code>.</li>
+<li><strong>REL-027</strong> The refusal says what to do instead — finish the milestone, or force a patch with a
+  <code>Release-As:</code> footer. A halt that does not say how to proceed gets worked around.</li>
+</ul>
+<blockquote>
+<p><strong>How the spec is changing (#31).</strong> §4 used to describe forcing a version as a convenience — one
+half-sentence in REL-020 about making a milestone and a version "match". It now states the rule
+that convenience existed to serve, and refuses the release that breaks it. The prompt was live:
+with <code>v0.5 — Fleet</code> open and none of its work started, two housekeeping commits made
+release-please propose <code>0.5.0</code>, and nothing in the flow objected. The rule was real but unwritten,
+which is the same as absent.</p>
+</blockquote>
+<h2 id="5-verifying-afterwards">5. Verifying afterwards<a class="headerlink" href="#5-verifying-afterwards" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>REL-030</strong> After merging, the tag is confirmed to exist.</li>
+<li><strong>REL-031</strong> The GitHub release is confirmed to exist.</li>
+<li><strong>REL-032</strong> The recorded version is confirmed to match what was released.</li>
+<li><strong>REL-033</strong> A missing tag or release is reported as an incomplete release, distinctly from a
+  failed merge.</li>
+<li><strong>REL-034</strong> Verification is retried briefly, because tagging follows the merge by a moment.</li>
+</ul>
+<h2 id="6-backfilling-tags">6. Backfilling tags<a class="headerlink" href="#6-backfilling-tags" title="Permanent link">&para;</a></h2>
+<p>A repository can end up with release commits on its default branch and no tags — release-please
+writing <code>/VERSION</code>, the manifest and <code>CHANGELOG.md</code> through merged pull requests, but never getting
+as far as tagging. ai-sdlc reached 0.4.0 that way, because its action was refused before it ever
+ran (#64). Without tags there is nothing for release-please to compute the next version <em>from</em>, so
+it re-proposes the entire history as one release.</p>
+<p>The tags are recoverable, because the release commits are still on the branch. This turns them back
+into tags.</p>
+<blockquote>
+<p><strong>Invariant — the plan is derived from the commit history, never from a hand-written list.</strong> A
+list of versions and SHAs is correct on the day it is written and wrong after the next release.</p>
+<p><strong>Invariant — nothing is created unless the run explicitly asks to create it.</strong> A tag is public
+and effectively permanent; a dry run is the default, and applying is opted into.</p>
+</blockquote>
+<ul>
+<li><strong>REL-040</strong> The plan is derived from the <code>chore(main): release X.Y.Z</code> commits on the default
+  branch. Each such commit is the boundary of the version it names.</li>
+<li><strong>REL-041</strong> A version that is already tagged is skipped, so the operation is idempotent and safe
+  to re-run.</li>
+<li><strong>REL-042</strong> The tag name is <code>vX.Y.Z</code> — what release-please writes and what consumers pin.</li>
+<li><strong>REL-043</strong> A release commit whose subject carries no valid semantic version is reported and
+  skipped, never guessed at.</li>
+<li><strong>REL-044</strong> The plan is ordered oldest version first, so tags are created in version order.</li>
+<li><strong>REL-045</strong> A release body is the matching section of <code>CHANGELOG.md</code>, ending where the next
+  version's heading begins. A version with no section gets an empty body rather than another
+  version's text.</li>
+<li><strong>REL-046</strong> A pre-release or build-metadata suffix is not treated as a release commit here. It is
+  reported and skipped: this recovers a history that was meant to be tagged, and guessing at a
+  channel is not part of that.</li>
+<li><strong>REL-047</strong> The plan is printed in full whether or not it is applied, so the log records what
+  happened.</li>
+<li><strong>REL-048</strong> The dry run is the default on the workflow's own input, not only inside the script.
+  The default that matters is the one attached to the button someone presses.</li>
+</ul>
+<hr />
+<h2 id="traceability">Traceability<a class="headerlink" href="#traceability" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Section</th>
+<th>IDs</th>
+<th>Tests</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Finding the release pull request</td>
+<td>REL-001–004</td>
+<td><code>test_release_find.py</code></td>
+</tr>
+<tr>
+<td>Before merging</td>
+<td>REL-005–009</td>
+<td><code>test_release_gate.py</code></td>
+</tr>
+<tr>
+<td>The squash title</td>
+<td>REL-010–012</td>
+<td><code>test_release_gate.py</code></td>
+</tr>
+<tr>
+<td>Forcing a version</td>
+<td>REL-020–022</td>
+<td><code>test_release_version.py</code></td>
+</tr>
+<tr>
+<td>Reserved milestone versions</td>
+<td>REL-023–027</td>
+<td><code>test_release_milestone.py</code></td>
+</tr>
+<tr>
+<td>Verifying afterwards</td>
+<td>REL-030–034</td>
+<td><code>test_release_verify.py</code></td>
+</tr>
+<tr>
+<td>Backfilling tags</td>
+<td>REL-040–048</td>
+<td><code>test_release_backfill.py</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>37 requirements, all <code>auto</code>.</strong></p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.sections", "navigation.top", "content.code.copy"], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.83f73b43.min.js"></script>
+      
+    
+  </body>
+</html>
