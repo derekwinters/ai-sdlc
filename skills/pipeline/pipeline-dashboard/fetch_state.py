@@ -12,7 +12,7 @@ reported, and repairing them stays a decision somebody makes.
 Two things about GitHub's issues endpoint shape this file, because production
 code was wrong about both (#106): it returns **pull requests** alongside
 issues, and it defaults to **open only**. Counting pull requests as issues put
-every open one on the board as untracked; never asking for closed issues made
+every open one on the board as an untriaged issue; never asking for closed issues made
 `DASH-025` unreachable and the Done bucket underivable.
 
 Specification: docs/spec/dashboard.md (`DASH`).
@@ -67,9 +67,10 @@ def fetch(api, labels, bot_login, dashboard_issue=None, overrides=None):
             if state_label:
                 faults["stale_state"].append({"issue": issue["number"], "labels": [state_label]})
         else:
-            if state_label is None:
-                faults["untracked"].append({"issue": issue["number"]})
-            elif state_label == labels.get("approved") and unresolved:
+            # An issue with no pipeline state is not a fault: it is the
+            # Waiting for triage section, which is the complement of the
+            # claimed states and therefore already lists every one of them.
+            if state_label == labels.get("approved") and unresolved:
                 faults["blocked_but_approved"].append(
                     {"issue": issue["number"], "blockers": unresolved}
                 )
@@ -113,7 +114,6 @@ def _empty_faults():
         "unverifiable_dependency": [],
         "prose_dependency": [],
         "stale_state": [],
-        "untracked": [],
     }
 
 
@@ -128,7 +128,7 @@ def _issues(api, dashboard_issue):
     return [
         i for i in found
         # The dashboard issue is the render target, not work. Listing it would
-        # make it permanently untracked and permanently in its own fault list.
+        # list it as work waiting to be triaged, for ever.
         if i.get("number") != dashboard_issue
         # GitHub returns pull requests here too, each carrying this key.
         and "pull_request" not in i

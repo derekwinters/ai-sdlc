@@ -119,9 +119,15 @@ class TestItNeverWrites(unittest.TestCase):
 
 
 class TestFaultDetection(unittest.TestCase):
-    def test_an_untracked_open_issue_is_flagged(self):  # DASH-024
+    def test_an_issue_with_no_state_raises_no_fault(self):  # DASH-027
+        """It is the Waiting for triage section, not a problem.
+
+        That section is the complement of the five claimed states, so it
+        already lists every such issue; flagging them again read as 28
+        problems when the real answer was none.
+        """
         github = api([issue(7, [])])
-        self.assertEqual([f["issue"] for f in state(github)["faults"]["untracked"]], [7])
+        self.assertEqual(sum(len(v) for v in state(github)["faults"].values()), 0)
 
     def test_a_closed_issue_with_state_is_flagged(self):  # DASH-025
         github = api([issue(7, ["in-progress"], state="closed")])
@@ -148,9 +154,9 @@ class TestWhatIsCounted(unittest.TestCase):
         github = api([issue(7, ["ready-for-work"]), issue(8, [], pull_request=True)])
         self.assertEqual([i["number"] for i in state(github)["issues"]], [7])
 
-    def test_a_pull_request_raises_no_untracked_fault(self):  # DASH-006
+    def test_a_pull_request_reaches_no_section(self):  # DASH-006
         github = api([issue(8, [], pull_request=True)])
-        self.assertEqual(state(github)["faults"]["untracked"], [])
+        self.assertEqual(state(github)["issues"], [])
 
     def test_closed_issues_are_requested(self):  # DASH-007
         """Asserted on the request, not the fixture.

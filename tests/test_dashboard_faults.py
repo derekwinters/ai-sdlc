@@ -47,8 +47,6 @@ class TestEveryFaultIsRendered(unittest.TestCase):
                                  {"issue": 7, "blocker": 42, "milestone": "Direct Involvement"}))
         self.assertIn("Direct Involvement", page)
 
-    def test_an_untracked_issue_appears(self):  # DASH-024
-        self.assertIn("#7", render(with_fault("untracked", {"issue": 7})))
 
     def test_stale_state_appears(self):  # DASH-025
         page = render(with_fault("stale_state", {"issue": 7, "labels": ["in-progress"]}))
@@ -91,11 +89,11 @@ class TestQuietWhenWell(unittest.TestCase):
 
 class TestTheCount(unittest.TestCase):
     def test_the_total_appears(self):  # DASH-028
-        page = render(state(faults={"untracked": [{"issue": 7}, {"issue": 8}]}))
+        page = render(state(faults={"stalled_work": [{"issue": 7}, {"issue": 8}]}))
         self.assertIn("2", page)
 
     def test_faults_across_kinds_are_summed(self):  # DASH-028
-        page = render(state(faults={"untracked": [{"issue": 7}],
+        page = render(state(faults={"stale_state": [{"issue": 7, "labels": ["in-progress"]}],
                                     "stalled_work": [{"issue": 8}]}))
         self.assertIn("2", page)
 
@@ -106,7 +104,7 @@ class TestTheCount(unittest.TestCase):
         count would have called a regression. What matters is that the count
         is readable before scrolling past the charts.
         """
-        page = render(state(faults={"untracked": [{"issue": 7}]}))
+        page = render(state(faults={"stalled_work": [{"issue": 7}]}))
         self.assertLess(page.index("**Needs attention:** 1."), page.index("```mermaid"))
 
 

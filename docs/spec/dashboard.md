@@ -102,9 +102,17 @@ Each of these corresponds to a repair the pipeline deliberately does not perform
   them named.
 - **DASH-023** **Unverifiable dependency** — a blocker whose milestone the configured ordering
   strategy cannot compare, so the ordering gate could not check it.
-- **DASH-024** **Untracked** — an open issue carrying no pipeline state at all.
 - **DASH-025** **Stale state** — a closed issue still carrying a pipeline label, meaning a close
   event was missed.
+
+> **How the spec is changing (#106).** `DASH-024` flagged an open issue carrying no pipeline
+> state as a fault, under *Open issues outside the pipeline*. That list is now exactly the
+> **Waiting for triage** section — which is defined as the complement of the five claimed states,
+> so it already contains every untracked issue — and printing it twice made the fault count read
+> as 28 problems when the real answer was none. The requirement is removed rather than reworded:
+> the section is where an untriaged issue belongs, and a fault report should hold things that need
+> a decision the board cannot show on its own.
+
 - **DASH-026** **Prose dependency** — a `Blocked by #N` written as text, invisible to the queue.
 - **DASH-027** A fault section with nothing in it is omitted rather than shown empty, so a page
   with nothing wrong carries no fault report at all. The charts and the five issue sections are a
@@ -158,4 +166,4 @@ Each of these corresponds to a repair the pipeline deliberately does not perform
 | Fault flags | DASH-020–028 | `test_dashboard_faults.py` |
 | Focus and cap | DASH-030–034 | `test_dashboard_fetch.py` |
 
-**32 requirements, all `auto`.**
+**31 requirements, all `auto`.**

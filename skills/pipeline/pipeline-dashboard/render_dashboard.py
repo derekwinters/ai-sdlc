@@ -100,10 +100,6 @@ FAULTS = {
             f"missed."
         ),
     ),
-    "untracked": (
-        "Open issues outside the pipeline",
-        lambda e: f"- **#{e['issue']}** — open with no pipeline state. Never admitted, or lost it.",
-    ),
 }
 
 
