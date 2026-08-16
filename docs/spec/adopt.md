@@ -148,6 +148,23 @@ than a formatting one: a reusable workflow runs with the **caller's** token, on 
 - **ADOPT-066** The recorded pin holds the version and the SHA together, so `verify` at the same
   version needs no network.
 
+> **Invariant — `ref` names a commit in ai-sdlc, never in the caller.** A reusable workflow may
+> use it only when checking ai-sdlc out; handing it to a checkout of the caller's own repository
+> asks GitHub for a commit that repository has never seen.
+
+- **ADOPT-067** A reusable workflow checks the caller's repository out at the commit that
+  triggered the run, and uses `inputs.ref` only on a checkout that also names
+  `repository: derekwinters/ai-sdlc`. The two checkouts serve different purposes — one is the work
+  being examined, the other is the code doing the examining — and conflating them fails as
+  `upload-pack: not our ref`, at fetch time, before any step of the workflow runs.
+
+> **How the spec is changing (#110).** §7 covered what a *caller* must write and said nothing
+> about what the *callee* may do with it. `reusable-docs-build.yml` therefore passed `inputs.ref`
+> to a checkout of the consumer's repository (#103), which worked in every test here and failed on
+> the first consumer that ran it — ai-sdlc does not install its own callers, so this path is never
+> exercised by its own CI. The rule is stated for the callee because that is where it can be
+> checked.
+
 > **Invariant — a caller grants exactly the permissions the workflow it calls requests.** Not
 > fewer, or the run cannot start; not more, or adoption quietly widens what the pipeline may do.
 
@@ -186,6 +203,7 @@ than a formatting one: a reusable workflow runs with the **caller's** token, on 
 | Applying | ADOPT-040–047 | `test_adopt_apply.py` |
 | Verifying | ADOPT-050–054 | `test_adopt_verify.py` |
 | Pinning a caller | ADOPT-060–066 | `test_adopt_pin.py` |
+| What a callee may do | ADOPT-067 | `test_reusable_workflows.py` |
 | Caller permissions | ADOPT-068–069 | `test_adopt_permissions.py` |
 
-**46 requirements, all `auto`.**
+**47 requirements, all `auto`.**

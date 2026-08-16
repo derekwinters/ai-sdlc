@@ -78,3 +78,30 @@ class TestASkillCanImportItsLibrary(unittest.TestCase):
                     text, r"\.ai-sdlc/skills/\S+\.py",
                     f"{path.name} hard-codes .ai-sdlc/ instead of using SKILL_ROOT",
                 )
+
+    def test_no_consumer_checkout_uses_the_ai_sdlc_ref(self):  # ADOPT-067
+        """`inputs.ref` names a commit in **ai-sdlc**, not in the caller.
+
+        Every caller passes `ref: <ai-sdlc sha>`. Handing that to a checkout of
+        the consumer's own repository asks GitHub for a commit that repository
+        has never seen:
+
+            fatal: remote error: upload-pack: not our ref 86edeee...
+
+        So a step may only use `inputs.ref` when it is also checking out
+        ai-sdlc — which means naming `repository:`. Introduced in #103 and
+        caught by the first consumer to run it (frogs#362), because ai-sdlc
+        does not install its own callers and so never exercises this path.
+        """
+        steps = re.compile(r"-\s+(?:if:[^\n]*\n\s+)?uses:\s*actions/checkout@[^\n]*\n"
+                           r"((?:\s+(?!-\s)\S[^\n]*\n)*)")
+        for path, text in _reusable():
+            for block in steps.findall(text):
+                if "inputs.ref" not in block:
+                    continue
+                with self.subTest(workflow=path.name):
+                    self.assertIn(
+                        "repository:", block,
+                        f"{path.name} passes the ai-sdlc ref to a checkout of the "
+                        f"caller's own repository; that commit does not exist there",
+                    )
