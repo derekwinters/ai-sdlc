@@ -195,5 +195,52 @@ class TestTheDocsArePublishedFromABranch(unittest.TestCase):
         # publish exactly the broken site the gate exists to catch.
         self.assertLess(
             self.text.index("mkdocs build --strict"),
-            self.text.index("mkdocs gh-deploy"),
+            self.text.index("mike deploy"),
         )
+
+
+class TestTheDocsAreVersioned(unittest.TestCase):
+    """PROF-015 — the published site is versioned with `mike`.
+
+    Consumers pin ai-sdlc by version and read its specification to know what
+    that version does. An unversioned site answers only for `main`, so a
+    repository pinned three releases back is reading documentation for code it
+    is not running — and has no way to tell.
+    """
+
+    WORKFLOW = ROOT / ".github" / "workflows" / "docs.yml"
+    REQUIREMENTS = ROOT / "docs" / "requirements.txt"
+    MKDOCS = ROOT / "mkdocs.yml"
+
+    def setUp(self):
+        raw = self.WORKFLOW.read_text()
+        self.text = "\n".join(
+            line for line in raw.splitlines() if not line.lstrip().startswith("#")
+        )
+
+    def test_mike_is_a_pinned_dependency(self):  # PROF-015
+        requirements = self.REQUIREMENTS.read_text()
+        self.assertIn("mike==", requirements)
+
+    def test_the_theme_offers_the_version_selector(self):  # PROF-015
+        # Without this the versions exist but nobody can switch between them.
+        config = self.MKDOCS.read_text()
+        self.assertIn("provider: mike", config)
+
+    def test_publishing_uses_mike(self):  # PROF-015
+        self.assertIn("mike deploy", self.text)
+
+    def test_the_newest_version_is_aliased(self):  # PROF-015
+        # A reader arriving at the bare URL must land somewhere current.
+        self.assertIn("latest", self.text)
+
+    def test_the_version_is_not_hard_coded(self):  # PROF-015
+        # A literal here is a second copy of the version, and second copies
+        # drift — /VERSION has been wrong for eight releases (#97).
+        self.assertNotIn("mike deploy --push --update-aliases 0.4", self.text)
+
+    def test_the_version_comes_from_the_release_manifest(self):  # PROF-015
+        self.assertIn("release-please/manifest.json", self.text)
+
+    def test_it_still_publishes_only_from_main(self):  # PROF-012
+        self.assertIn("github.ref == 'refs/heads/main'", self.text)

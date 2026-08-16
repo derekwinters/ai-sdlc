@@ -83,6 +83,10 @@
       
     </div>
     
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
     
       
 
@@ -1043,12 +1047,16 @@ they fire for.</p>
 
 <span class="nt">jobs</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">closing-keyword</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">derekwinters/ai-sdlc/.github/workflows/reusable-closing-keyword.yml@v0.1.0</span>
+<span class="w">    </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">derekwinters/ai-sdlc/.github/workflows/reusable-closing-keyword.yml@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071</span><span class="w"> </span><span class="c1"># v0.4.1</span>
 <span class="w">    </span><span class="nt">with</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">ref</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v0.1.0</span>
+<span class="w">      </span><span class="nt">ref</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5c625bfb5d1ff62eadeeb3772007f7f66fdcf071</span>
 </code></pre></div>
-<p>Pin to a released tag rather than <code>main</code>. An upgrade is then a pull request that moves the pin,
-reviewed like any other change.</p>
+<p>Pin to a <strong>commit</strong>, not a tag and not <code>main</code>. A reusable workflow runs with the caller's token, on
+<code>issue_comment</code> and <code>issues</code>, so a mutable ref there is the same exposure as a mutable action —
+publishing it ourselves says who could move the tag, not that it cannot move.</p>
+<p>The version comment is what keeps this readable: nobody reads forty characters of hexadecimal and
+knows whether they are three releases behind. <code>adopt</code> writes both, and rewrites both on upgrade, so
+an upgrade is still a pull request that moves one line and nobody resolves a SHA by hand.</p>
 <h2 id="4-make-the-checks-required">4. Make the checks required<a class="headerlink" href="#4-make-the-checks-required" title="Permanent link">&para;</a></h2>
 <p>A check that is not required is advisory. In <strong>Settings → Branches</strong> (or Rulesets), protect the
 default branch and require the checks you added.</p>
@@ -1120,7 +1128,7 @@ rule working rather than a limitation.</p>
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.sections", "navigation.top", "content.code.copy"], "search": "../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.sections", "navigation.top", "content.code.copy"], "search": "../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
       <script src="../assets/javascripts/bundle.83f73b43.min.js"></script>
