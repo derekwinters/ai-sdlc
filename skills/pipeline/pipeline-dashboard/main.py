@@ -31,8 +31,9 @@ def main():
     )
     page = render(state)
 
-    # The only write: the dashboard's own body.
-    api.request("PATCH", f"/issues/{config.dashboard_issue}", {"body": page})
+    # The only write: the dashboard's own body. A named operation rather than
+    # a raw request, so a test can assert it happened.
+    api.set_body(config.dashboard_issue, page)
 
     total = sum(len(v) for v in state["faults"].values())
     print(f"dashboard: rendered {len(state['issues'])} issues, {total} needing attention")

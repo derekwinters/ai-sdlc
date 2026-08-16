@@ -23,6 +23,7 @@ from arguments import check_arguments
 from authority import Authority
 from catchup import unfinished_comments
 from downstream import fires_triage, should_rerender
+from refresh import refresh_quietly
 from gates import run_gates
 from lib.github import GitHubError
 from parse_commands import parse
@@ -165,12 +166,19 @@ def _apply(api, issue_number, comment, settings, watermark):
     if fires_triage(before, after, settings.labels["triage"]) and settings.fire:
         fired = settings.fire.send(issue_number, api.repository).attempted
 
+    rerender = should_rerender(before, after) or bool(overrides)
+    if rerender:
+        # The render *is* how `/focus` and `/cap` persist: the board's body is
+        # their only store. Returning the value without rendering leaves it in
+        # memory until this process ends (#105).
+        refresh_quietly(api, settings, overrides)
+
     return Result(
         applied=gated.actions,
         refused=gated.skips,
         reply=reply,
         fired=fired,
-        rerender=should_rerender(before, after) or bool(overrides),
+        rerender=rerender,
         overrides=overrides,
         unverifiable=gated.unverifiable,
     )

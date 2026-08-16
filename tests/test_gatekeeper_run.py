@@ -149,24 +149,76 @@ class TestIdempotence(unittest.TestCase):
 
 
 class TestDashboardOverrides(unittest.TestCase):
-    """GK-116 — focus and cap persist as render overrides, never body patches."""
+    """GK-114, GK-116 — a command re-renders the board and persists its value.
 
-    def test_focus_does_not_patch_the_issue_body(self):
+    These used to assert only that an override was *returned* on the result,
+    plus that `update_issue` was absent from the call log — a method that does
+    not exist, so the assertion was vacuously true. Nothing acted on the
+    returned value, so `/focus` replied `Done` and changed nothing (#105).
+
+    The board's own body is the store: the renderer writes the marker it read,
+    which is what carries a value from this workflow run into the dashboard's
+    separate one.
+    """
+
+    def _body(self, api):
+        return next((args[1] for name, args in api.calls if name == "set_body"), None)
+
+    def test_focus_writes_the_marker_into_the_board(self):  # GK-116
         api = github()
         handle_comment(api, event(body="/focus v0.2", issue=193), settings())
-        self.assertNotIn("update_issue", [name for name, _ in api.calls])
+        self.assertIn("<!-- pipeline-focus: v0.2 -->", self._body(api) or "")
 
-    def test_focus_is_returned_as_an_override(self):
+    def test_cap_writes_the_marker_into_the_board(self):  # GK-116
+        api = github()
+        handle_comment(api, event(body="/cap 3", issue=193), settings())
+        self.assertIn("<!-- pipeline-cap: 3 -->", self._body(api) or "")
+
+    def test_the_board_is_rewritten_once(self):  # GK-114
+        api = github()
+        handle_comment(api, event(body="/focus v0.2", issue=193), settings())
+        writes = [name for name, _ in api.calls if name == "set_body"]
+        self.assertEqual(len(writes), 1)
+
+    def test_only_the_dashboard_is_rewritten(self):  # GK-114
+        api = github()
+        handle_comment(api, event(body="/focus v0.2", issue=193), settings())
+        targets = {args[0] for name, args in api.calls if name == "set_body"}
+        self.assertEqual(targets, {193})
+
+    def test_a_label_change_also_re_renders(self):  # GK-114
+        api = github()
+        handle_comment(api, event(body="/approve", issue=7), settings())
+        self.assertIsNotNone(self._body(api))
+
+    def test_a_run_that_changes_nothing_does_not_re_render(self):  # GK-115
+        api = github(labels=("ready-for-work",))
+        handle_comment(api, event(body="/approve", issue=7), settings())
+        self.assertIsNone(self._body(api))
+
+    def test_focus_is_returned_as_an_override(self):  # GK-116
         api = github()
         result = handle_comment(api, event(body="/focus v0.2", issue=193), settings())
         self.assertEqual(result.overrides["focus"], "v0.2")
 
-    def test_cap_is_returned_as_an_override(self):
+    def test_cap_is_returned_as_an_override(self):  # GK-116
         api = github()
         result = handle_comment(api, event(body="/cap 3", issue=193), settings())
         self.assertEqual(result.overrides["cap"], 3)
 
-    def test_no_label_is_written_for_an_override(self):
+    def test_a_failed_re_render_does_not_fail_the_run(self):  # GK-120
+        """The commands are already applied and acknowledged by then.
+
+        Losing the run — and its exit code — because the board could not be
+        redrawn would be the worse trade; the next scheduled render fixes it.
+        """
+        from lib.fake_github import FakeFailure
+
+        api = github(fail={"set_body": FakeFailure("down")})
+        result = handle_comment(api, event(body="/focus v0.2", issue=193), settings())
+        self.assertEqual(result.overrides["focus"], "v0.2")
+
+    def test_no_label_is_written_for_an_override(self):  # GK-116
         api = github()
         handle_comment(api, event(body="/cap 3", issue=193), settings())
         self.assertNotIn("set_labels", [name for name, _ in api.calls])
