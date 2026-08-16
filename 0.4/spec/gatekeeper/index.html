@@ -1513,14 +1513,30 @@ ordering rather than at the cause.</p>
   fire it.</li>
 <li><strong>GK-112</strong> Removing the triage label does not fire it.</li>
 <li><strong>GK-113</strong> A refused command fires nothing.</li>
-<li><strong>GK-114</strong> The dashboard is re-rendered once after a run that changed at least one label.</li>
-<li><strong>GK-115</strong> A run that changed no label does not re-render.</li>
-<li><strong>GK-116</strong> <code>/focus</code> and <code>/cap</code> persist as dashboard render overrides; the issue body is never
-  patched directly.</li>
-<li><strong>GK-117</strong> A fire failure is reported but never raised, and never fails the run.</li>
-<li><strong>GK-118</strong> The fire request never logs its URL or its secret.</li>
-<li><strong>GK-119</strong> An unconfigured fire endpoint is a notice, not an error.</li>
+<li><strong>GK-114</strong> The dashboard is re-rendered once after a run that changed at least one label, or
+  that carried <code>/focus</code> or <code>/cap</code>. The run performs the render; returning a flag saying it should
+  happen is not the same thing.</li>
+<li><strong>GK-115</strong> A run that changed nothing does not re-render.</li>
+<li><strong>GK-116</strong> <code>/focus</code> and <code>/cap</code> persist by being carried into that render, which writes them into
+  the dashboard's own body as markers. The board's body is their only store, so <strong>the render is
+  the write</strong> — there is nowhere else the value is kept between this run and the dashboard's own.</li>
+<li><strong>GK-120</strong> A failed re-render degrades the board, never the run. The commands are already
+  applied and acknowledged by then, and the next scheduled render redraws; losing the run over a
+  stale board is the worse trade.</li>
 </ul>
+<blockquote>
+<p><strong>How the spec is changing (#112).</strong> <code>GK-116</code> used to end <em>"the issue body is never patched
+directly"</em>, and <code>GK-114</code> said the dashboard "is re-rendered" without saying by whom. Both were
+satisfied by a flag and a dictionary on the returned result that <strong>nothing ever acted on</strong> — the
+entry point printed what was applied and returned. So <code>/focus</code> replied <code>Done</code> and changed
+nothing, for as long as the command has existed (#105). The "never patch the body" clause was
+the cause rather than a safeguard: the body is exactly where the value has to live, because the
+renderer re-emits the marker it read and that is what carries it between two separate workflow
+runs. Found by issuing <code>/focus v0.5</code> on a live board and watching nothing happen.
+- <strong>GK-117</strong> A fire failure is reported but never raised, and never fails the run.
+- <strong>GK-118</strong> The fire request never logs its URL or its secret.
+- <strong>GK-119</strong> An unconfigured fire endpoint is a notice, not an error.</p>
+</blockquote>
 <hr />
 <h2 id="9-architecture-and-configuration">9. Architecture and configuration<a class="headerlink" href="#9-architecture-and-configuration" title="Permanent link">&para;</a></h2>
 <ul>
