@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.4.9](https://github.com/derekwinters/ai-sdlc/compare/v0.4.8...v0.4.9) (2026-08-16)
+
+
+### ⚠ BREAKING CHANGES
+
+* **mkdocs:** `reusable-docs.yml` is removed. Nothing could install it, so no adopted repository references it, but a hand-written caller pointing at it will stop resolving.
+
+### Features
+
+* **dashboard:** rebuild the board as two charts and five sections ([#108](https://github.com/derekwinters/ai-sdlc/issues/108)) ([86edeee](https://github.com/derekwinters/ai-sdlc/commit/86edeee56e7f976a9c1ab85f3038984eabcc8a51)), closes [#106](https://github.com/derekwinters/ai-sdlc/issues/106)
+* **docs:** publish to a gh-pages branch instead of a Pages artifact ([dcc9015](https://github.com/derekwinters/ai-sdlc/commit/dcc9015abef9403ca67a2ad857a694acfb076fee)), closes [#93](https://github.com/derekwinters/ai-sdlc/issues/93)
+* **docs:** version the published site with mike ([#98](https://github.com/derekwinters/ai-sdlc/issues/98)) ([691d03d](https://github.com/derekwinters/ai-sdlc/commit/691d03d4036863d1576534688ff4523cc5bbdbe8)), closes [#96](https://github.com/derekwinters/ai-sdlc/issues/96)
+* **mkdocs:** install a strict build, and ship no publisher ([#103](https://github.com/derekwinters/ai-sdlc/issues/103)) ([8eef8a2](https://github.com/derekwinters/ai-sdlc/commit/8eef8a2c5b52712682b93712c3c6fd45af266fa6)), closes [#100](https://github.com/derekwinters/ai-sdlc/issues/100)
+
+
+### Fixes
+
+* **mkdocs:** stop checking the consumer out at an ai-sdlc commit ([#111](https://github.com/derekwinters/ai-sdlc/issues/111)) ([9bc3ecc](https://github.com/derekwinters/ai-sdlc/commit/9bc3eccf38473fd0b24a1c4f52b2ae61ed7db71e)), closes [#110](https://github.com/derekwinters/ai-sdlc/issues/110)
+
+
+### Chores
+
+* release 0.4.9 ([b5361a5](https://github.com/derekwinters/ai-sdlc/commit/b5361a5e34fb6310ac1542050eaa6ff4fe6309fa))
+
 ## [0.4.8](https://github.com/derekwinters/ai-sdlc/compare/v0.4.7...v0.4.8) (2026-08-15)
 
 
