@@ -37,13 +37,52 @@ Every requirement below is `auto` (covered by a named test) unless marked otherw
 
 ## 2. What it shows
 
-- **DASH-010** The focus milestone, with its open and closed counts.
-- **DASH-011** Issues by pipeline state, each linked and titled.
-- **DASH-012** The ready queue, in the order the builder would take it.
-- **DASH-013** An issue's blockers are named where it is blocked.
-- **DASH-014** The concurrency cap and how many issues are in progress against it.
-- **DASH-015** Every issue needing attention, not only those in the focus milestone. An issue
-  parked in an unrelated milestone is still stuck.
+The page is two charts and then five sections, in that order.
+
+### Charts
+
+- **DASH-010** A chart of open issues per **open milestone**, including milestones with none.
+  An empty milestone is the signal that more planning runway exists; hiding it hides the thing
+  the chart is for.
+- **DASH-011** A chart of the focus milestone's issues by bucket, ordered **Unplanned → In
+  planning → Ready → Done**, so it reads as a flow.
+- **DASH-012** Where no focus milestone resolves, the second chart is replaced by a line saying
+  so. An empty chart is worse than a sentence: it looks like a finished milestone.
+
+> **Invariant — a chart never hides a value behind another.** Mermaid's `xychart-beta` draws
+> multiple `bar` series *overlaid from zero* rather than stacked, so a taller series conceals a
+> shorter one entirely. Every chart is single-series.
+
+- **DASH-013** Charts are horizontal. Labels then sit on the vertical axis with room to render in
+  full; mermaid neither wraps nor rotates axis labels, so a horizontal chart is what removes the
+  need to truncate them.
+- **DASH-014** Chart height is derived from the number of bars, so the same chart is compact with
+  three milestones and legible with twelve.
+- **DASH-015** A label is escaped before it reaches the chart, so a milestone title containing a
+  quote cannot break the syntax.
+
+### Sections
+
+- **DASH-016** Five sections — ready for work, pending approval, needs clarification, waiting for
+  triage, parked — each collapsible, each carrying its count, each containing exactly one table.
+- **DASH-017** A section renders even when empty, showing zero. The board's shape is then
+  constant, and a missing section means a defect rather than an empty queue.
+- **DASH-018** Every row links the issue, its milestone and its blockers, and shows `-` where
+  there is no milestone or no blocker.
+- **DASH-019** Ready for work holds both approved and in-progress issues, and is the only section
+  carrying a status column. Merging two states into one section makes it the only place where a
+  row is otherwise ambiguous.
+
+### What is counted
+
+> **Invariant — a pull request is not an issue.** GitHub's issues endpoint returns both, and
+> counting them together inflates every section and every chart.
+
+- **DASH-006** Pull requests are excluded from every count, section and chart.
+- **DASH-007** Closed issues are fetched, not only open ones. The Done bucket is closed issues by
+  definition, and a fault about closed issues cannot fire against a list that never contains one.
+- **DASH-008** Done is counted from the issues themselves, never from a milestone's
+  `closed_issues` field, which counts pull requests too.
 
 ## 3. Fault flags
 
@@ -60,15 +99,44 @@ Each of these corresponds to a repair the pipeline deliberately does not perform
 - **DASH-025** **Stale state** — a closed issue still carrying a pipeline label, meaning a close
   event was missed.
 - **DASH-026** **Prose dependency** — a `Blocked by #N` written as text, invisible to the queue.
-- **DASH-027** A section with no faults is omitted rather than shown empty, so the page is short
-  when things are well.
+- **DASH-027** A fault section with nothing in it is omitted rather than shown empty, so a page
+  with nothing wrong carries no fault report at all. The charts and the five issue sections are a
+  fixed skeleton and always render (`DASH-017`), so it is the presence of a fault heading, not the
+  page's length, that signals attention is needed.
 - **DASH-028** A count of all faults appears near the top, so the page can be judged at a glance.
 
-## 4. Overrides
+## 4. Focus and cap
 
-- **DASH-030** `focus` and `cap` set by the gatekeeper are read as render overrides.
-- **DASH-031** An override takes precedence over the milestone description marker for that render.
+> **Invariant — the dashboard's own body is where focus and cap are stored.** The renderer writes
+> the marker it just read, which is what makes the value survive between two independent workflow
+> runs with no storage anywhere else.
+
+- **DASH-030** Focus and cap are recorded as markers in the dashboard issue's body, and re-emitted
+  by every render.
+- **DASH-031** Precedence is override, then marker, then fallback. The override exists only to
+  carry a command's value into the render that persists it.
 - **DASH-032** The dashboard issue's body is the render target; no other issue body is patched.
+- **DASH-033** The focus fallback is the lowest open version milestone with ready work, under the
+  configured milestone ordering, so a repository that has never set a focus still has one.
+- **DASH-034** An override naming no live milestone is refused rather than stored. A mistyped
+  focus otherwise renders a board where every section is empty, which is indistinguishable from a
+  finished milestone.
+
+> **How the spec is changing (#106).** §4 used to say focus and cap were read from a marker on the
+> **milestone's description**, and that an override applied for one render. Neither worked: nothing
+> ever wrote the milestone marker — `set_focus()` has a passing test and no production caller — and
+> the override was an in-memory value discarded when the gatekeeper's run ended, which cannot reach
+> the dashboard's separate run. `/focus` therefore replied `Done` and changed nothing (#105). The
+> store is now the dashboard's own body, which is what both `lucas-doggiehood` and
+> `connor-multiplying-frogs` do, and the reason it works is that the renderer re-emits the marker
+> rather than treating it as something a render would overwrite.
+
+> **How the spec is changing (#106) — §2.** What the page showed was previously described as a
+> focus headline, a board grouped by label, and a ready queue. It is now two charts and five
+> collapsible sections with linked tables. The parts about *what is counted* — `DASH-005a` to
+> `DASH-007` — are new rules rather than changed ones: the fetch counted pull requests as issues
+> and never asked for closed issues at all, so `DASH-025` could not fire and a Done count was not
+> derivable.
 
 ---
 
@@ -77,8 +145,10 @@ Each of these corresponds to a repair the pipeline deliberately does not perform
 | Section | IDs | Tests |
 |---|---|---|
 | Fetching and rendering | DASH-001–005 | `test_dashboard_fetch.py` |
-| What it shows | DASH-010–015 | `test_dashboard_render.py` |
+| What it shows — charts | DASH-010–015 | `test_dashboard_render.py` |
+| What it shows — sections | DASH-016–019 | `test_dashboard_render.py` |
+| What is counted | DASH-006–008 | `test_dashboard_fetch.py` |
 | Fault flags | DASH-020–028 | `test_dashboard_faults.py` |
-| Overrides | DASH-030–032 | `test_dashboard_fetch.py` |
+| Focus and cap | DASH-030–034 | `test_dashboard_fetch.py` |
 
-**24 requirements, all `auto`.**
+**32 requirements, all `auto`.**

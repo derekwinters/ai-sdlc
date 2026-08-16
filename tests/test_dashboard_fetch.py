@@ -1,4 +1,4 @@
-"""DASH-001, DASH-005 and DASH-030 to DASH-032 — gathering the state."""
+"""DASH-001, DASH-005 to DASH-008, and DASH-030 to DASH-034 — gathering state."""
 
 import unittest
 
@@ -11,15 +11,25 @@ LABELS = dict(STATES)
 BOT = "sdlc-bot[bot]"
 
 
-def issue(number, labels=(), state="open", milestone="v0.2", body=""):
-    return {
+def issue(number, labels=(), state="open", milestone="v0.2", body="",
+          milestone_number=2, pull_request=False):
+    found = {
         "number": number,
         "title": f"Issue {number}",
         "state": state,
         "body": body,
         "labels": [{"name": name} for name in labels],
-        "milestone": {"title": milestone} if milestone else None,
+        "milestone": {"title": milestone, "number": milestone_number} if milestone else None,
     }
+    if pull_request:
+        # How GitHub marks a pull request in the issues listing.
+        found["pull_request"] = {"url": f"https://api.github.com/pulls/{number}"}
+    return found
+
+
+def dashboard(body=""):
+    return {"number": 193, "title": "Dashboard", "state": "open", "body": body,
+            "labels": [], "milestone": None}
 
 
 def api(issues=None, milestones=None, **kwargs):
@@ -74,10 +84,22 @@ class TestDegradation(unittest.TestCase):
 
 class TestOverrides(unittest.TestCase):
     def test_a_focus_override_wins(self):  # DASH-030, DASH-031
-        result = state(overrides={"focus": "v0.9"})
+        """Over the marker, and over the fallback.
+
+        The override names a live milestone; one that names nothing is
+        refused instead, which is DASH-034 and is asserted separately.
+        """
+        github = api(milestones=[
+            {"number": 2, "title": "v0.2", "state": "open",
+             "open_issues": 1, "closed_issues": 0},
+            {"number": 9, "title": "v0.9", "state": "open",
+             "open_issues": 1, "closed_issues": 0},
+        ])
+        result = state(github, overrides={"focus": "v0.9"})
         self.assertEqual(result["focus"]["title"], "v0.9")
 
-    def test_without_an_override_the_marker_decides(self):  # DASH-031
+    def test_without_an_override_the_fallback_decides(self):  # DASH-031
+        """No marker in the body, so the lowest version with ready work."""
         self.assertEqual(state()["focus"]["title"], "v0.2")
 
     def test_a_cap_override_is_carried(self):  # DASH-030
@@ -112,6 +134,126 @@ class TestFaultDetection(unittest.TestCase):
 
     def test_a_healthy_issue_raises_no_fault(self):  # DASH-027
         self.assertEqual(sum(len(v) for v in state()["faults"].values()), 0)
+
+
+class TestWhatIsCounted(unittest.TestCase):
+    """DASH-006 to DASH-008 — who belongs in the numbers."""
+
+    def test_a_pull_request_is_not_an_issue(self):  # DASH-006
+        """GitHub's issues endpoint returns both.
+
+        Counting them together made every open pull request appear on the
+        board as an untracked issue.
+        """
+        github = api([issue(7, ["ready-for-work"]), issue(8, [], pull_request=True)])
+        self.assertEqual([i["number"] for i in state(github)["issues"]], [7])
+
+    def test_a_pull_request_raises_no_untracked_fault(self):  # DASH-006
+        github = api([issue(8, [], pull_request=True)])
+        self.assertEqual(state(github)["faults"]["untracked"], [])
+
+    def test_closed_issues_are_requested(self):  # DASH-007
+        """Asserted on the request, not the fixture.
+
+        A fake that returns closed issues to a caller that never asked for
+        them is exactly how DASH-025 kept a green test while being dead in
+        production.
+        """
+        github = api()
+        state(github)
+        filters = [args[0] for name, args in github.calls if name == "issues"]
+        self.assertTrue(filters, "the fetch never listed issues")
+        self.assertEqual(filters[0].get("state"), "all")
+
+    def test_a_closed_issue_is_carried_for_the_done_bucket(self):  # DASH-008
+        github = api([issue(7, [], state="closed")])
+        found = state(github)["issues"]
+        self.assertEqual([i["number"] for i in found], [7])
+        self.assertTrue(found[0]["closed"])
+
+    def test_each_issue_carries_its_milestone_number(self):  # DASH-001
+        self.assertEqual(state()["issues"][0]["milestone_number"], 2)
+
+
+class TestTheMilestoneList(unittest.TestCase):
+    """DASH-010 — the data behind the first chart."""
+
+    MILESTONES = [
+        {"number": 2, "title": "v0.2", "state": "open", "open_issues": 1, "closed_issues": 0},
+        {"number": 9, "title": "v0.9", "state": "open", "open_issues": 0, "closed_issues": 0},
+        {"number": 1, "title": "v0.1", "state": "closed", "open_issues": 0, "closed_issues": 5},
+    ]
+
+    def test_open_milestones_are_carried(self):  # DASH-010
+        github = api(milestones=self.MILESTONES)
+        titles = [m["title"] for m in state(github)["milestones"]]
+        self.assertIn("v0.2", titles)
+
+    def test_an_empty_open_milestone_is_kept(self):  # DASH-010
+        github = api(milestones=self.MILESTONES)
+        titles = [m["title"] for m in state(github)["milestones"]]
+        self.assertIn("v0.9", titles)
+
+    def test_closed_milestones_are_left_out(self):  # DASH-010
+        github = api(milestones=self.MILESTONES)
+        titles = [m["title"] for m in state(github)["milestones"]]
+        self.assertNotIn("v0.1", titles)
+
+
+class TestFocusResolution(unittest.TestCase):
+    """DASH-030, DASH-031, DASH-033, DASH-034 — override, marker, fallback."""
+
+    MILESTONES = [
+        {"number": 2, "title": "v0.2", "state": "open", "open_issues": 1, "closed_issues": 0},
+        {"number": 9, "title": "v0.9", "state": "open", "open_issues": 1, "closed_issues": 0},
+    ]
+
+    def _api(self, body="", issues=None):
+        return api(
+            (issues if issues is not None else [issue(7, ["ready-for-work"])]) + [dashboard(body)],
+            milestones=self.MILESTONES,
+        )
+
+    def test_the_marker_in_the_dashboard_body_decides(self):  # DASH-030
+        github = self._api("<!-- pipeline-focus: v0.9 -->")
+        self.assertEqual(state(github)["focus"]["title"], "v0.9")
+
+    def test_the_cap_marker_is_read_too(self):  # DASH-030
+        github = self._api("<!-- pipeline-cap: 5 -->")
+        self.assertEqual(state(github)["cap"], 5)
+
+    def test_an_override_beats_the_marker(self):  # DASH-031
+        github = self._api("<!-- pipeline-focus: v0.9 -->")
+        self.assertEqual(state(github, overrides={"focus": "v0.2"})["focus"]["title"], "v0.2")
+
+    def test_an_override_naming_nothing_is_refused(self):  # DASH-034
+        """Rather than stored.
+
+        A mistyped focus renders a board where every section is empty, which
+        is indistinguishable from a milestone whose work is finished.
+        """
+        github = self._api("<!-- pipeline-focus: v0.9 -->")
+        result = state(github, overrides={"focus": "v9.9"})
+        self.assertEqual(result["focus"]["title"], "v0.9")
+
+    def test_with_no_marker_the_fallback_is_the_lowest_with_ready_work(self):  # DASH-033
+        github = self._api("", issues=[issue(7, ["ready-for-work"], milestone="v0.9",
+                                              milestone_number=9)])
+        self.assertEqual(state(github)["focus"]["title"], "v0.9")
+
+    def test_the_fallback_prefers_the_lowest_version(self):  # DASH-033
+        github = self._api("", issues=[
+            issue(7, ["ready-for-work"], milestone="v0.9", milestone_number=9),
+            issue(8, ["ready-for-work"], milestone="v0.2", milestone_number=2),
+        ])
+        self.assertEqual(state(github)["focus"]["title"], "v0.2")
+
+    def test_a_milestone_with_no_ready_work_is_not_the_fallback(self):  # DASH-033
+        github = self._api("", issues=[issue(7, ["ai-triage"], milestone="v0.2",
+                                              milestone_number=2),
+                                       issue(8, ["ready-for-work"], milestone="v0.9",
+                                             milestone_number=9)])
+        self.assertEqual(state(github)["focus"]["title"], "v0.9")
 
 
 if __name__ == "__main__":

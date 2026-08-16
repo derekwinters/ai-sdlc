@@ -93,10 +93,24 @@ class FakeGitHub:
         return dict(self._issues[number])
 
     def issues(self, **filters):
+        """Mirrors GitHub, including the parts that surprise people.
+
+        Two behaviours are deliberate rather than incidental, because
+        production code has been wrong about both:
+
+        - **The default is `state="open"`.** A fake that returned closed
+          issues to a caller that never asked for them let `DASH-025` — a
+          fault about closed issues — keep a green test while being
+          unreachable in production (#106).
+        - **Pull requests come back too.** GitHub's issues endpoint returns
+          both, each pull request carrying a `pull_request` key. A fake that
+          omitted them would hide every miscount they cause.
+        """
         self._record("issues", filters)
         found = [dict(i) for i in self._issues.values()]
-        if "state" in filters:
-            found = [i for i in found if i.get("state", "open") == filters["state"]]
+        wanted = filters.get("state", "open")
+        if wanted != "all":
+            found = [i for i in found if i.get("state", "open") == wanted]
         return self._page(found)
 
     def comments(self, issue):
