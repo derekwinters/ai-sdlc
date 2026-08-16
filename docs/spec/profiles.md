@@ -51,6 +51,17 @@ Every requirement below is `auto` (covered by a named test) unless marked otherw
   artifact pipeline. It therefore needs `contents: write` and no other grant — no `pages: write`,
   no OIDC token exchange — and depends on no third-party action.
 
+- **PROF-015** The published site is **versioned**. Each release series gets its own tree and
+  `latest` follows the newest, so a repository pinned three releases back reads the specification
+  for the code it is actually running. The version is read from the release manifest rather than
+  written anywhere a second time.
+
+> **How the spec is changing (#96).** `PROF-010`–`014` described one site, published from `main`.
+> That is wrong for a project whose consumers **pin a version**: they read the specification to know
+> what their pinned version does, and an unversioned site can only ever answer for `main`. Versions
+> are per release series — `0.4.7` and `0.4.8` do not describe different systems, so they share a
+> tree — and `latest` is the alias a bare URL resolves to.
+
 > **How the spec is changing (#93).** `PROF-012` said the profile publishes on merge and left the
 > mechanism open, and the implementation used `upload-pages-artifact`, `configure-pages` and
 > `deploy-pages`. It now names the mechanism, because the mechanism turned out to matter: this
@@ -79,7 +90,7 @@ Every requirement below is `auto` (covered by a named test) unless marked otherw
 | Section | IDs | Tests |
 |---|---|---|
 | Selection | PROF-001–005 | `test_profiles.py` |
-| The mkdocs profile | PROF-010–014 | `test_profiles.py` |
+| The mkdocs profile | PROF-010–015 | `test_profiles.py` |
 | The documentation gate | PROF-020–025 | `test_docs_gate.py` |
 
-**17 requirements, all `auto`.**
+**18 requirements, all `auto`.**

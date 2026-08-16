@@ -83,6 +83,10 @@
       
     </div>
     
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
     
       
 
@@ -592,6 +596,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#6-reaching-the-module-from-a-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      6. Reaching the module from a workflow
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#5-the-fake" class="md-nav__link">
     <span class="md-ellipsis">
       5. The fake
@@ -954,6 +967,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#6-reaching-the-module-from-a-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      6. Reaching the module from a workflow
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#5-the-fake" class="md-nav__link">
     <span class="md-ellipsis">
       5. The fake
@@ -1080,6 +1102,23 @@ method that mutates state.</p>
   that edits an issue body. Milestones are different: a milestone's state is a normal field, and
   closing one is reversible, so <code>update_milestone</code> may set it. Nothing deletes a milestone.</li>
 </ul>
+<h2 id="6-reaching-the-module-from-a-workflow">6. Reaching the module from a workflow<a class="headerlink" href="#6-reaching-the-module-from-a-workflow" title="Permanent link">&para;</a></h2>
+<p><code>lib/github.py</code> is imported by skills that reusable workflows run. A workflow that runs such a
+skill without putting the repository root on <code>PYTHONPATH</code> fails on the import, before doing
+anything at all.</p>
+<ul>
+<li><strong>API-060</strong> A reusable workflow running a skill that imports <code>lib</code> sets <code>PYTHONPATH</code> to the root
+  it checked out, and refers to that root by variable rather than hard-coding <code>.ai-sdlc</code> — which is
+  where a <em>consumer</em> checks ai-sdlc out and is not where ai-sdlc itself is.</li>
+</ul>
+<blockquote>
+<p><strong>How the spec is changing (#87).</strong> <code>API</code> described the module and said nothing about reaching
+it. The gatekeeper workflow ran <code>python3 .ai-sdlc/…/main.py</code> with no <code>PYTHONPATH</code> and died on
+<code>ModuleNotFoundError: No module named 'lib'</code> — the pipeline's central workflow, which had never
+executed anywhere until <code>connor-multiplying-frogs</code> adopted it. Its siblings <code>labels-sync</code> and
+<code>dashboard</code> set <code>PYTHONPATH</code> correctly, so the defect was a difference between siblings, which is
+the kind of thing a test should hold still.</p>
+</blockquote>
 <h2 id="5-the-fake">5. The fake<a class="headerlink" href="#5-the-fake" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>API-050</strong> <code>FakeGitHub</code> implements the same interface and is constructed from a plain dictionary
@@ -1129,13 +1168,18 @@ method that mutates state.</p>
 <td><code>test_fake_github.py</code></td>
 </tr>
 <tr>
+<td>Reaching it from a workflow</td>
+<td>API-060</td>
+<td><code>test_reusable_workflows.py</code></td>
+</tr>
+<tr>
 <td>Invariants</td>
 <td>—</td>
 <td><code>test_architecture.py</code></td>
 </tr>
 </tbody>
 </table>
-<p><strong>50 requirements, 49 <code>auto</code> and 1 <code>manual</code>.</strong></p>
+<p><strong>51 requirements, 50 <code>auto</code> and 1 <code>manual</code>.</strong></p>
 
 
 
@@ -1188,7 +1232,7 @@ method that mutates state.</p>
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.sections", "navigation.top", "content.code.copy"], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.sections", "navigation.top", "content.code.copy"], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
       <script src="../../assets/javascripts/bundle.83f73b43.min.js"></script>

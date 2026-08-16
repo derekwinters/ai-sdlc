@@ -83,6 +83,10 @@
       
     </div>
     
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
     
       
 
@@ -478,6 +482,15 @@
   <a href="#6-verifying" class="md-nav__link">
     <span class="md-ellipsis">
       6. Verifying
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-pinning-a-caller" class="md-nav__link">
+    <span class="md-ellipsis">
+      7. Pinning a caller
     </span>
   </a>
   
@@ -981,6 +994,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#7-pinning-a-caller" class="md-nav__link">
+    <span class="md-ellipsis">
+      7. Pinning a caller
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#traceability" class="md-nav__link">
     <span class="md-ellipsis">
       Traceability
@@ -1073,7 +1095,17 @@ upgrade is a reviewable pull request.</p>
 <li><strong>ADOPT-035</strong> Collisions are only checked for events the adoption actually installs a handler
   for. A repository taking only the hygiene capability installs no issue handler, so another
   repository's issue workflow is not its concern.</li>
+<li><strong>ADOPT-036</strong> A workflow adoption itself manages is never a collision. It is keyed on provenance
+  rather than on the file name, so a consumer's hand-written <code>dashboard.yml</code> still collides — the
+  name is precisely what would match.</li>
 </ul>
+<blockquote>
+<p><strong>How the spec is changing (#90).</strong> §4 said a workflow listening on a claimed event is a
+collision, without excepting adoption's own. Installing <code>pipeline</code> therefore made every later
+<code>apply</code> refuse, and <code>ADOPT-046</code> — <em>upgrading is the same operation</em> — became false for exactly the
+repositories that had taken the most. Found upgrading <code>connor-multiplying-frogs</code> from v0.4.6 to
+v0.4.7, one command after the pipeline landed.</p>
+</blockquote>
 <h2 id="5-applying">5. Applying<a class="headerlink" href="#5-applying" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>ADOPT-040</strong> <code>apply</code> writes to a branch.</li>
@@ -1086,6 +1118,23 @@ upgrade is a reviewable pull request.</p>
 <li><strong>ADOPT-046</strong> Upgrading is the same operation: <code>apply</code> at a higher version updates managed files
   and leaves conflicts alone.</li>
 </ul>
+<blockquote>
+<p><strong>Invariant — a capability installs everything it references.</strong> A workflow and the files that
+workflow reads land together, or neither lands.</p>
+</blockquote>
+<ul>
+<li><strong>ADOPT-047</strong> Enabling a capability installs every file its workflows require, not only the
+  workflows. <code>labels</code> installs <code>labels.core.yml</code> as well as <code>labels-sync.yml</code>; <code>hygiene</code> installs
+  <code>house-rules.md</code> alongside the import line that points at it.</li>
+</ul>
+<blockquote>
+<p><strong>How the spec is changing (#75).</strong> §5 described what <code>apply</code> writes without saying that the set
+has to be <em>complete</em>. Twice a capability then shipped half of itself: the <code>CLAUDE.md</code> import with
+no <code>house-rules.md</code> (#71), and <code>labels-sync.yml</code> with no <code>labels.core.yml</code> (#75). Both fail only
+when something runs — long after the review that should have caught them — and both were found by
+the first real consumer rather than by this repository. ADOPT-047 states the completeness rule
+that was assumed and unwritten.</p>
+</blockquote>
 <h2 id="6-verifying">6. Verifying<a class="headerlink" href="#6-verifying" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>ADOPT-050</strong> <code>verify</code> reports whether the repository matches its recorded version.</li>
@@ -1095,6 +1144,61 @@ upgrade is a reviewable pull request.</p>
   keeping its own version of something is visibly non-standard.</li>
 <li><strong>ADOPT-054</strong> <code>verify</code> writes nothing.</li>
 </ul>
+<h2 id="7-pinning-a-caller">7. Pinning a caller<a class="headerlink" href="#7-pinning-a-caller" title="Permanent link">&para;</a></h2>
+<p>A caller names the ai-sdlc workflow it runs. What it names it <em>by</em> is a security decision rather
+than a formatting one: a reusable workflow runs with the <strong>caller's</strong> token, on <code>issue_comment</code> and
+<code>issues</code>, in the consumer's repository.</p>
+<blockquote>
+<p><strong>Invariant — a caller references a commit SHA, never a tag or a branch.</strong> A tag is a mutable
+pointer. Publishing it ourselves narrows who could move it; it does not make the reference
+immutable, and immutability is the property being relied on.</p>
+</blockquote>
+<ul>
+<li><strong>ADOPT-060</strong> A caller's <code>uses:</code> names a full 40-character commit SHA, and its <code>ref:</code> input is
+  that same SHA. The two cannot be allowed to disagree: a caller running one version of the
+  workflow against another version of the code is exactly what pairing them prevents.</li>
+<li><strong>ADOPT-061</strong> The SHA carries a trailing comment naming the version it resolves to. Forty
+  characters of hexadecimal tell a reviewer nothing about how far behind they are, which was the
+  one real advantage a tag had.</li>
+<li><strong>ADOPT-062</strong> The command still takes a <strong>version</strong>. A human knows <code>v0.4.1</code>; nobody resolves a
+  SHA by hand, and an upgrade stays a pull request moving one line because <code>apply</code> rewrites it.</li>
+<li><strong>ADOPT-063</strong> Resolution from version to SHA goes through an injected resolver, so no test
+  performs network I/O and the one-module network seam holds.</li>
+<li><strong>ADOPT-064</strong> An annotated tag is dereferenced to the commit it points at. <code>refs/tags/v4</code> and
+  <code>refs/tags/v4^{}</code> are different objects and only the second is a commit; pinning the tag object
+  produces a reference that does not resolve.</li>
+<li><strong>ADOPT-065</strong> A version that resolves to nothing is an error naming the version, never a caller
+  written with an empty or partial ref.</li>
+<li><strong>ADOPT-066</strong> The recorded pin holds the version and the SHA together, so <code>verify</code> at the same
+  version needs no network.</li>
+</ul>
+<blockquote>
+<p><strong>Invariant — a caller grants exactly the permissions the workflow it calls requests.</strong> Not
+fewer, or the run cannot start; not more, or adoption quietly widens what the pipeline may do.</p>
+</blockquote>
+<ul>
+<li><strong>ADOPT-068</strong> A caller's <code>permissions:</code> block is derived from the reusable workflow it calls. A
+  called workflow cannot be granted more than its caller holds, so a caller granting too little
+  fails as <code>startup_failure</code> — no jobs, no logs, no annotation, which is close to silent.</li>
+<li><strong>ADOPT-069</strong> Every reusable workflow ai-sdlc ships is reachable: some capability or profile
+  installs a caller for it. A workflow nothing can install is indistinguishable from one that does
+  not exist, and this is the gate that makes the next such omission fail here rather than in a
+  consumer's repository.</li>
+</ul>
+<blockquote>
+<p><strong>How the spec is changing (#84).</strong> Five defects of one shape reached a consumer before ADOPT-069
+existed — an import with no file (#71), a workflow with no manifest (#75), a permissions block too
+narrow to start (#78), a profile that installed nothing (#81), and a dashboard nothing could
+install (#84). Each was fixed on its own. ADOPT-047 states that a capability installs what it
+<em>references</em>; ADOPT-069 states the converse, that everything shipped is installable, which is the
+half that catches an omission rather than a dangling pointer.</p>
+<p><strong>How the spec is changing (#72).</strong> Callers used to reference a tag — <code>@v0.4.1</code> — and §7 did not
+exist. The reason given was that a tag keeps an upgrade readable, and that a workflow we publish
+ourselves is not third-party code. The first is true and is now served by the trailing comment;
+the second confuses <em>who could move the tag</em> with <em>whether it can move</em>. Found adopting
+<code>connor-multiplying-frogs</code>, whose own action-pin checker rejected the caller <code>adopt</code> wrote and
+was right to. <code>VAL-056</code> moved with it, in the same direction.</p>
+</blockquote>
 <hr />
 <h2 id="traceability">Traceability<a class="headerlink" href="#traceability" title="Permanent link">&para;</a></h2>
 <table>
@@ -1123,12 +1227,12 @@ upgrade is a reviewable pull request.</p>
 </tr>
 <tr>
 <td>Trigger collisions</td>
-<td>ADOPT-030–035</td>
+<td>ADOPT-030–036</td>
 <td><code>test_adopt_collision.py</code></td>
 </tr>
 <tr>
 <td>Applying</td>
-<td>ADOPT-040–046</td>
+<td>ADOPT-040–047</td>
 <td><code>test_adopt_apply.py</code></td>
 </tr>
 <tr>
@@ -1136,9 +1240,19 @@ upgrade is a reviewable pull request.</p>
 <td>ADOPT-050–054</td>
 <td><code>test_adopt_verify.py</code></td>
 </tr>
+<tr>
+<td>Pinning a caller</td>
+<td>ADOPT-060–066</td>
+<td><code>test_adopt_pin.py</code></td>
+</tr>
+<tr>
+<td>Caller permissions</td>
+<td>ADOPT-068–069</td>
+<td><code>test_adopt_permissions.py</code></td>
+</tr>
 </tbody>
 </table>
-<p><strong>35 requirements, all <code>auto</code>.</strong></p>
+<p><strong>46 requirements, all <code>auto</code>.</strong></p>
 
 
 
@@ -1191,7 +1305,7 @@ upgrade is a reviewable pull request.</p>
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.sections", "navigation.top", "content.code.copy"], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.sections", "navigation.top", "content.code.copy"], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
       <script src="../../assets/javascripts/bundle.83f73b43.min.js"></script>

@@ -83,6 +83,10 @@
       
     </div>
     
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
     
       
 
@@ -622,6 +626,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#6-workflow-actions" class="md-nav__link">
+    <span class="md-ellipsis">
+      6. Workflow actions
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#traceability" class="md-nav__link">
     <span class="md-ellipsis">
       Traceability
@@ -963,6 +976,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#6-workflow-actions" class="md-nav__link">
+    <span class="md-ellipsis">
+      6. Workflow actions
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#traceability" class="md-nav__link">
     <span class="md-ellipsis">
       Traceability
@@ -1073,6 +1095,53 @@ agent decision, never a side effect of checking.</p>
   usable in a diff. <em>(manual: ordering is asserted; determinism across environments is observed in
   CI.)</em></li>
 </ul>
+<h2 id="6-workflow-actions">6. Workflow actions<a class="headerlink" href="#6-workflow-actions" title="Permanent link">&para;</a></h2>
+<blockquote>
+<p><strong>Invariant — every action is referenced by commit SHA, never by tag or branch.</strong> A tag is a
+moving pointer to code that runs with the workflow's token. Who publishes it makes no difference.</p>
+</blockquote>
+<ul>
+<li><strong>VAL-050</strong> Every <code>uses:</code> reference in every <code>.yml</code> and <code>.yaml</code> file under <code>.github/workflows/</code>
+  is checked. A repository with no workflows is clean.</li>
+<li><strong>VAL-051</strong> An action reference names a full 40-character commit SHA. A tag, a branch, or an
+  abbreviated SHA is reported.</li>
+<li><strong>VAL-052</strong> A local reference (<code>./…</code>) and a container reference (<code>docker://…</code>) are exempt: neither
+  resolves through a moving ref.</li>
+<li><strong>VAL-053</strong> No publisher is exempt. <code>actions/checkout@v4</code> is reported exactly as anyone else's
+  action is — the platform's policy makes no exception for GitHub's own actions, and neither does
+  this.</li>
+<li><strong>VAL-054</strong> A SHA pin carries a trailing comment naming the version it pins, so a reader can tell
+  what forty characters of hexadecimal mean. A pin with no comment is reported.</li>
+<li><strong>VAL-055</strong> A problem names the workflow file and the line number.</li>
+<li><strong>VAL-056</strong> A reusable-workflow reference is <strong>not</strong> exempt. It runs with the caller's token, so
+  a moving ref there is the same exposure as a moving action, and being published by us narrows who
+  could move the tag without making the reference immutable.</li>
+</ul>
+<p>This gate reads the repository's own workflow files and nothing else. A composite action can
+reference further actions inside its own <code>action.yml</code>, and those are equally subject to the
+policy — <code>actions/upload-pages-artifact@v3</code> calls <code>actions/upload-artifact@v4</code> and is refused for
+that reason alone. Checking them would mean fetching every action's source at validation time,
+which is network I/O in a validator, so the gate does not attempt it. The failure is loud and
+immediate when it happens, and the fix is to pin a version of the action whose own references are
+pinned.</p>
+<blockquote>
+<p><strong>How the spec is changing (#72).</strong> VAL-056 used to exempt reusable workflows, on the grounds
+that ai-sdlc distributes its own by tag and a gate flagging the line its own <code>adopt</code> skill writes
+would be at war with itself. That resolved the contradiction in the wrong direction: the gate was
+right and <code>adopt</code> was wrong. A reusable workflow runs with the caller's token, so a mutable ref
+there is the same exposure as a mutable action — "we publish it" says who could move the tag, not
+that it cannot move. <code>adopt</code> now writes a commit SHA with the version as a trailing comment, so
+there is no longer a contradiction to resolve. Found adopting <code>connor-multiplying-frogs</code>, whose
+own pin checker rejected the caller and was correct to.</p>
+<p><strong>How the spec is changing (#64).</strong> The consistency capability previously checked only the
+specification, the tests, the site and the capability boundaries — everything <em>inside</em> the Python.
+It now also checks the workflow files, because a defect that lives in a <code>uses:</code> line is invisible
+to all of the above and only shows up as a failing run. <code>release-please.yml</code> referenced
+<code>googleapis/release-please-action@v4</code>, this repository requires actions to be pinned to a
+full-length SHA, and every release run failed at the point of starting the step while the whole
+suite stayed green. The policy turned out to exempt nobody — <code>actions/checkout@v4</code> is refused
+too — which is why the rule here is about references rather than about publishers.</p>
+</blockquote>
 <hr />
 <h2 id="traceability">Traceability<a class="headerlink" href="#traceability" title="Permanent link">&para;</a></h2>
 <table>
@@ -1109,9 +1178,14 @@ agent decision, never a side effect of checking.</p>
 <td>VAL-040–044</td>
 <td><code>test_validators_run.py</code></td>
 </tr>
+<tr>
+<td>Workflow actions</td>
+<td>VAL-050–056</td>
+<td><code>test_validate_actions.py</code></td>
+</tr>
 </tbody>
 </table>
-<p><strong>29 requirements, 28 <code>auto</code> and 1 <code>manual</code>.</strong></p>
+<p><strong>36 requirements, 35 <code>auto</code> and 1 <code>manual</code>.</strong></p>
 
 
 
@@ -1164,7 +1238,7 @@ agent decision, never a side effect of checking.</p>
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.sections", "navigation.top", "content.code.copy"], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.sections", "navigation.top", "content.code.copy"], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
       <script src="../../assets/javascripts/bundle.83f73b43.min.js"></script>

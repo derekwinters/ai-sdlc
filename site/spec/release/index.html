@@ -83,6 +83,10 @@
       
     </div>
     
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
     
       
 
@@ -580,6 +584,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#6-backfilling-tags" class="md-nav__link">
+    <span class="md-ellipsis">
+      6. Backfilling tags
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#traceability" class="md-nav__link">
     <span class="md-ellipsis">
       Traceability
@@ -963,6 +976,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#6-backfilling-tags" class="md-nav__link">
+    <span class="md-ellipsis">
+      6. Backfilling tags
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#traceability" class="md-nav__link">
     <span class="md-ellipsis">
       Traceability
@@ -1043,6 +1065,31 @@ exist, because "the merge succeeded" and "the release happened" are different cl
 <li><strong>REL-021</strong> A forced version must be a valid semantic version.</li>
 <li><strong>REL-022</strong> A forced version lower than the current one is refused.</li>
 </ul>
+<blockquote>
+<p><strong>Invariant — a version milestone reserves its version number until its work is done.</strong> A version
+cannot be un-released. Spending <code>0.5.0</code> on unrelated work leaves <code>v0.5 — Fleet</code> with no number of
+its own, permanently.</p>
+</blockquote>
+<ul>
+<li><strong>REL-023</strong> A release whose version matches an <strong>open</strong> milestone that still has open issues is
+  refused, naming the milestone.</li>
+<li><strong>REL-024</strong> Only the major and minor are reserved. A patch release of the current version is the
+  escape, and is allowed while a later minor is reserved.</li>
+<li><strong>REL-025</strong> A milestone reserves nothing once it has no open issues — either its work is done and
+  this release is exactly what it was named for, or it is an empty placeholder.</li>
+<li><strong>REL-026</strong> A milestone whose title names no version is ignored, and a title is matched on its
+  version boundary: <code>v0.50</code> is not <code>v0.5</code>.</li>
+<li><strong>REL-027</strong> The refusal says what to do instead — finish the milestone, or force a patch with a
+  <code>Release-As:</code> footer. A halt that does not say how to proceed gets worked around.</li>
+</ul>
+<blockquote>
+<p><strong>How the spec is changing (#31).</strong> §4 used to describe forcing a version as a convenience — one
+half-sentence in REL-020 about making a milestone and a version "match". It now states the rule
+that convenience existed to serve, and refuses the release that breaks it. The prompt was live:
+with <code>v0.5 — Fleet</code> open and none of its work started, two housekeeping commits made
+release-please propose <code>0.5.0</code>, and nothing in the flow objected. The rule was real but unwritten,
+which is the same as absent.</p>
+</blockquote>
 <h2 id="5-verifying-afterwards">5. Verifying afterwards<a class="headerlink" href="#5-verifying-afterwards" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>REL-030</strong> After merging, the tag is confirmed to exist.</li>
@@ -1051,6 +1098,40 @@ exist, because "the merge succeeded" and "the release happened" are different cl
 <li><strong>REL-033</strong> A missing tag or release is reported as an incomplete release, distinctly from a
   failed merge.</li>
 <li><strong>REL-034</strong> Verification is retried briefly, because tagging follows the merge by a moment.</li>
+</ul>
+<h2 id="6-backfilling-tags">6. Backfilling tags<a class="headerlink" href="#6-backfilling-tags" title="Permanent link">&para;</a></h2>
+<p>A repository can end up with release commits on its default branch and no tags — release-please
+writing <code>/VERSION</code>, the manifest and <code>CHANGELOG.md</code> through merged pull requests, but never getting
+as far as tagging. ai-sdlc reached 0.4.0 that way, because its action was refused before it ever
+ran (#64). Without tags there is nothing for release-please to compute the next version <em>from</em>, so
+it re-proposes the entire history as one release.</p>
+<p>The tags are recoverable, because the release commits are still on the branch. This turns them back
+into tags.</p>
+<blockquote>
+<p><strong>Invariant — the plan is derived from the commit history, never from a hand-written list.</strong> A
+list of versions and SHAs is correct on the day it is written and wrong after the next release.</p>
+<p><strong>Invariant — nothing is created unless the run explicitly asks to create it.</strong> A tag is public
+and effectively permanent; a dry run is the default, and applying is opted into.</p>
+</blockquote>
+<ul>
+<li><strong>REL-040</strong> The plan is derived from the <code>chore(main): release X.Y.Z</code> commits on the default
+  branch. Each such commit is the boundary of the version it names.</li>
+<li><strong>REL-041</strong> A version that is already tagged is skipped, so the operation is idempotent and safe
+  to re-run.</li>
+<li><strong>REL-042</strong> The tag name is <code>vX.Y.Z</code> — what release-please writes and what consumers pin.</li>
+<li><strong>REL-043</strong> A release commit whose subject carries no valid semantic version is reported and
+  skipped, never guessed at.</li>
+<li><strong>REL-044</strong> The plan is ordered oldest version first, so tags are created in version order.</li>
+<li><strong>REL-045</strong> A release body is the matching section of <code>CHANGELOG.md</code>, ending where the next
+  version's heading begins. A version with no section gets an empty body rather than another
+  version's text.</li>
+<li><strong>REL-046</strong> A pre-release or build-metadata suffix is not treated as a release commit here. It is
+  reported and skipped: this recovers a history that was meant to be tagged, and guessing at a
+  channel is not part of that.</li>
+<li><strong>REL-047</strong> The plan is printed in full whether or not it is applied, so the log records what
+  happened.</li>
+<li><strong>REL-048</strong> The dry run is the default on the workflow's own input, not only inside the script.
+  The default that matters is the one attached to the button someone presses.</li>
 </ul>
 <hr />
 <h2 id="traceability">Traceability<a class="headerlink" href="#traceability" title="Permanent link">&para;</a></h2>
@@ -1084,13 +1165,23 @@ exist, because "the merge succeeded" and "the release happened" are different cl
 <td><code>test_release_version.py</code></td>
 </tr>
 <tr>
+<td>Reserved milestone versions</td>
+<td>REL-023–027</td>
+<td><code>test_release_milestone.py</code></td>
+</tr>
+<tr>
 <td>Verifying afterwards</td>
 <td>REL-030–034</td>
 <td><code>test_release_verify.py</code></td>
 </tr>
+<tr>
+<td>Backfilling tags</td>
+<td>REL-040–048</td>
+<td><code>test_release_backfill.py</code></td>
+</tr>
 </tbody>
 </table>
-<p><strong>23 requirements, all <code>auto</code>.</strong></p>
+<p><strong>37 requirements, all <code>auto</code>.</strong></p>
 
 
 
@@ -1143,7 +1234,7 @@ exist, because "the merge succeeded" and "the release happened" are different cl
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.sections", "navigation.top", "content.code.copy"], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.sections", "navigation.top", "content.code.copy"], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
       <script src="../../assets/javascripts/bundle.83f73b43.min.js"></script>

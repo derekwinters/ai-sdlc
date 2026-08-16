@@ -51,9 +51,28 @@ jobs:
       - name: Build the site (strict)
         run: mkdocs build --strict
 
-      - name: Publish to gh-pages
+      # Versioned, because consumers pin ai-sdlc by version and read the
+      # specification to know what that version does. An unversioned site
+      # answers only for main, so a repository pinned three releases back reads
+      # documentation for code it is not running and cannot tell.
+      #
+      # The version is the release's major.minor: patches within a minor do not
+      # get their own tree, because 0.4.7 and 0.4.8 do not describe different
+      # systems. `latest` follows the newest, so a bare URL lands somewhere
+      # current.
+      - name: Publish the version to gh-pages
         if: github.ref == 'refs/heads/main'
         run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          mkdocs gh-deploy --force --no-history
+
+          # From the release-please manifest, which is the file release-please
+          # actually maintains. /VERSION claims to be the source and has been
+          # wrong since 0.4.0 (#97) — a literal here would be a third copy.
+          version="$(python3 -c "import json; print(json.load(open('.github/release-please/manifest.json'))['.'])")"
+          series="${version%.*}"
+          echo "publishing docs for $series (release $version)"
+
+          mike deploy --push --update-aliases "$series" latest
+          mike set-default --push latest

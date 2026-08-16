@@ -53,3 +53,9 @@ nav:
       - Triage: spec/triage.md
   - Decisions:
       - Migration plan: decisions/migration-plan.md
+
+# The version selector in the header. Without a provider the versions
+# exist on gh-pages but nobody can switch between them.
+extra:
+  version:
+    provider: mike

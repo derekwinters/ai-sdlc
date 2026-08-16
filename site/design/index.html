@@ -83,6 +83,10 @@
       
     </div>
     
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
     
       
 
@@ -1394,7 +1398,7 @@ installs a capability by installing its scope.</p>
     labels.core.yml      # installed, pinned — the pipeline state vocabulary
     labels.repo.yml      # hand-written — this repository&#39;s domain labels
     scripts/sync_labels.py
-    workflows/           # thin callers: uses: derekwinters/ai-sdlc/workflows/&lt;x&gt;.yml@&lt;tag&gt;
+    workflows/           # thin callers: uses: …/reusable-&lt;x&gt;.yml@&lt;sha&gt; # &lt;version&gt;
   CLAUDE.md              # @import of the shared fragment + repo-specific rules
 </code></pre></div>
 <p>A caller workflow is roughly fifteen lines: the trigger, and a <code>uses:</code> with inputs. Triggers that
@@ -1720,7 +1724,7 @@ the spec does not merge.</p>
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.sections", "navigation.top", "content.code.copy"], "search": "../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.sections", "navigation.top", "content.code.copy"], "search": "../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
       <script src="../assets/javascripts/bundle.83f73b43.min.js"></script>
