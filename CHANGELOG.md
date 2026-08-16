@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.11](https://github.com/derekwinters/ai-sdlc/compare/v0.4.10...v0.4.11) (2026-08-16)
+
+
+### Fixes
+
+* **dashboard:** link a milestone by its name, not its number ([d347583](https://github.com/derekwinters/ai-sdlc/commit/d34758387954b6bdd1ce7fb6a9ddcf320f8e0eba)), closes [#115](https://github.com/derekwinters/ai-sdlc/issues/115)
+
 ## [0.4.10](https://github.com/derekwinters/ai-sdlc/compare/v0.4.9...v0.4.10) (2026-08-16)
 
 
