@@ -1108,7 +1108,9 @@ shorter one entirely. Every chart is single-series.</p>
 <li><strong>DASH-017</strong> A section renders even when empty, showing zero. The board's shape is then
   constant, and a missing section means a defect rather than an empty queue.</li>
 <li><strong>DASH-018</strong> Every row links the issue, its milestone and its blockers, and shows <code>-</code> where
-  there is no milestone or no blocker.</li>
+  there is no milestone or no blocker. A milestone link reads as the milestone's <strong>name</strong> and
+  targets its number: <code>v0.5</code> identifies it, <code>#13</code> does not, and both go to the same page. Any text
+  placed in a cell has its pipes escaped, or the row ends early and the table loses its shape.</li>
 <li><strong>DASH-019</strong> Ready for work holds both approved and in-progress issues, and is the only section
   carrying a status column. Merging two states into one section makes it the only place where a
   row is otherwise ambiguous.</li>
