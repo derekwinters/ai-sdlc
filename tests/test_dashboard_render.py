@@ -114,14 +114,22 @@ class TestTheFocusChart(unittest.TestCase):
         chart = self._chart_for([issue(1, closed=True)])
         self.assertIn("bar [0, 0, 0, 1]", chart)
 
-    def test_parked_folds_into_unplanned(self):  # DASH-011
-        """Rather than vanishing.
+    def test_parked_is_left_out_of_the_chart(self):  # DASH-011
+        """Deliberately set aside is not the same as not yet planned.
 
-        An issue missing from every bucket makes the chart understate the
-        milestone, which is worse than putting it in the roughest bucket.
+        Parked has its own section, and folding it into Unplanned counted the
+        same issue twice in two different senses — once as work waiting to be
+        planned, once as work explicitly chosen against.
         """
         chart = self._chart_for([issue(1, state_label=LABELS["parked"])])
-        self.assertIn("bar [1, 0, 0, 0]", chart)
+        self.assertIn("bar [0, 0, 0, 0]", chart)
+
+    def test_parked_does_not_displace_other_buckets(self):  # DASH-011
+        chart = self._chart_for([
+            issue(1, state_label=LABELS["parked"]),
+            issue(2, state_label=LABELS["approved"]),
+        ])
+        self.assertIn("bar [0, 0, 1, 0]", chart)
 
     def test_an_untracked_issue_is_unplanned(self):  # DASH-011
         chart = self._chart_for([issue(1, state_label=None)])

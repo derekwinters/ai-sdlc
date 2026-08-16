@@ -249,7 +249,9 @@ def _focus_chart(state):
     for issue in state.get("issues") or []:
         if issue.get("milestone") != focus.get("title"):
             continue
-        counts[_bucket(issue, state)] += 1
+        bucket = _bucket(issue, state)
+        if bucket is not None:
+            counts[bucket] += 1
 
     return _chart(
         f"Focus: {focus['title']}",
@@ -260,17 +262,25 @@ def _focus_chart(state):
 
 
 def _bucket(issue, state):
+    """The chart bucket for one issue, or None to leave it out entirely.
+
+    Parked is the only `None`. Work deliberately set aside is not work waiting
+    to be planned, and counting it as Unplanned put the same issue in two
+    places in two different senses — it already has its own section.
+    """
     if issue.get("closed"):
         return "Done"
     labels = state.get("labels") or {}
     label = issue.get("state_label")
+    if label == labels.get("parked"):
+        return None
     if label in (labels.get("approved"), labels.get("building")):
         return "Ready"
     if label in (labels.get("triage"), labels.get("pending_approval"),
                  labels.get("clarification")):
         return "In planning"
-    # Parked and untracked both land here. Neither is planned work, and an
-    # issue in no bucket at all would make the chart understate the milestone.
+    # Untracked lands here: nobody has decided about it, which is exactly
+    # what Unplanned means.
     return "Unplanned"
 
 

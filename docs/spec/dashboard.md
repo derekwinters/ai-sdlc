@@ -45,7 +45,14 @@ The page is two charts and then five sections, in that order.
   An empty milestone is the signal that more planning runway exists; hiding it hides the thing
   the chart is for.
 - **DASH-011** A chart of the focus milestone's issues by bucket, ordered **Unplanned → In
-  planning → Ready → Done**, so it reads as a flow.
+  planning → Ready → Done**, so it reads as a flow. Done is closed; Ready is approved or being
+  built; In planning is any of the three planning states; Unplanned is everything left — the
+  issues nobody has decided about yet.
+
+  A **parked** issue appears in no bucket at all. Work deliberately set aside is not work waiting
+  to be planned, and counting it as Unplanned put the same issue in two places in two different
+  senses, when it already has a section of its own. The chart therefore counts fewer issues than
+  the milestone holds, which is the honest reading: it shows the work in play.
 - **DASH-012** Where no focus milestone resolves, the second chart is replaced by a line saying
   so. An empty chart is worse than a sentence: it looks like a finished milestone.
 
