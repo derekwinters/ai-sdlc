@@ -1173,6 +1173,24 @@ immutable, and immutability is the property being relied on.</p>
   version needs no network.</li>
 </ul>
 <blockquote>
+<p><strong>Invariant — <code>ref</code> names a commit in ai-sdlc, never in the caller.</strong> A reusable workflow may
+use it only when checking ai-sdlc out; handing it to a checkout of the caller's own repository
+asks GitHub for a commit that repository has never seen.</p>
+</blockquote>
+<ul>
+<li><strong>ADOPT-067</strong> A reusable workflow checks the caller's repository out at the commit that
+  triggered the run, and uses <code>inputs.ref</code> only on a checkout that also names
+  <code>repository: derekwinters/ai-sdlc</code>. The two checkouts serve different purposes — one is the work
+  being examined, the other is the code doing the examining — and conflating them fails as
+  <code>upload-pack: not our ref</code>, at fetch time, before any step of the workflow runs.</li>
+</ul>
+<blockquote>
+<p><strong>How the spec is changing (#110).</strong> §7 covered what a <em>caller</em> must write and said nothing
+about what the <em>callee</em> may do with it. <code>reusable-docs-build.yml</code> therefore passed <code>inputs.ref</code>
+to a checkout of the consumer's repository (#103), which worked in every test here and failed on
+the first consumer that ran it — ai-sdlc does not install its own callers, so this path is never
+exercised by its own CI. The rule is stated for the callee because that is where it can be
+checked.</p>
 <p><strong>Invariant — a caller grants exactly the permissions the workflow it calls requests.</strong> Not
 fewer, or the run cannot start; not more, or adoption quietly widens what the pipeline may do.</p>
 </blockquote>
@@ -1246,13 +1264,18 @@ was right to. <code>VAL-056</code> moved with it, in the same direction.</p>
 <td><code>test_adopt_pin.py</code></td>
 </tr>
 <tr>
+<td>What a callee may do</td>
+<td>ADOPT-067</td>
+<td><code>test_reusable_workflows.py</code></td>
+</tr>
+<tr>
 <td>Caller permissions</td>
 <td>ADOPT-068–069</td>
 <td><code>test_adopt_permissions.py</code></td>
 </tr>
 </tbody>
 </table>
-<p><strong>46 requirements, all <code>auto</code>.</strong></p>
+<p><strong>47 requirements, all <code>auto</code>.</strong></p>
 
 
 
