@@ -4,23 +4,52 @@
 Pure: state in, Markdown out. It imports no client and performs no I/O, which
 is what makes the page diffable and the tests exhaustive.
 
-Half of this file is the fault report, and that is the point. The reconcile
+The page is two charts, five collapsible sections, and then the fault report.
+The fault report is the other half of a bargain made elsewhere: the reconcile
 sweep was removed because auto-repair hid problems and occasionally caused
-them; the bargain was that faults would be reported instead of fixed. Every
-entry in FAULTS is the other half of a decision made somewhere else — a place
-the pipeline deliberately does nothing and promises to tell you.
-
-A page with no faults says so in one line. If this is long, something is wrong,
-and that should be legible from the length alone.
+them, and the trade was that faults would be *reported* instead of fixed. A
+page with nothing wrong carries no fault report at all — the charts and the
+five sections are a fixed skeleton, so it is the presence of headings below
+them, not the page's length, that tells you something needs attention.
 
 Specification: docs/spec/dashboard.md (`DASH`).
 """
 
 from __future__ import annotations
 
+import json
+import re
+
+#: Focus buckets, in render order — Unplanned first, so the chart reads as a
+#: flow downward towards Done.
+BUCKETS = ("Unplanned", "In planning", "Ready", "Done")
+
+#: Sections, in render order: (heading, role names whose issues belong here).
+#: `None` means "every state no other section claims", which is how
+#: waiting-for-triage catches both `ai-triage` and an issue carrying no state.
+SECTIONS = (
+    ("Ready for work", ("approved", "building")),
+    ("Pending approval", ("pending_approval",)),
+    ("Needs clarification", ("clarification",)),
+    ("Waiting for triage", None),
+    ("Parked", ("parked",)),
+)
+
+#: Every state a section claims by name. Waiting-for-triage is the complement.
+CLAIMED = ("approved", "building", "pending_approval", "clarification", "parked")
+
+#: A milestone naming a version, for ordering the first chart.
+VERSION = re.compile(r"^v(\d+)\.(\d+)(?:\.(\d+))?(?![\d.])")
+
+#: Chart geometry. Height is derived rather than fixed: the same chart has to
+#: stay compact with three milestones and legible with twelve.
+CHART_WIDTH = 700
+ROW_HEIGHT = 30
+CHART_PADDING = 40
+MIN_HEIGHT = 180
+
 #: Each fault: a heading, and a function turning one entry into a bullet.
-#: Keyed in render order — worst first, so the top of the page is the part
-#: most likely to need action.
+#: Keyed in render order — worst first.
 FAULTS = {
     "stalled_command": (
         "Commands that did not finish",
@@ -71,10 +100,6 @@ FAULTS = {
             f"missed."
         ),
     ),
-    "untracked": (
-        "Open issues outside the pipeline",
-        lambda e: f"- **#{e['issue']}** — open with no pipeline state. Never admitted, or lost it.",
-    ),
 }
 
 
@@ -84,26 +109,47 @@ def render(state):
     total = sum(len(entries) for entries in faults.values())
 
     lines = ["# Pipeline", ""]
+    lines += _markers(state)
     lines += _summary(state, total)
+    lines += _milestone_chart(state)
+    lines += _focus_chart(state)
+    lines += _sections(state)
     lines += _faults(faults)
-    lines += _issues(state)
 
     return "\n".join(lines).rstrip() + "\n"
 
 
+# ------------------------------------------------------------------ markers
+
+
+def _markers(state):
+    """The focus and cap, re-emitted as HTML comments.
+
+    This is the store, not decoration. The renderer writes back the marker it
+    read, which is the whole reason a `/focus` survives from the gatekeeper's
+    workflow run into the dashboard's separate one — there is nowhere else the
+    value is kept.
+    """
+    lines = []
+    focus = (state.get("focus") or {}).get("title")
+    if focus:
+        lines.append(f"<!-- pipeline-focus: {focus} -->")
+    cap = state.get("cap")
+    if cap is not None:
+        lines.append(f"<!-- pipeline-cap: {cap} -->")
+    return lines + [""] if lines else []
+
+
 def _summary(state, total):
     focus = state.get("focus")
-    if focus:
-        headline = (
-            f"**Focus:** {focus['title']} — {focus.get('open', 0)} open, "
-            f"{focus.get('closed', 0)} closed."
-        )
-    else:
-        headline = "**Focus:** no focus milestone is set."
+    headline = (
+        f"**Focus:** {focus['title']}." if focus
+        else "**Focus:** no milestone set."
+    )
 
     cap = state.get("cap")
     building = sum(
-        1 for i in state.get("issues") or []
+        1 for i in _open(state)
         if i.get("state_label") == (state.get("labels") or {}).get("building")
     )
     capacity = (
@@ -111,12 +157,220 @@ def _summary(state, total):
         else f"**In progress:** {building} (no cap set)."
     )
 
-    if total:
-        attention = f"**Needs attention:** {total}."
-    else:
-        attention = "**Needs attention:** nothing needs attention."
+    attention = (
+        f"**Needs attention:** {total}." if total
+        else "**Needs attention:** nothing needs attention."
+    )
 
     return [headline, "", capacity, "", attention, ""]
+
+
+# ------------------------------------------------------------------- charts
+
+
+def _chart(title, labels, values, axis):
+    """One horizontal, single-series bar chart.
+
+    Horizontal is what lets a label render in full: mermaid neither wraps nor
+    rotates axis labels, and on a vertical chart a long milestone title prints
+    straight through its neighbour. Single-series is not a simplification —
+    mermaid draws several `bar` series overlaid from zero rather than stacked,
+    so a second series would hide the first rather than sit on top of it.
+    """
+    top = max([*values, 1])
+    height = max(MIN_HEIGHT, CHART_PADDING + ROW_HEIGHT * len(labels))
+    quoted = ", ".join(f'"{_escape(label)}"' for label in labels)
+
+    # Built with json rather than `%`-formatting or an f-string: mermaid needs
+    # the directive's percent signs doubled, and `"...%%..." % (...)` collapses
+    # them to one, producing a directive mermaid ignores. That failed silently
+    # — the chart rendered at default size — and no unit test caught it.
+    config = json.dumps({"xyChart": {"width": CHART_WIDTH, "height": height}})
+
+    return [
+        "```mermaid",
+        "%%{init: " + config + "}%%",
+        "xychart-beta horizontal",
+        f'    title "{_escape(title)}"',
+        f"    x-axis [{quoted}]",
+        f'    y-axis "{_escape(axis)}" 0 --> {top}',
+        f"    bar [{', '.join(str(v) for v in values)}]",
+        "```",
+        "",
+    ]
+
+
+def _escape(text):
+    """A quote in a title would end the label early and break the syntax."""
+    return str(text).replace('"', "'")
+
+
+def _milestone_chart(state):
+    milestones = _ordered(state.get("milestones") or [])
+    if not milestones:
+        return []
+    return _chart(
+        "Open issues by milestone",
+        [m["title"] for m in milestones],
+        [m.get("open", 0) for m in milestones],
+        "Open issues",
+    )
+
+
+def _ordered(milestones):
+    """Version milestones in version order, everything else after them.
+
+    The API returns creation order, which puts a v0.5 created late after a
+    v0.12 created early. A milestone naming no version — a standing bucket for
+    work only a person can do — sorts last rather than being interleaved by
+    its title.
+    """
+    def key(milestone):
+        found = VERSION.match(milestone.get("title", ""))
+        if not found:
+            return (1, (), milestone.get("title", ""))
+        return (0, tuple(int(p or 0) for p in found.groups()), "")
+
+    return sorted(milestones, key=key)
+
+
+def _focus_chart(state):
+    focus = state.get("focus")
+    if not focus:
+        # A sentence rather than an empty chart: an empty chart looks exactly
+        # like a milestone whose work is finished.
+        return ["**Focus milestone:** no milestone set.", ""]
+
+    counts = {name: 0 for name in BUCKETS}
+    for issue in state.get("issues") or []:
+        if issue.get("milestone") != focus.get("title"):
+            continue
+        bucket = _bucket(issue, state)
+        if bucket is not None:
+            counts[bucket] += 1
+
+    return _chart(
+        f"Focus: {focus['title']}",
+        list(BUCKETS),
+        [counts[name] for name in BUCKETS],
+        "Issues",
+    )
+
+
+def _bucket(issue, state):
+    """The chart bucket for one issue, or None to leave it out entirely.
+
+    Parked is the only `None`. Work deliberately set aside is not work waiting
+    to be planned, and counting it as Unplanned put the same issue in two
+    places in two different senses — it already has its own section.
+    """
+    if issue.get("closed"):
+        return "Done"
+    labels = state.get("labels") or {}
+    label = issue.get("state_label")
+    if label == labels.get("parked"):
+        return None
+    if label in (labels.get("approved"), labels.get("building")):
+        return "Ready"
+    if label in (labels.get("triage"), labels.get("pending_approval"),
+                 labels.get("clarification")):
+        return "In planning"
+    # Untracked lands here: nobody has decided about it, which is exactly
+    # what Unplanned means.
+    return "Unplanned"
+
+
+# ----------------------------------------------------------------- sections
+
+
+def _sections(state):
+    labels = state.get("labels") or {}
+    claimed = {labels[role] for role in CLAIMED if role in labels}
+
+    lines = []
+    for heading, roles in SECTIONS:
+        if roles is None:
+            rows = [i for i in _open(state) if i.get("state_label") not in claimed]
+        else:
+            wanted = {labels[role] for role in roles if role in labels}
+            rows = [i for i in _open(state) if i.get("state_label") in wanted]
+        lines += _section(state, heading, rows, status=(heading == "Ready for work"))
+    return lines
+
+
+def _section(state, heading, rows, status):
+    """One collapsible section, always rendered.
+
+    Empty sections stay: a board whose shape is constant makes a missing
+    section unambiguously a defect, where a board that drops empty sections
+    makes it indistinguishable from an empty queue.
+
+    The blank lines around the table are load-bearing — without them GitHub
+    renders the table as literal text inside `<details>`.
+    """
+    columns = ["Issue", "Title", "Milestone", "Blocked by"]
+    if status:
+        columns.append("Status")
+
+    table = [
+        "| " + " | ".join(columns) + " |",
+        "| " + " | ".join("---" for _ in columns) + " |",
+    ]
+    for issue in sorted(rows, key=lambda i: i["number"]):
+        table.append(_row(state, issue, status))
+
+    return [
+        "<details>",
+        f"<summary><b>{heading}</b> — {len(rows)}</summary>",
+        "",
+        *table,
+        "",
+        "</details>",
+        "",
+    ]
+
+
+def _row(state, issue, status):
+    repository = state.get("repository", "")
+    cells = [
+        _issue_link(repository, issue["number"]),
+        str(issue.get("title", "")).replace("|", "\\|"),
+        _milestone_link(repository, issue),
+        _blocker_links(repository, issue),
+    ]
+    if status:
+        cells.append(issue.get("state_label") or "-")
+    return "| " + " | ".join(cells) + " |"
+
+
+def _issue_link(repository, number):
+    return f"[#{number}](https://github.com/{repository}/issues/{number})"
+
+
+def _milestone_link(repository, issue):
+    number = issue.get("milestone_number")
+    if not number:
+        return "-"
+    return f"[#{number}](https://github.com/{repository}/milestone/{number})"
+
+
+def _blocker_links(repository, issue):
+    blockers = issue.get("blockers") or []
+    if not blockers:
+        return "-"
+    return ", ".join(_issue_link(repository, b) for b in blockers)
+
+
+def _open(state):
+    """Issues that are still open.
+
+    Closed issues are in the snapshot because the Done bucket is closed issues
+    by definition, but they belong in no section.
+    """
+    return [i for i in (state.get("issues") or []) if not i.get("closed")]
+
+
+# ------------------------------------------------------------------- faults
 
 
 def _faults(faults):
@@ -129,45 +383,6 @@ def _faults(faults):
         lines += [bullet(entry) for entry in sorted(entries, key=_by_issue)]
         lines += [""]
     return lines
-
-
-def _issues(state):
-    issues = sorted(state.get("issues") or [], key=lambda i: i["number"])
-    if not issues:
-        return []
-
-    labels = state.get("labels") or {}
-    order = [labels[name] for name in
-             ("triage", "pending_approval", "clarification", "approved", "building", "parked")
-             if name in labels]
-
-    lines = ["## Board", ""]
-    for label in order:
-        in_state = [i for i in issues if i.get("state_label") == label]
-        if not in_state:
-            continue
-        lines += [f"### {label}", ""]
-        for issue in in_state:
-            lines.append(_issue_line(issue, state))
-        lines.append("")
-    return lines
-
-
-def _issue_line(issue, state):
-    parts = [f"- **#{issue['number']}** {issue.get('title', '')}"]
-
-    milestone = issue.get("milestone")
-    focus = (state.get("focus") or {}).get("title")
-    if milestone and milestone != focus:
-        # Worth showing: an issue parked in another milestone is still stuck,
-        # and its milestone is why it is not in the focus list.
-        parts.append(f"*{milestone}*")
-
-    blockers = issue.get("blockers") or []
-    if blockers:
-        parts.append("blocked by " + ", ".join(f"#{b}" for b in blockers))
-
-    return " — ".join(parts)
 
 
 def _by_issue(entry):
