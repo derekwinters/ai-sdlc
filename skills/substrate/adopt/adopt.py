@@ -381,6 +381,18 @@ def _files_for(config, pin):
     # indistinguishable from one that is working, which is how `mkdocs` shipped
     # fully specified and entirely inert (#81).
     if "mkdocs" in getattr(config, "profiles", ()):
+        # The strict build. It builds and stops — the profile installs no
+        # publisher, because publishing is repository-specific and a second one
+        # underneath a working publisher is not a migration (#100).
+        files[".github/workflows/docs-build.yml"] = _caller(
+            "docs-build", "reusable-docs-build.yml", pin,
+            trigger=(
+                "  pull_request:\n"
+                "  push:\n"
+                "    branches: [main]\n"
+            ),
+        )
+
         files[".github/workflows/docs-gate.yml"] = _caller(
             "docs-gate", "reusable-docs-gate.yml", pin,
             # `labeled` is load-bearing: the gate's verdict depends on the
@@ -450,6 +462,7 @@ def _core_labels():
 #: actually declare.
 GRANTS = {
     "reusable-closing-keyword.yml": {"contents": "read"},
+    "reusable-docs-build.yml": {"contents": "read"},
     "reusable-docs-gate.yml": {"contents": "read"},
     "reusable-labels-sync.yml": {"contents": "read", "issues": "write"},
     "reusable-gatekeeper-comment.yml": {"contents": "read", "issues": "write"},

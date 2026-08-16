@@ -112,14 +112,8 @@ class TestEveryReusableWorkflowIsReachable(unittest.TestCase):
         }
         called = {called for _, _, called in _callers()}
 
-        # `reusable-docs.yml` builds and publishes ai-sdlc's own site through
-        # GitHub Pages. It is deliberately not installed: a consumer with its
-        # own publisher should not have a second one put underneath it, and
-        # how a consumer says "I already have one" is undecided (#82).
-        undecided = {"reusable-docs.yml"}
-
         self.assertEqual(
-            shipped - called - undecided, set(),
+            shipped - called, set(),
             "these reusable workflows are shipped but nothing installs a caller "
             "for them, so no consumer can reach them",
         )
