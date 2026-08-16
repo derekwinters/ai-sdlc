@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.10](https://github.com/derekwinters/ai-sdlc/compare/v0.4.9...v0.4.10) (2026-08-16)
+
+
+### Fixes
+
+* **gatekeeper:** perform the re-render instead of returning a flag ([43d63c0](https://github.com/derekwinters/ai-sdlc/commit/43d63c046133fa05619022f3a17c8886a09df9f5)), closes [#112](https://github.com/derekwinters/ai-sdlc/issues/112)
+
 ## [0.4.9](https://github.com/derekwinters/ai-sdlc/compare/v0.4.8...v0.4.9) (2026-08-16)
 
 
