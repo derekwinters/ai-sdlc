@@ -75,7 +75,9 @@ The page is two charts and then five sections, in that order.
 - **DASH-017** A section renders even when empty, showing zero. The board's shape is then
   constant, and a missing section means a defect rather than an empty queue.
 - **DASH-018** Every row links the issue, its milestone and its blockers, and shows `-` where
-  there is no milestone or no blocker.
+  there is no milestone or no blocker. A milestone link reads as the milestone's **name** and
+  targets its number: `v0.5` identifies it, `#13` does not, and both go to the same page. Any text
+  placed in a cell has its pipes escaped, or the row ends early and the table loses its shape.
 - **DASH-019** Ready for work holds both approved and in-progress issues, and is the only section
   carrying a status column. Merging two states into one section makes it the only place where a
   row is otherwise ambiguous.
