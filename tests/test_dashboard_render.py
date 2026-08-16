@@ -315,9 +315,19 @@ class TestRows(unittest.TestCase):
         block = _section(render(state(issues=[issue(41)])), "Ready for work")
         self.assertIn(f"[#41](https://github.com/{REPO}/issues/41)", block)
 
-    def test_the_milestone_is_linked_by_number(self):  # DASH-018
+    def test_the_milestone_link_reads_as_its_name(self):  # DASH-018
+        """`v0.2` tells you something; `#2` tells you nothing.
+
+        The target is the milestone number either way, so the number buys
+        nothing a reader can use.
+        """
         block = _section(render(state(issues=[issue(41)])), "Ready for work")
-        self.assertIn(f"[#2](https://github.com/{REPO}/milestone/2)", block)
+        self.assertIn(f"[v0.2](https://github.com/{REPO}/milestone/2)", block)
+
+    def test_a_milestone_name_with_a_pipe_cannot_break_the_table(self):  # DASH-018
+        block = _section(render(state(issues=[
+            issue(41, milestone="a|b", milestone_number=9)])), "Ready for work")
+        self.assertIn("a\\|b", block)
 
     def test_no_milestone_renders_a_dash(self):  # DASH-018
         block = _section(render(state(issues=[

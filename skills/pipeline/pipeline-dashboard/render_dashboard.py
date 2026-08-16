@@ -334,7 +334,7 @@ def _row(state, issue, status):
     repository = state.get("repository", "")
     cells = [
         _issue_link(repository, issue["number"]),
-        str(issue.get("title", "")).replace("|", "\\|"),
+        _cell(issue.get("title", "")),
         _milestone_link(repository, issue),
         _blocker_links(repository, issue),
     ]
@@ -343,15 +343,26 @@ def _row(state, issue, status):
     return "| " + " | ".join(cells) + " |"
 
 
+def _cell(text):
+    """A pipe would end the table cell early."""
+    return str(text).replace("|", "\\|")
+
+
 def _issue_link(repository, number):
     return f"[#{number}](https://github.com/{repository}/issues/{number})"
 
 
 def _milestone_link(repository, issue):
+    """Linked by name, targeted by number.
+
+    `v0.5` tells a reader which milestone this is; `#13` tells them nothing,
+    and the link goes to the same place either way.
+    """
     number = issue.get("milestone_number")
     if not number:
         return "-"
-    return f"[#{number}](https://github.com/{repository}/milestone/{number})"
+    name = _cell(issue.get("milestone") or f"#{number}")
+    return f"[{name}](https://github.com/{repository}/milestone/{number})"
 
 
 def _blocker_links(repository, issue):
