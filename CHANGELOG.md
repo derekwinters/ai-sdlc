@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.14](https://github.com/derekwinters/ai-sdlc/compare/v0.4.13...v0.4.14) (2026-08-17)
+
+
+### Fixes
+
+* **pipeline:** send a fire request the routine endpoint accepts ([#127](https://github.com/derekwinters/ai-sdlc/issues/127)) ([bb2ebe8](https://github.com/derekwinters/ai-sdlc/commit/bb2ebe8f697f44a8bd61067093a08fb5c4bca2aa)), closes [#126](https://github.com/derekwinters/ai-sdlc/issues/126)
+
 ## [0.4.13](https://github.com/derekwinters/ai-sdlc/compare/v0.4.12...v0.4.13) (2026-08-17)
 
 
