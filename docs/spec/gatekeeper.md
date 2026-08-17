@@ -272,10 +272,25 @@ Replaces the removed comment-replay sweep.
 - **GK-117** A fire failure is reported but never raised, and never fails the run.
 - **GK-118** The fire request never logs its URL or its secret.
 - **GK-119** An unconfigured fire endpoint is a notice, not an error.
-- **GK-122** The analysis routine is fired by the **label event**, not by the gatekeeper. An issue
-  entering triage fires exactly once, however the label got there — a command, a hand, or anything
-  added later. The handler writes nothing: firing is a poke, and what happens next is the routine's
-  decision.
+- **GK-122** The analysis routine is fired by **both** the gatekeeper and the label event, and an
+  issue entering triage fires exactly once however the label got there. The two paths are disjoint
+  by construction, not by deduplication: the gatekeeper writes labels with `GITHUB_TOKEN`, and
+  GitHub starts no workflow run from an event that token authored, so the gatekeeper's own label
+  move never reaches the label handler. The gatekeeper covers its own moves; the label event covers
+  every label applied by a human or an app. **Invariant — the gatekeeper writes labels with
+  `GITHUB_TOKEN` and nothing else.** Giving it a personal access token or an app token would make
+  both paths fire for one `/admit`. Neither handler writes anything in response to a fire: firing
+  is a poke, and what happens next is the routine's decision.
+- **GK-123** The fire request carries `anthropic-version` and the `/fire` endpoint's dated
+  `anthropic-beta` research-preview header, alongside its bearer token. These are conditions of
+  the endpoint, not of one deployment: without the first it answers `400` and the routine is never
+  reached.
+- **GK-124** The body is the routine's freeform `text` payload, naming the repository and the issue
+  number. The routine parses the issue number out of an untrusted wrapper, so the payload is prose
+  rather than a structured record.
+- **GK-125** A fire counts as successful only when the endpoint returns a `routine_fire` carrying a
+  session URL, which is then reported. Any other answer — including a `2xx` — is a failure naming
+  its status and body.
 - **GK-121** Every run reports what became of the analysis routine: fired, fired and failed with
   the scrubbed detail, not configured, or not a triage transition. `GK-119`'s silence is about
   not *failing* the run, never about saying nothing — a deliberate absence and a broken wire must
@@ -289,6 +304,25 @@ Replaces the removed comment-replay sweep.
 > keys on the label event, and the gatekeeper no longer fires: doing both would poke the routine
 > twice for every `/admit`, and deduplicating two independent workflows is harder than having one.
 > The payload is unchanged, so the routine sees exactly what it saw before.
+
+> **How the spec is changing (#126).** Two corrections, one to the request and one to who sends it.
+>
+> `GK-123`–`GK-125` are new because the request was never a working one. It carried neither
+> `anthropic-version` nor the research-preview `anthropic-beta` header, and its body was a
+> `{"version", "repository", "issue"}` record the endpoint does not accept. Every fire since
+> `0.1.0` was rejected with `400 anthropic-version: header is required`. `GK-121` had already made
+> the outcome visible; what it revealed was that the outcome had always been failure. The old
+> "the payload is unchanged" reassurance above is exactly the problem — the payload was unchanged
+> and had never worked.
+>
+> `GK-122` said the gatekeeper *no longer* fires, on the reasoning that firing in both places would
+> poke the routine twice for every `/admit`. It cannot: the gatekeeper labels with `GITHUB_TOKEN`,
+> and GitHub deliberately starts no workflow run from an event that token authored, so the label
+> handler never sees the gatekeeper's own label move. The reasoning had the consequence backwards —
+> rather than double-firing, `/admit` fired *nothing*, because the gatekeeper had stopped firing and
+> the label event it triggered was suppressed. Both paths now fire, and the disjointness that makes
+> that safe is recorded as an invariant so a later change to the gatekeeper's token does not quietly
+> reintroduce the double fire the old note feared.
 
 > **How the spec is changing (#121).** `GK-117`–`GK-119` said a fire failure is reported and never
 > raised, without saying where it is reported *to*. Nothing printed it: `handle_comment` computed

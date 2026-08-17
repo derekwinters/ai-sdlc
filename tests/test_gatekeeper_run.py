@@ -114,12 +114,9 @@ class TestARefusal(unittest.TestCase):
         result = handle_comment(api, event(), settings())
         self.assertIn("milestone", result.reply.lower())
 
-    def test_a_refused_command_fires_nothing(self):  # GK-113
+    def test_a_refused_command_applies_no_label(self):  # GK-113
         api = github(milestone=None)
-        result = handle_comment(api, event(), settings())
-        # Firing moved to the label event (#123), so what matters here is
-        # that a refused command applies no label — with no transition into
-        # triage, there is no `labeled` event and nothing to fire.
+        handle_comment(api, event(), settings())
         self.assertNotIn("ai-triage", labels_of(api))
 
 
@@ -227,23 +224,21 @@ class TestDashboardOverrides(unittest.TestCase):
         self.assertNotIn("set_labels", [name for name, _ in api.calls])
 
 
-class TestTheGatekeeperDoesNotFire(unittest.TestCase):
-    """GK-110 — firing belongs to the label event, not to this run.
+class TestTheGatekeeperFires(unittest.TestCase):
+    """GK-110, GK-122 — the gatekeeper pokes the routine for its own moves.
 
-    `/admit` applies the label; the `issues: labeled` event that follows is
-    what pokes the analysis routine. Firing here as well would poke it twice
-    for every `/admit`, and deduplicating two independent workflows is harder
-    than having one (#123).
+    The label event cannot cover them: the gatekeeper labels with
+    `GITHUB_TOKEN`, and GitHub starts no workflow run from an event that
+    token authored, so `/admit` reaches the label handler never (#126).
     """
 
-    def test_admitting_does_not_fire(self):  # GK-110
+    def test_admitting_fires(self):  # GK-110
         api = github(labels=())
         fire = RecordingFire()
         handle_comment(api, event(body="/admit"), settings(fire=fire))
-        self.assertEqual(fire.sent, [])
+        self.assertEqual(fire.sent, [(7, api.repository)])
 
     def test_admitting_still_applies_the_label(self):  # GK-110
-        """The gatekeeper's own job is unchanged; only the poke moved."""
         api = github(labels=())
         handle_comment(api, event(body="/admit"), settings())
         self.assertIn("ai-triage", labels_of(api))
@@ -253,6 +248,50 @@ class TestTheGatekeeperDoesNotFire(unittest.TestCase):
         fire = RecordingFire()
         handle_comment(api, event(), settings(fire=fire))
         self.assertEqual(fire.sent, [])
+
+    def test_a_refused_command_fires_nothing(self):  # GK-113
+        api = github(labels=(), milestone=None)
+        fire = RecordingFire()
+        handle_comment(api, event(body="/approve"), settings(fire=fire))
+        self.assertEqual(fire.sent, [])
+
+    def test_re_admitting_an_issue_already_in_triage_does_not(self):  # GK-111
+        """The transition is what fires, not the destination."""
+        api = github(labels=("ai-triage",))
+        fire = RecordingFire()
+        handle_comment(api, event(body="/admit"), settings(fire=fire))
+        self.assertEqual(fire.sent, [])
+
+    def test_the_outcome_is_on_the_result(self):  # GK-121
+        """So the entry point can report it — a poke nobody can see is
+        indistinguishable from one that never went out."""
+        api = github(labels=())
+        result = handle_comment(api, event(body="/admit"), settings())
+        self.assertTrue(result.fired)
+
+    def test_a_run_that_did_not_fire_says_why(self):  # GK-121
+        api = github()
+        result = handle_comment(api, event(), settings())
+        self.assertFalse(result.fired)
+        self.assertIn("triage", result.fired.detail.lower())
+
+    def test_a_failing_fire_does_not_fail_the_run(self):  # GK-117
+        """The label move already happened; losing the run over a poke that
+        did not land is the worse trade."""
+        from downstream import Fire
+
+        api = github(labels=())
+
+        def explode(*_args, **_kwargs):
+            raise OSError("no route to host")
+
+        result = handle_comment(
+            api,
+            event(body="/admit"),
+            settings(fire=Fire("https://example.com", "t", transport=explode)),
+        )
+        self.assertIn("ai-triage", labels_of(api))
+        self.assertTrue(result.fired.failed)
 
 
 if __name__ == "__main__":

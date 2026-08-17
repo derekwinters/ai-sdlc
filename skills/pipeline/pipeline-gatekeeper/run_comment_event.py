@@ -22,7 +22,7 @@ from apply_actions import final_state, plan_labels
 from arguments import check_arguments
 from authority import Authority
 from catchup import unfinished_comments
-from downstream import should_rerender
+from downstream import NOT_TRIAGE, FireResult, fires_triage, should_rerender
 from refresh import refresh_quietly
 from gates import run_gates
 from lib.github import GitHubError
@@ -73,16 +73,18 @@ class Settings:
 
 class Result:
     __slots__ = ("applied", "refused", "reply", "rerender", "overrides",
-                 "unverifiable")
+                 "unverifiable", "fired")
 
     def __init__(self, applied=(), refused=(), reply=None,
-                 rerender=False, overrides=None, unverifiable=()):
+                 rerender=False, overrides=None, unverifiable=(),
+                 fired=NOT_TRIAGE):
         self.applied = list(applied)
         self.refused = list(refused)
         self.reply = reply
         self.rerender = rerender
         self.overrides = dict(overrides or {})
         self.unverifiable = list(unverifiable)
+        self.fired = fired
 
     def __repr__(self):
         return f"<Result applied={len(self.applied)} refused={len(self.refused)}>"
@@ -168,6 +170,8 @@ def _apply(api, issue_number, comment, settings, watermark):
         # memory until this process ends (#105).
         refresh_quietly(api, settings, overrides)
 
+    fired = _fire(api, issue_number, before, after, settings)
+
     return Result(
         applied=gated.actions,
         refused=gated.skips,
@@ -175,7 +179,29 @@ def _apply(api, issue_number, comment, settings, watermark):
         rerender=rerender,
         overrides=overrides,
         unverifiable=gated.unverifiable,
+        fired=fired,
     )
+
+
+def _fire(api, issue_number, before, after, settings):
+    """Poke the analysis routine when this run put the issue into triage.
+
+    Last, because the label move is the gatekeeper's actual job and a routine
+    that cannot be reached must not cost it. The transition is what fires, not
+    the destination: re-applying `/admit` to an issue already in triage would
+    otherwise make a repeated command a way to queue work repeatedly (#111).
+
+    The label event cannot cover this. The gatekeeper writes with
+    `GITHUB_TOKEN`, and GitHub starts no workflow run from an event that token
+    authored, so the `labeled` event this very write emits reaches nothing
+    (#126). That suppression is also what keeps the two paths from both firing
+    for one `/admit` — see `GK-122`.
+    """
+    if not fires_triage(before, after, (settings.labels or {}).get("triage")):
+        return NOT_TRIAGE
+    if not settings.fire:
+        return FireResult(attempted=False, detail="no analysis routine configured")
+    return settings.fire.send(issue_number, api.repository)
 
 
 def _overrides(actions):

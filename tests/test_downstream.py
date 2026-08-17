@@ -8,7 +8,13 @@ run which changed nothing costs nothing.
 import unittest
 
 import _gatekeeper  # noqa: F401
-from downstream import Fire, fires_triage, should_rerender
+from downstream import (
+    ANTHROPIC_VERSION,
+    ROUTINE_BETA,
+    Fire,
+    fires_triage,
+    should_rerender,
+)
 
 TRIAGE = "ai-triage"
 
@@ -86,9 +92,9 @@ class TestTheFireIsBestEffort(unittest.TestCase):
                       transport=lambda *a, **k: (404, "nope")).send(7, "o/r")
         self.assertTrue(result.failed)
 
-    def test_a_2xx_succeeds(self):  # GK-117
+    def test_a_real_fire_succeeds(self):  # GK-117
         result = Fire("https://example.com", "t",
-                      transport=lambda *a, **k: (202, "{}")).send(7, "o/r")
+                      transport=lambda *a, **k: (200, ROUTINE_FIRE)).send(7, "o/r")
         self.assertTrue(result.attempted)
         self.assertFalse(result.failed)
 
@@ -122,29 +128,105 @@ class TestNothingSecretIsLogged(unittest.TestCase):
         self.assertNotIn("secret.example.com", result.detail)
 
 
+#: What the endpoint actually returns when a session was created.
+ROUTINE_FIRE = (
+    '{"type": "routine_fire", "claude_code_session_id": "session_01X", '
+    '"claude_code_session_url": "https://claude.ai/code/session_01X"}'
+)
+
+
+def _records(sent, response=(200, ROUTINE_FIRE)):
+    """A transport that captures the request and returns a canned response."""
+
+    def record(url, headers, body):
+        sent.update(url=url, headers=headers, body=body)
+        return response
+
+    return record
+
+
 class TestTheRequest(unittest.TestCase):
     def test_it_names_the_repository_and_issue(self):  # GK-110
         sent = {}
-
-        def record(url, headers, body):
-            sent.update(body=body)
-            return (202, "{}")
-
-        Fire("https://example.com", "t", transport=record).send(7, "owner/repo")
+        Fire("https://example.com", "t", transport=_records(sent)).send(7, "owner/repo")
         self.assertIn("owner/repo", sent["body"])
         self.assertIn("7", sent["body"])
 
-    def test_the_issue_number_is_an_integer_not_free_text(self):  # GK-110
+    def test_it_carries_the_api_version_header(self):  # GK-123
+        """Without this the endpoint answers 400 and the routine never runs.
+
+        This is not a detail of one deployment: `anthropic-version` is required
+        on every Anthropic API request, so its absence failed every fire this
+        pipeline has ever sent.
+        """
+        sent = {}
+        Fire("https://example.com", "t", transport=_records(sent)).send(7, "owner/repo")
+        self.assertEqual(sent["headers"]["anthropic-version"], ANTHROPIC_VERSION)
+
+    def test_it_carries_the_research_preview_beta_header(self):  # GK-123
+        sent = {}
+        Fire("https://example.com", "t", transport=_records(sent)).send(7, "owner/repo")
+        self.assertEqual(sent["headers"]["anthropic-beta"], ROUTINE_BETA)
+
+    def test_it_still_authenticates_with_the_bearer_token(self):  # GK-123
+        sent = {}
+        Fire("https://example.com", "tok", transport=_records(sent)).send(7, "owner/repo")
+        self.assertEqual(sent["headers"]["Authorization"], "Bearer tok")
+
+    def test_the_body_is_the_routines_freeform_text_payload(self):  # GK-124
+        """The endpoint takes `{"text": ...}`, not a structured record.
+
+        The routine parses the issue number back out of an untrusted wrapper,
+        so the payload is prose naming the repository and the issue.
+        """
         import json
 
         sent = {}
+        Fire("https://example.com", "t", transport=_records(sent)).send(7, "owner/repo")
+        body = json.loads(sent["body"])
+        self.assertEqual(list(body), ["text"])
+        self.assertIn("owner/repo", body["text"])
+        self.assertIn("7", body["text"])
 
-        def record(url, headers, body):
-            sent.update(body=body)
-            return (202, "{}")
 
-        Fire("https://example.com", "t", transport=record).send(7, "owner/repo")
-        self.assertIsInstance(json.loads(sent["body"])["issue"], int)
+class TestOnlyARealFireIsSuccess(unittest.TestCase):
+    """GK-125 — a 2xx is not proof that a session was created.
+
+    `urlopen` raises only on 4xx/5xx, so "2xx ⇒ fired" reported success for a
+    misdirected endpoint that returned a 200 HTML page. Success requires the
+    endpoint's own `routine_fire` answer.
+    """
+
+    def test_a_routine_fire_response_is_success(self):  # GK-125
+        result = Fire("https://example.com", "t",
+                      transport=lambda *a, **k: (200, ROUTINE_FIRE)).send(7, "o/r")
+        self.assertTrue(result.attempted)
+        self.assertFalse(result.failed)
+
+    def test_the_session_url_is_reported(self):  # GK-125
+        result = Fire("https://example.com", "t",
+                      transport=lambda *a, **k: (200, ROUTINE_FIRE)).send(7, "o/r")
+        self.assertIn("https://claude.ai/code/session_01X", result.detail)
+
+    def test_a_2xx_carrying_no_session_url_is_a_failure(self):  # GK-125
+        result = Fire("https://example.com", "t",
+                      transport=lambda *a, **k: (202, "{}")).send(7, "o/r")
+        self.assertTrue(result.failed)
+
+    def test_a_2xx_html_page_is_a_failure(self):  # GK-125
+        result = Fire("https://example.com", "t",
+                      transport=lambda *a, **k: (200, "<!doctype html><html>")).send(7, "o/r")
+        self.assertTrue(result.failed)
+
+    def test_an_unparseable_2xx_body_is_a_failure(self):  # GK-125
+        result = Fire("https://example.com", "t",
+                      transport=lambda *a, **k: (200, "not json at all")).send(7, "o/r")
+        self.assertTrue(result.failed)
+
+    def test_the_failure_still_names_the_status(self):  # GK-125
+        result = Fire("https://example.com", "t",
+                      transport=lambda *a, **k: (202, "{}")).send(7, "o/r")
+        self.assertIn("202", result.detail)
 
 
 if __name__ == "__main__":

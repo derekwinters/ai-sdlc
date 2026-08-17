@@ -26,8 +26,14 @@ import json
 
 from lib.github import MAX_DETAIL, post_json
 
-#: Sent so the receiving routine can pin its own behaviour to a known shape.
-PAYLOAD_VERSION = 1
+#: Required on every Anthropic API request. Its absence is a 400 before the
+#: request reaches the routine at all, which is what made every fire this
+#: pipeline sent fail silently (#126).
+ANTHROPIC_VERSION = "2023-06-01"
+
+#: The `/fire` endpoint is in research preview behind this dated beta header.
+#: Request and response shapes may change under a future one.
+ROUTINE_BETA = "experimental-cc-routine-2026-04-01"
 
 #: Below this length a value is not a credential, and replacing every
 #: occurrence of it would shred the message instead of protecting anything —
@@ -87,6 +93,24 @@ def fire_summary(fired):
     return f"triage: not fired — {fired.detail or 'no reason recorded'}"
 
 
+def _session_url(status, text):
+    """The session URL a real `routine_fire` carries, or `None`.
+
+    Proof that a session was actually created, rather than that something
+    answered. Returning `None` for every other shape is what keeps a
+    misdirected endpoint from reporting success.
+    """
+    if not 200 <= status < 300:
+        return None
+    try:
+        parsed = json.loads(text or "")
+    except (ValueError, TypeError):
+        return None
+    if not isinstance(parsed, dict):
+        return None
+    return parsed.get("claude_code_session_url") or None
+
+
 class Fire:
     """Asks the analysis routine to look at an issue. Never fails the run."""
 
@@ -109,12 +133,18 @@ class Fire:
             # same — which is how #118 survived from adoption (#121).
             return FireResult(attempted=False, detail="no analysis routine configured")
 
+        # Freeform prose, not a structured record: the endpoint takes a `text`
+        # payload and the routine parses the issue number back out of an
+        # untrusted wrapper. A `{"repository", "issue"}` object is not a shape
+        # the endpoint accepts.
         body = json.dumps(
-            {"version": PAYLOAD_VERSION, "repository": repository, "issue": int(issue)}
+            {"text": f"Run triage on issue #{int(issue)} in {repository}."}
         )
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self._token}",
+            "anthropic-version": ANTHROPIC_VERSION,
+            "anthropic-beta": ROUTINE_BETA,
         }
 
         try:
@@ -122,12 +152,16 @@ class Fire:
         except Exception as error:  # noqa: BLE001 - nothing may escape
             return FireResult(True, failed=True, detail=self._scrub(str(error)))
 
-        if not 200 <= status < 300:
+        session_url = _session_url(status, text)
+        if session_url is None:
+            # Not "not 2xx": a 2xx that is not a `routine_fire` means the
+            # endpoint is not the one we think it is, and reporting that as
+            # fired is how a broken wire passes for a working one.
             return FireResult(
                 True, failed=True, detail=f"status {status}: {self._scrub(text)}"
             )
 
-        return FireResult(attempted=True)
+        return FireResult(attempted=True, detail=session_url)
 
     def _scrub(self, text):
         """Remove the endpoint and token, then bound the length.

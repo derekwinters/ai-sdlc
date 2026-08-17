@@ -1,12 +1,14 @@
 name: triage
 
-# Fires the analysis routine when an issue enters triage.
+# Fires the analysis routine for a label this repository's gatekeeper did not
+# apply itself — a hand on the web UI, an app, anything added later. Before
+# this existed the routine was reachable only through `/admit`, so labelling
+# an issue by hand poked nothing at all.
 #
-# The single trigger. The gatekeeper used to fire this, which meant the
-# routine was reachable only through `/admit` and only at the instant of the
-# transition — labelling an issue by hand poked nothing at all. Keyed on the
-# label event instead, so "the issue entered triage" fires exactly once
-# however the label got there.
+# The gatekeeper fires for its own moves and the two cannot collide: it writes
+# with GITHUB_TOKEN, and GitHub starts no workflow run from an event that
+# token authored, so its own label move never reaches this workflow. See the
+# invariant on GK-122 before giving the gatekeeper a different token.
 #
 # Writes nothing. Firing is a poke; what happens next is the routine's
 # decision, and a workflow that also moved labels would be a second

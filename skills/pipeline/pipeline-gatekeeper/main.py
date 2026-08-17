@@ -67,6 +67,7 @@ def main(argv):
     print(f"refused: {[s.reason for s in result.refused] or '(nothing)'}")
     # Every run says what became of the analysis routine. Without this a run
     # that fired and one that silently skipped are indistinguishable (#121).
+    print(fire_summary(result.fired))
     if result.unverifiable:
         print(f"unverifiable dependencies: {[b['number'] for b in result.unverifiable]}")
     return 0

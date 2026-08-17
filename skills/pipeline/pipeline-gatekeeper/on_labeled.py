@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-"""Fire the analysis routine when an issue enters triage.
+"""Fire the analysis routine when a label puts an issue into triage.
 
-The single trigger. Adding the triage label used to fire nothing unless a
-comment command caused it: the gatekeeper listens on `issue_comment`, so the
-routine was reachable only through `/admit`, and only at the instant of the
-transition. Labelling an issue by hand — the obvious thing to do — poked
-nothing at all.
+One of two triggers, covering the labels the gatekeeper did not apply itself:
+a hand on the web UI, an app, anything added later. Before this existed, the
+routine was reachable only through `/admit`, so labelling an issue by hand —
+the obvious thing to do — poked nothing at all.
 
-Keyed on the label event instead, so "the issue entered triage" fires exactly
-once however it got there. The gatekeeper no longer fires, because firing in
-both places would poke the routine twice for every `/admit`, and
-deduplicating two independent workflows is harder than having one.
+The gatekeeper fires for its own moves, and the two cannot collide. It writes
+labels with `GITHUB_TOKEN`, and GitHub starts no workflow run from an event
+that token authored, so its own label move never arrives here. That is a
+property of the token, not a deduplication step — see the invariant on
+`GK-122` before giving the gatekeeper a different one.
 
 This writes nothing. Firing is a poke; what happens next is the routine's
 decision, and a handler that also moved labels would be a second gatekeeper.
