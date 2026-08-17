@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
-"""Glue for the sweep workflow: read the board, plan, poke.
+"""Glue for the sweep workflow: read the board, decide, relabel.
 
-The decisions live in `sweep.plan`, which is pure and tested. This is the I/O
-around it — fetching the board, asking the routine, and saying what happened.
+The decision lives in `sweep.plan`, which is pure and tested. This is the I/O
+around it — fetching the board, writing the state, and saying what happened.
 
-Requeueing pokes the routine **directly** rather than by removing and
-re-applying the triage label. Both would start a session, but a label
-round-trip also emits `labeled`, which the label handler answers with a second
-poke; one intent would become two sessions, and the sweep's whole purpose is
-bounding how many sessions exist.
+There is no fire here, and that absence is the design. The sweep observes; a
+person decides whether to spend another session, with `/admit`. A scheduled job
+that cannot start a session cannot spend an account's usage limits while nobody
+is watching, however wrong it gets things.
 
-Specification: docs/spec/gatekeeper.md (`GK-138`–`GK-144`).
+Specification: docs/spec/gatekeeper.md (`GK-139`–`GK-143`).
 """
 
 from __future__ import annotations
@@ -27,14 +26,14 @@ from sweep import plan  # noqa: E402
 def has_analysis(api, issue, *, author):
     """Whether anything has already analysed this issue.
 
-    True when a comment exists from somebody other than the issue's author.
-    The owner's own `/admit` is a command rather than analysis, and counting it
+    True when a comment exists from somebody other than the issue's author. The
+    owner's own `/admit` is a command rather than analysis, and counting it
     would mark every admitted issue as analysed — which reads as "nothing is
-    stranded" and turns the backstop off exactly where it is needed.
+    stalled" and turns the backstop off exactly where it is needed.
 
-    An unreadable comment list answers False, so the issue stays eligible. That
-    errs toward spending rather than toward silence, which is only defensible
-    because `GK-139` and `GK-141` bound what that can cost.
+    An unreadable comment list answers False. The issue then stays eligible for
+    a stall label, which is the direction that reports a problem rather than
+    hiding one, and the worst it can cost is a label a person can remove.
     """
     try:
         comments = api.comments(issue["number"]) or []
@@ -47,27 +46,27 @@ def has_analysis(api, issue, *, author):
     return False
 
 
-def board(api, *, triage_label, now):
+def board(api, *, running_label, now):
     """The snapshot `sweep.plan` needs, and nothing more.
 
-    Only issues carrying the triage label are inspected for comments: the
-    comment read is one request per issue, and the rest of the board cannot be
-    stranded by definition.
+    Only issues carrying the running label are inspected for comments: that
+    read is one request per issue, and nothing else on the board can be a
+    session that never answered.
     """
     issues = []
     for issue in api.issues(state="open") or []:
         if "pull_request" in issue:
             continue
-        labels = [l.get("name") for l in (issue.get("labels") or [])
-                  if isinstance(l, dict)] or list(issue.get("labels") or [])
+        names = [l.get("name") for l in (issue.get("labels") or [])
+                 if isinstance(l, dict)] or list(issue.get("labels") or [])
         entry = {
             "number": issue.get("number"),
             "state": issue.get("state", "open"),
-            "labels": labels,
+            "labels": names,
             "updated_at": issue.get("updated_at"),
             "has_analysis": False,
         }
-        if triage_label in labels:
+        if running_label in names:
             entry["has_analysis"] = has_analysis(
                 api, issue, author=((issue.get("user") or {}).get("login")))
         issues.append(entry)
@@ -75,77 +74,47 @@ def board(api, *, triage_label, now):
 
 
 def summarise(result):
-    """One line per outcome. Every branch says something, including the empty
-    one — a backstop nobody can see working is one nobody trusts (`GK-144`).
+    """What the run did, including when it did nothing.
+
+    A backstop nobody can see working is one nobody trusts (`GK-143`), and a
+    silent run is indistinguishable from a broken one — which is the whole
+    failure this component exists to end.
     """
-    lines = [f"sweep: requeued {len(result['requeue'])}"]
-    if result["clear"]:
-        lines.append(
-            f"sweep: cleared stale markers from {len(result['clear'])} issues: "
-            f"{result['clear']}"
-        )
-    if result["stalled"]:
-        lines.append(
-            f"sweep: {len(result['stalled'])} issues were poked twice and never "
-            f"answered — these need a human, not another poke: "
-            f"{result['stalled']}"
-        )
-    if result["skipped"]:
-        lines.append(
-            f"sweep: {len(result['skipped'])} stranded issues left for the next "
-            f"run — the ceiling was reached, which means something is wrong "
-            f"rather than busy: {result['skipped']}"
-        )
-    if result["withheld"]:
-        lines.append(
-            f"sweep: {len(result['withheld'])} stranded on the event path, "
-            f"requeueing deferred to the schedule: {result['withheld']}"
-        )
-    return lines
+    if not result["stall"]:
+        return ["sweep: nothing stalled"]
+    return [
+        f"sweep: {len(result['stall'])} sessions never answered and are now "
+        f"stalled — these need a person, not another poke: {result['stall']}"
+    ]
 
 
-def set_marker(api, number, marker, markers):
-    """Advance an issue to `marker`, replacing whichever it carried.
+def move_to_stalled(api, number, labels):
+    """Replace whichever triage state the issue carries with stalled.
 
-    One write, not a remove and an add: two writes are two events, two audit
-    entries, and a window in which the issue carries no marker at all — which
-    is the window a concurrent read would misinterpret as "never poked".
+    One write rather than a remove and an add: two writes are two events, two
+    audit entries, and a window in which the issue carries no state at all —
+    which a concurrent read would see as an issue outside the pipeline.
     """
+    triage_states = {labels[name] for name in
+                     ("triage_queued", "triage_running", "triage_stalled")
+                     if name in labels}
     try:
         current = [l["name"] for l in (api.issue(number).get("labels") or [])]
-        wanted = [n for n in current if n not in set(markers)]
-        if marker:
-            wanted.append(marker)
-        if set(wanted) != set(current):
-            api.set_labels(number, wanted)
-    except Exception:  # noqa: BLE001 - bookkeeping must not fail the run
+        wanted = [n for n in current if n not in triage_states]
+        wanted.append(labels["triage_stalled"])
+        api.set_labels(number, wanted)
+    except Exception:  # noqa: BLE001 - one issue must not fail the run
         return False
     return True
 
 
-def run(api, config, fire, *, now, events_only):
-    """Plan and apply one sweep. Returns the plan, for the caller to report."""
-    markers = config.markers()
+def run(api, config, *, now, stale_after):
+    """Observe the board and stall what never answered. Starts no sessions."""
     result = plan(
-        board(api, triage_label=config.label("triage"), now=now),
-        triage_label=config.label("triage"),
-        markers=markers,
-        ceiling=config.sweep.ceiling,
-        stale_after=config.sweep.stale_after,
-        events_only=events_only,
+        board(api, running_label=config.label("triage_running"), now=now),
+        labels=config.labels,
+        stale_after=stale_after,
     )
-
-    for number in result["requeue"]:
-        # Best-effort, exactly as the gatekeeper's own fire is: a backstop that
-        # fails the run when the routine is unreachable is a backstop that goes
-        # red overnight and gets muted.
-        sent = fire.send(number, api.repository)
-        # Marked only when a session actually started, so a routine that could
-        # not be reached does not consume the issue's one retry (`GK-138`).
-        if sent and sent.attempted and not sent.failed:
-            set_marker(api, number, result["mark"].get(number), markers)
-
-    for number in result["clear"]:
-        set_marker(api, number, None, markers)
-
+    for number in result["stall"]:
+        move_to_stalled(api, number, config.labels)
     return result

@@ -22,20 +22,20 @@ def plan(current, *commands):
 
 class TestOneStateAtATime(unittest.TestCase):
     def test_applying_a_state_leaves_exactly_one(self):  # GK-001
-        result = plan(["ai-triage"], "approve")
+        result = plan(["ai-triage-queued"], "approve")
         self.assertEqual(len(set(result) & ALL_STATES), 1)
 
     def test_the_previous_state_is_replaced(self):  # GK-002
-        self.assertNotIn("ai-triage", plan(["ai-triage"], "approve"))
+        self.assertNotIn("ai-triage-queued", plan(["ai-triage-queued"], "approve"))
 
     def test_the_new_state_is_present(self):  # GK-002
-        self.assertIn("ready-for-work", plan(["ai-triage"], "approve"))
+        self.assertIn("ready-for-work", plan(["ai-triage-queued"], "approve"))
 
     def test_starting_from_no_state_still_ends_with_one(self):  # GK-001
-        self.assertEqual(set(plan([], "admit")) & ALL_STATES, {"ai-triage"})
+        self.assertEqual(set(plan([], "admit")) & ALL_STATES, {"ai-triage-queued"})
 
     def test_a_malformed_issue_with_two_states_is_reduced_to_one(self):  # GK-001
-        result = plan(["ai-triage", "parked"], "approve")
+        result = plan(["ai-triage-queued", "parked"], "approve")
         self.assertEqual(set(result) & ALL_STATES, {"ready-for-work"})
 
     def test_several_commands_apply_in_order(self):  # GK-025
@@ -44,15 +44,15 @@ class TestOneStateAtATime(unittest.TestCase):
 
 class TestOnlyStateLabelsAreTouched(unittest.TestCase):
     def test_classification_labels_survive(self):  # GK-003
-        result = plan(["ai-triage", "area:build", "type:bug"], "approve")
+        result = plan(["ai-triage-queued", "area:build", "type:bug"], "approve")
         self.assertIn("area:build", result)
         self.assertIn("type:bug", result)
 
     def test_skip_docs_survives(self):  # GK-003
-        self.assertIn("skip-docs", plan(["ai-triage", "skip-docs"], "approve"))
+        self.assertIn("skip-docs", plan(["ai-triage-queued", "skip-docs"], "approve"))
 
     def test_an_epic_label_survives(self):  # GK-004
-        self.assertIn("type:epic", plan(["type:epic", "ai-triage"], "park"))
+        self.assertIn("type:epic", plan(["type:epic", "ai-triage-queued"], "park"))
 
     def test_a_wireframe_label_survives(self):  # GK-004
         self.assertIn("type:wireframe", plan(["type:wireframe"], "admit"))
@@ -65,34 +65,34 @@ class TestOnlyStateLabelsAreTouched(unittest.TestCase):
 
 class TestWhichCommandsMoveState(unittest.TestCase):
     def test_admit_goes_to_triage(self):  # GK-002
-        self.assertIn("ai-triage", plan([], "admit"))
+        self.assertIn("ai-triage-queued", plan([], "admit"))
 
     def test_approve_goes_to_ready(self):  # GK-002
         self.assertIn("ready-for-work", plan(["pending-approval"], "approve"))
 
     def test_unpark_returns_to_triage(self):  # GK-002
-        self.assertIn("ai-triage", plan(["parked"], "unpark"))
+        self.assertIn("ai-triage-queued", plan(["parked"], "unpark"))
 
     def test_redo_returns_to_ready(self):  # GK-002
         self.assertIn("ready-for-work", plan([], "redo"))
 
     def test_revise_returns_to_triage(self):  # GK-002
-        self.assertIn("ai-triage", plan(["pending-approval"], "revise"))
+        self.assertIn("ai-triage-queued", plan(["pending-approval"], "revise"))
 
     def test_propose_goes_to_triage(self):  # GK-002
-        self.assertIn("ai-triage", plan([], "propose"))
+        self.assertIn("ai-triage-queued", plan([], "propose"))
 
     def test_milestone_changes_no_labels(self):  # GK-002
-        self.assertEqual(plan(["ai-triage"], "milestone"), ["ai-triage"])
+        self.assertEqual(plan(["ai-triage-queued"], "milestone"), ["ai-triage-queued"])
 
     def test_focus_changes_no_labels(self):  # GK-002
-        self.assertEqual(plan(["ai-triage"], "focus"), ["ai-triage"])
+        self.assertEqual(plan(["ai-triage-queued"], "focus"), ["ai-triage-queued"])
 
     def test_cap_changes_no_labels(self):  # GK-002
-        self.assertEqual(plan(["ai-triage"], "cap"), ["ai-triage"])
+        self.assertEqual(plan(["ai-triage-queued"], "cap"), ["ai-triage-queued"])
 
     def test_retry_changes_no_labels_itself(self):  # GK-002
-        self.assertEqual(plan(["ai-triage"], "retry"), ["ai-triage"])
+        self.assertEqual(plan(["ai-triage-queued"], "retry"), ["ai-triage-queued"])
 
 
 class TestStatesTheGatekeeperNeverWrites(unittest.TestCase):
@@ -119,18 +119,18 @@ class TestStatesTheGatekeeperNeverWrites(unittest.TestCase):
         self.assertIn("ready-for-work", plan(["in-progress"], "redo"))
 
     def test_moving_out_of_needs_clarification_is_allowed(self):
-        self.assertIn("ai-triage", plan(["needs-clarification"], "revise"))
+        self.assertIn("ai-triage-queued", plan(["needs-clarification"], "revise"))
 
 
 class TestTheLabelNamesAreConfigured(unittest.TestCase):
     def test_a_renamed_state_is_honoured(self):  # GK-002
         renamed = dict(LABELS, approved="queued")
-        result = plan_labels(["ai-triage"], [Action("approve")], labels=renamed)
+        result = plan_labels(["ai-triage-queued"], [Action("approve")], labels=renamed)
         self.assertIn("queued", result)
 
     def test_the_default_name_is_not_used_when_renamed(self):  # GK-002
         renamed = dict(LABELS, approved="queued")
-        result = plan_labels(["ai-triage"], [Action("approve")], labels=renamed)
+        result = plan_labels(["ai-triage-queued"], [Action("approve")], labels=renamed)
         self.assertNotIn("ready-for-work", result)
 
 

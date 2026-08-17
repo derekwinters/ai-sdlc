@@ -38,7 +38,7 @@ SILENT = {
 #: picked an issue up needs to see which state it actually landed in; the
 #: consequence is why they should care.
 NEXT = {
-    "ai-triage": "the next triage run will pick it up",
+    "ai-triage-queued": "the next triage run will pick it up",
     "ready-for-work": "the builder can pick it up next",
     "parked": "the pipeline will leave it alone until `/unpark`",
 }

@@ -31,7 +31,6 @@ for _sibling in ("issue-blockers",):
         sys.path.insert(0, str(_path))
 
 from issue_blockers import Blockers, prose_blockers  # noqa: E402
-from lib.config import MARKERS  # noqa: E402
 from lib.github import GitHubError  # noqa: E402
 
 #: The markers the dashboard keeps in its own body. The renderer writes them
@@ -64,12 +63,10 @@ def fetch(api, labels, bot_login, dashboard_issue=None, overrides=None):
         closed = issue.get("state") == "closed"
         milestone = issue.get("milestone") or {}
 
-        marker = next((n for n in names if n in set(MARKERS.values())), None)
-
-        if not closed and MARKERS["triage_stalled"] in names:
-            # Bounding the retries converts "retried for ever" into "ignored
-            # for ever" unless somebody is told (`GK-146`). Without this the
-            # issue sits in Waiting for triage looking like ordinary work.
+        if not closed and labels.get("triage_stalled") == state_label:
+            # The sweep deliberately does not retry, so the board is the only
+            # thing that turns a dead session into something somebody knows
+            # about (`DASH-029`).
             faults["stalled_triage"].append({"issue": issue["number"]})
 
         if closed:
@@ -93,9 +90,6 @@ def fetch(api, labels, bot_login, dashboard_issue=None, overrides=None):
                 "number": issue["number"],
                 "title": issue.get("title", ""),
                 "state_label": state_label,
-                # Carried so the section can annotate a stalled issue rather than
-                # listing it as ordinary waiting work (`DASH-029`).
-                "marker": marker,
                 "milestone": milestone.get("title"),
                 "milestone_number": milestone.get("number"),
                 "blockers": unresolved,

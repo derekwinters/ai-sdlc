@@ -137,12 +137,12 @@ class TestFaultDetection(unittest.TestCase):
         """Bounding the retries turns "retried for ever" into "ignored for
         ever" unless somebody is told. Without this the issue sits in Waiting
         for triage looking exactly like ordinary waiting work."""
-        github = api([issue(7, ["ai-triage", "ai-triage-stalled"])])
+        github = api([issue(7, ["ai-triage-stalled"])])
         self.assertEqual(
             [f["issue"] for f in state(github)["faults"]["stalled_triage"]], [7])
 
     def test_an_ordinary_triage_raises_no_stalled_fault(self):  # DASH-029
-        github = api([issue(7, ["ai-triage"])])
+        github = api([issue(7, ["ai-triage-queued"])])
         self.assertEqual(state(github)["faults"]["stalled_triage"], [])
 
     def test_a_prose_dependency_is_flagged(self):  # DASH-026
@@ -267,7 +267,7 @@ class TestFocusResolution(unittest.TestCase):
         self.assertEqual(state(github)["focus"]["title"], "v0.2")
 
     def test_a_milestone_with_no_ready_work_is_not_the_fallback(self):  # DASH-033
-        github = self._api("", issues=[issue(7, ["ai-triage"], milestone="v0.2",
+        github = self._api("", issues=[issue(7, ["ai-triage-queued"], milestone="v0.2",
                                               milestone_number=2),
                                        issue(8, ["ready-for-work"], milestone="v0.9",
                                              milestone_number=9)])

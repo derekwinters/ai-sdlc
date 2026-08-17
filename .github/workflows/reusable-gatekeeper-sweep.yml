@@ -1,17 +1,14 @@
 name: gatekeeper-sweep
 
 # The backstop. Firing is a poke, and a poke can be lost — a routine that never
-# starts leaves the issue in triage with nothing that will ever look at it
-# again. This finds those and pokes them once more.
+# starts leaves the issue in `ai-triage-running` with nothing that will ever
+# look at it again. This notices those and relabels them `ai-triage-stalled`.
 #
-# Two paths, and the difference between them is the point. The scheduled path
-# may requeue. The event path may not: a merge or a label change can briefly
-# make a healthy issue look stranded, and requeueing in that window is what
-# turns two states into a loop that fires a session on every flip.
+# It starts no sessions. Deciding to spend another one is a person's job, done
+# with `/admit`. That is why this workflow needs no ceiling, no per-issue
+# budget, and no fire secrets: whatever it gets wrong, it writes a label.
 #
-# What it may spend is bounded twice — `sweep.ceiling` per run, and
-# `sweep.give_up_after` per issue across all runs. See docs/spec/gatekeeper.md
-# (GK-138 to GK-144).
+# See docs/spec/gatekeeper.md (GK-139 to GK-143).
 
 on:
   workflow_call:
@@ -20,27 +17,23 @@ on:
         description: The ai-sdlc ref providing the handler.
         type: string
         default: main
-      events_only:
+      stale_after:
         description: >-
-          True on the event path, where requeueing is withheld. The scheduled
-          caller passes false.
-        type: boolean
-        default: true
-    secrets:
-      fire_endpoint:
-        required: false
-      fire_token:
-        required: false
+          Seconds a session may run before it counts as never having answered.
+          Required rather than defaulted: a caller that omits it should fail
+          loudly instead of inheriting a number nobody chose, and the number it
+          does carry belongs in the repository it governs. `adopt` writes 1800.
+        type: number
+        required: true
 
-# `issues: write` advances and clears the attempt markers. No pipeline state.
 permissions:
   contents: read
   issues: write
 
 concurrency:
-  # One sweep at a time, and never cancelled: two concurrent sweeps would each
-  # see the same stranded issues and poke them, which is the one thing the
-  # ceiling cannot bound.
+  # One at a time, never cancelled. Two concurrent sweeps would each read the
+  # same board and write the same labels — harmless, but the second run's
+  # report would describe work the first already did.
   group: gatekeeper-sweep
   cancel-in-progress: false
 
@@ -64,9 +57,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          FIRE_ENDPOINT: ${{ secrets.fire_endpoint }}
-          FIRE_TOKEN: ${{ secrets.fire_token }}
-          EVENTS_ONLY: ${{ inputs.events_only }}
+          STALE_AFTER: ${{ inputs.stale_after }}
           SKILL_ROOT: ${{ inputs.ref != '' && '.ai-sdlc' || '.' }}
         run: |
           PYTHONPATH="$SKILL_ROOT" python3 \

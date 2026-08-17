@@ -117,7 +117,7 @@ class TestARefusal(unittest.TestCase):
     def test_a_refused_command_applies_no_label(self):  # GK-113
         api = github(milestone=None)
         handle_comment(api, event(), settings())
-        self.assertNotIn("ai-triage", labels_of(api))
+        self.assertNotIn("ai-triage-queued", labels_of(api))
 
 
 class TestAStranger(unittest.TestCase):
@@ -238,10 +238,26 @@ class TestTheGatekeeperFires(unittest.TestCase):
         handle_comment(api, event(body="/admit"), settings(fire=fire))
         self.assertEqual(fire.sent, [(7, api.repository)])
 
-    def test_admitting_still_applies_the_label(self):  # GK-110
+    def test_admitting_puts_the_issue_into_triage(self):  # GK-110
+        """`/admit` writes queued, and a fire that starts a session immediately
+        moves it on to running (`GK-138`). Asserting the end state rather than
+        the intermediate one, because the intermediate one exists for as long
+        as one HTTP round trip."""
         api = github(labels=())
         handle_comment(api, event(body="/admit"), settings())
-        self.assertIn("ai-triage", labels_of(api))
+        self.assertIn("ai-triage-running", labels_of(api))
+
+    def test_admitting_leaves_it_queued_when_nothing_started(self):  # GK-138
+        """A routine that could not be reached started nothing, so the issue
+        stays where the sweep will still see work waiting."""
+        class FailingFire:
+            def send(self, issue, repository):
+                from downstream import FireResult
+                return FireResult(True, failed=True, detail="502")
+
+        api = github(labels=())
+        handle_comment(api, event(body="/admit"), settings(fire=FailingFire()))
+        self.assertIn("ai-triage-queued", labels_of(api))
 
     def test_no_command_fires_anything(self):  # GK-110
         api = github()
@@ -257,7 +273,7 @@ class TestTheGatekeeperFires(unittest.TestCase):
 
     def test_re_admitting_an_issue_already_in_triage_does_not(self):  # GK-111
         """The transition is what fires, not the destination."""
-        api = github(labels=("ai-triage",))
+        api = github(labels=("ai-triage-queued",))
         fire = RecordingFire()
         handle_comment(api, event(body="/admit"), settings(fire=fire))
         self.assertEqual(fire.sent, [])
@@ -290,7 +306,7 @@ class TestTheGatekeeperFires(unittest.TestCase):
             event(body="/admit"),
             settings(fire=Fire("https://example.com", "t", transport=explode)),
         )
-        self.assertIn("ai-triage", labels_of(api))
+        self.assertIn("ai-triage-queued", labels_of(api))
         self.assertTrue(result.fired.failed)
 
 

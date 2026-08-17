@@ -21,10 +21,10 @@ from __future__ import annotations
 #: Where each command leaves the issue, by state name. Commands absent from
 #: this map change no labels at all — `/milestone`, `/focus`, `/cap`, `/retry`.
 MOVES = {
-    "admit": "triage",
-    "propose": "triage",
-    "revise": "triage",
-    "unpark": "triage",
+    "admit": "triage_queued",
+    "propose": "triage_queued",
+    "revise": "triage_queued",
+    "unpark": "triage_queued",
     "approve": "approved",
     "redo": "approved",
     "park": "parked",
@@ -34,20 +34,16 @@ MOVES = {
 WRITTEN_BY_OTHERS = {"pending_approval", "clarification", "building"}
 
 
-def plan_labels(current, actions, labels, markers=()):
+def plan_labels(current, actions, labels):
     """The label set after applying `actions` in order.
 
     `labels` maps a state name to the label this repository uses for it.
 
-    `markers` are the triage attempt markers, dropped by any state move. A
-    marker that outlives its episode is a slower version of the bug it prevents
-    — the next episode starts with a spent budget and is never retried at all
-    (`GK-145`). Re-entering triage clears them for the same reason from the
-    other direction: a fresh `/admit` is a new episode and deserves a fresh
-    budget (`GK-141`).
+    Moving to any state drops whatever state label was there, including the
+    other two triage states — so `/admit` on a stalled issue returns it to the
+    queue, which is the only way out of stalled (`GK-142`).
     """
-    state_labels = set(labels.values())
-    dropped = state_labels | set(markers)
+    dropped = set(labels.values())
     result = list(current)
 
     for action in actions:

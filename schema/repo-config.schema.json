@@ -74,8 +74,17 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "triage": {
-          "type": "string"
+        "triage_queued": {
+          "type": "string",
+          "default": "ai-triage-queued"
+        },
+        "triage_running": {
+          "type": "string",
+          "default": "ai-triage-running"
+        },
+        "triage_stalled": {
+          "type": "string",
+          "default": "ai-triage-stalled"
         },
         "pending_approval": {
           "type": "string"
@@ -134,25 +143,6 @@
         },
         "token_secret": {
           "type": "string"
-        }
-      }
-    },
-    "sweep": {
-      "description": "Bounds on what the scheduled backstop may spend. A circuit breaker against a fault requeueing without limit, not a throttle for ordinary operation. How many times one issue may be poked is carried by the attempt-marker labels, not by a duration.",
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "ceiling": {
-          "description": "Most issues one run may requeue. 0 disables the sweep.",
-          "type": "integer",
-          "minimum": 0,
-          "default": 20
-        },
-        "stale_after": {
-          "description": "Seconds untouched before an issue counts as stranded.",
-          "type": "integer",
-          "minimum": 0,
-          "default": 1800
         }
       }
     }

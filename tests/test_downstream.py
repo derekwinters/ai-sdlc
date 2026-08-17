@@ -16,7 +16,7 @@ from downstream import (
     should_rerender,
 )
 
-TRIAGE = "ai-triage"
+TRIAGE = "ai-triage-queued"
 
 
 class TestFiringAnalysis(unittest.TestCase):

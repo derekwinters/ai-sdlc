@@ -11,7 +11,9 @@ if str(SKILL) not in sys.path:
 REPO = "derekwinters/ai-sdlc"
 
 LABELS = {
-    "triage": "ai-triage",
+    "triage_queued": "ai-triage-queued",
+    "triage_running": "ai-triage-running",
+    "triage_stalled": "ai-triage-stalled",
     "pending_approval": "pending-approval",
     "clarification": "needs-clarification",
     "approved": "ready-for-work",

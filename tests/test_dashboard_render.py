@@ -104,7 +104,7 @@ class TestTheFocusChart(unittest.TestCase):
 
     def test_in_planning_counts_the_three_planning_states(self):  # DASH-011
         chart = self._chart_for([
-            issue(1, state_label=LABELS["triage"]),
+            issue(1, state_label=LABELS["triage_queued"]),
             issue(2, state_label=LABELS["pending_approval"]),
             issue(3, state_label=LABELS["clarification"]),
         ])
@@ -293,7 +293,7 @@ class TestSections(unittest.TestCase):
             issue(3, state_label=LABELS["pending_approval"]),
             issue(4, state_label=LABELS["clarification"]),
             issue(5, state_label=LABELS["parked"]),
-            issue(6, state_label=LABELS["triage"]),
+            issue(6, state_label=LABELS["triage_queued"]),
             issue(7, state_label=None),
         ]))
         block = _section(page, "Waiting for triage")
@@ -301,22 +301,27 @@ class TestSections(unittest.TestCase):
         self.assertIn("#6", block)
         self.assertIn("#7", block)
 
-    def test_a_stalled_issue_is_annotated_in_its_section(self):  # DASH-029
-        """It genuinely is waiting for triage, so removing it would make the
-        count wrong. Listing it unmarked beside live work is the other
-        failure: the section would report a dead issue as ordinary waiting."""
+    def test_the_three_triage_states_share_one_section(self):  # DASH-035
+        """One section because they are one answer to "what has not been
+        analysed yet". Splitting them would give a thirty-second-old session
+        its own heading for the minute it exists."""
         page = render(state(issues=[
-            issue(6, state_label="ai-triage", marker="ai-triage-stalled")]))
+            issue(1, state_label="ai-triage-queued"),
+            issue(2, state_label="ai-triage-running"),
+            issue(3, state_label="ai-triage-stalled"),
+        ]))
         block = _section(page, "Waiting for triage")
-        self.assertIn("triage stalled", block)
-        self.assertIn("Waiting for triage</b> — 1", block)
+        self.assertIn("Waiting for triage</b> — 3", block)
+        for number in ("#1", "#2", "#3"):
+            self.assertIn(number, block)
 
-    def test_a_pending_issue_is_not_annotated(self):  # DASH-029
-        """Transient bookkeeping most issues carry for minutes. Annotating the
-        normal case teaches the reader to skip the annotation."""
-        page = render(state(issues=[
-            issue(6, state_label="ai-triage", marker="ai-triage-pending")]))
-        self.assertNotIn("triage stalled", _section(page, "Waiting for triage"))
+    def test_no_other_section_claims_a_triage_state(self):  # DASH-035
+        """The complement is what collects them, so a triage label leaking into
+        a claimed state would silently empty this section."""
+        page = render(state(issues=[issue(2, state_label="ai-triage-running")]))
+        for heading in ("Ready for work", "Pending approval",
+                        "Needs clarification", "Parked"):
+            self.assertNotIn("#2", _section(page, heading))
 
     def test_a_closed_issue_is_in_no_section(self):  # DASH-017
         """It still counts towards Done on the chart."""

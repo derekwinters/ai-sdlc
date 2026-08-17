@@ -13,7 +13,7 @@ def fake(**state):
 
 class TestConstruction(unittest.TestCase):
     def test_it_is_built_from_plain_state(self):  # API-050
-        api = fake(issues=[{"number": 1, "labels": [{"name": "ai-triage"}]}])
+        api = fake(issues=[{"number": 1, "labels": [{"name": "ai-triage-queued"}]}])
         self.assertEqual(api.issue(1)["number"], 1)
 
     def test_an_unknown_issue_raises_like_the_real_client(self):  # API-050

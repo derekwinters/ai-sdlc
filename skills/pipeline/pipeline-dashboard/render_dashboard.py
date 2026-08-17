@@ -20,15 +20,13 @@ from __future__ import annotations
 import json
 import re
 
-from lib.config import MARKERS
-
 #: Focus buckets, in render order — Unplanned first, so the chart reads as a
 #: flow downward towards Done.
 BUCKETS = ("Unplanned", "In planning", "Ready", "Done")
 
 #: Sections, in render order: (heading, role names whose issues belong here).
 #: `None` means "every state no other section claims", which is how
-#: waiting-for-triage catches both `ai-triage` and an issue carrying no state.
+#: waiting-for-triage catches all three triage states and an issue carrying none.
 SECTIONS = (
     ("Ready for work", ("approved", "building")),
     ("Pending approval", ("pending_approval",)),
@@ -277,15 +275,20 @@ def _bucket(issue, state):
         return "Done"
     labels = state.get("labels") or {}
     label = issue.get("state_label")
+    if label is None:
+        # Untracked. Guarded before any comparison because `labels.get` answers
+        # `None` for a role a repository has not mapped, and `None == None`
+        # would then file every untracked issue under whichever state was
+        # missing.
+        return "Unplanned"
     if label == labels.get("parked"):
         return None
     if label in (labels.get("approved"), labels.get("building")):
         return "Ready"
-    if label in (labels.get("triage"), labels.get("pending_approval"),
+    if label in (labels.get("triage_queued"), labels.get("triage_running"),
+                 labels.get("triage_stalled"), labels.get("pending_approval"),
                  labels.get("clarification")):
         return "In planning"
-    # Untracked lands here: nobody has decided about it, which is exactly
-    # what Unplanned means.
     return "Unplanned"
 
 
@@ -343,30 +346,13 @@ def _row(state, issue, status):
     repository = state.get("repository", "")
     cells = [
         _issue_link(repository, issue["number"]),
-        _cell(issue.get("title", "")) + _marker_note(issue),
+        _cell(issue.get("title", "")),
         _milestone_link(repository, issue),
         _blocker_links(repository, issue),
     ]
     if status:
         cells.append(issue.get("state_label") or "-")
     return "| " + " | ".join(cells) + " |"
-
-
-def _marker_note(issue):
-    """What to append to a title when triage has stopped retrying (`DASH-029`).
-
-    Annotated rather than moved out of the section: the issue genuinely *is*
-    waiting for triage, so removing it would make the section's count wrong.
-    Leaving it unmarked is the other failure — a section that lists a dead
-    issue beside live ones reports it as ordinary waiting work.
-
-    Only the terminal marker is shown. `pending` is transient bookkeeping that
-    most issues carry for a few minutes, and a board that annotates the normal
-    case teaches its reader to skip the annotation.
-    """
-    if issue.get("marker") == MARKERS["triage_stalled"]:
-        return " — **triage stalled**"
-    return ""
 
 
 def _cell(text):

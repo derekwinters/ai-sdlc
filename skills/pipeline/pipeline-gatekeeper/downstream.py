@@ -126,29 +126,35 @@ def _created_session(status, text):
     return bool(parsed.get("claude_code_session_url"))
 
 
-def record_attempt(api, issue, result, marker):
-    """Record that a poke went out, by adding the pending marker.
+def record_started(api, issue, result, labels):
+    """Move the issue from queued to running, because a session started.
 
-    Only when a session actually started (`GK-138`). A fire that failed to
-    reach the endpoint started nothing, so recording an attempt would spend the
-    issue's one retry on a session that never existed — and the sweep would
-    then advance it straight to stalled without the routine ever having been
-    asked twice.
+    Only on a fire that actually started one (`GK-138`). A fire that never
+    reached the endpoint started nothing, and saying otherwise would leave the
+    issue looking like work in flight that nobody is doing — which the sweep
+    would then stall, blaming the routine for a failure that was ours.
+
+    This is the widening in `GK-005`: the handler writes a pipeline state. It
+    writes exactly one, the one it is the only component able to know is true —
+    only the thing that fired can say a session began.
 
     Never raises. The poke has already gone out by the time this runs, so
-    failing here would report a fire that happened as a fire that did not, and
-    would fail a workflow whose actual job already succeeded.
+    failing here would report a fire that happened as a fire that did not.
     """
-    if not (result and result.attempted and not result.failed and marker):
+    if not (result and result.attempted and not result.failed):
+        return False
+    running = (labels or {}).get("triage_running")
+    queued = (labels or {}).get("triage_queued")
+    if not running:
         return False
     try:
         current = [label["name"] for label in
                    (api.issue(issue).get("labels") or [])]
-        if marker in current:
-            # A write that changes nothing is still a write: it shows in the
-            # audit trail and invites a re-render.
+        if running in current:
+            # Already there. A write that changes nothing is still a write.
             return False
-        api.set_labels(issue, current + [marker])
+        wanted = [n for n in current if n != queued] + [running]
+        api.set_labels(issue, wanted)
     except Exception:  # noqa: BLE001 - bookkeeping must not fail the run
         return False
     return True

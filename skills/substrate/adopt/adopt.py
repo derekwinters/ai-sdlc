@@ -422,7 +422,7 @@ def _files_for(config, pin):
             trigger="  issues:\n    types: [labeled]\n",
             condition=(
                 "github.event.label.name == "
-                f"'{config.labels['triage']}'"
+                f"'{config.labels['triage_queued']}'"
             ),
             secrets=_fire_secrets(config),
         )
@@ -431,15 +431,18 @@ def _files_for(config, pin):
             trigger="  issues:\n    types: [closed]\n",
         )
         # The backstop for a lost poke (#136). Hourly rather than on the
-        # dashboard's daily schedule: an issue whose routine never started is
+        # dashboard's daily schedule: an issue whose session never answered is
         # dead until something notices, and a day of that is a day of nothing
-        # happening. `events_only: false` is what makes this the only caller
-        # permitted to requeue — see GK-142 for why the event path is not.
+        # happening.
         files[".github/workflows/gatekeeper-sweep.yml"] = _caller(
             "gatekeeper-sweep", "reusable-gatekeeper-sweep.yml", pin,
             trigger="  schedule:\n    - cron: \"17 * * * *\"\n  workflow_dispatch:\n",
-            inputs="      events_only: false\n",
-            secrets=_fire_secrets(config),
+            # Thirty minutes, written here rather than defaulted in the reusable
+            # workflow: the value belongs where somebody can see and change it,
+            # and a caller that omits it fails loudly (`GK-141`).
+            inputs="      stale_after: 1800\n",
+            # No fire secrets. The sweep starts no sessions, so it has nothing
+            # to authenticate to.
         )
         # The other half of report-rather-than-repair: nothing silently fixes
         # drift, so the board has to show it. A pipeline with no dashboard is

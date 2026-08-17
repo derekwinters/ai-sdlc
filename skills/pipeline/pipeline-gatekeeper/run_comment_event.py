@@ -23,7 +23,7 @@ from arguments import check_arguments
 from authority import Authority
 from catchup import unfinished_comments
 from downstream import (NOT_TRIAGE, FireResult, fires_triage,
-                        record_attempt, should_rerender)
+                        record_started, should_rerender)
 from refresh import refresh_quietly
 from gates import run_gates
 from lib.github import GitHubError
@@ -42,7 +42,6 @@ class Settings:
         "dashboard_issue",
         "milestone_ordering",
         "fire",
-        "markers",
     )
 
     def __init__(
@@ -53,7 +52,6 @@ class Settings:
         dashboard_issue=None,
         milestone_ordering="semver",
         fire=None,
-        markers=(),
     ):
         self.owners = list(owners)
         self.bot_login = bot_login
@@ -61,15 +59,6 @@ class Settings:
         self.dashboard_issue = dashboard_issue
         self.milestone_ordering = milestone_ordering
         self.fire = fire
-        #: The triage attempt markers, in order. Empty for a caller that has
-        #: not been given any, which keeps every existing test constructing a
-        #: `Settings` by hand working unchanged.
-        self.markers = tuple(markers)
-
-    @property
-    def marker_pending(self):
-        """The marker recording that a poke went out, or None."""
-        return self.markers[0] if self.markers else None
 
     @classmethod
     def from_config(cls, config, fire=None):
@@ -80,7 +69,6 @@ class Settings:
             dashboard_issue=config.dashboard_issue,
             milestone_ordering=config.milestone_ordering,
             fire=fire,
-            markers=config.markers(),
         )
 
 
@@ -210,13 +198,14 @@ def _fire(api, issue_number, before, after, settings):
     (#126). That suppression is also what keeps the two paths from both firing
     for one `/admit` — see `GK-122`.
     """
-    if not fires_triage(before, after, (settings.labels or {}).get("triage")):
+    if not fires_triage(before, after, (settings.labels or {}).get("triage_queued")):
         return NOT_TRIAGE
     if not settings.fire:
         return FireResult(attempted=False, detail="no analysis routine configured")
     result = settings.fire.send(issue_number, api.repository)
-    # Whoever fires records the attempt (`GK-138`). A marker, never a state.
-    record_attempt(api, issue_number, result, settings.marker_pending)
+    # Whoever fires records that a session started, by moving queued -> running
+    # (`GK-138`). Exactly one state, the one only this component can know.
+    record_started(api, issue_number, result, settings.labels)
     return result
 
 

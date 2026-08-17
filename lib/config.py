@@ -42,18 +42,15 @@ DEPENDENCIES = {
 
 PROFILES = ("unity", "mkdocs", "python", "node", "kotlin")
 
-#: Attempt markers. Not pipeline states — an issue carrying one is still *in*
-#: triage; the marker records how many pokes that episode has had. Kept
-#: separate from STATES so `GK-001` ("at most one state label") stays true and
-#: the gates never have to know about them.
-MARKERS = {
-    "triage_pending": "ai-triage-pending",
-    "triage_stalled": "ai-triage-stalled",
-}
-
 #: Pipeline states and the labels they carry unless a repository says otherwise.
+#:
+#: Triage is three states because one could not answer "has it happened?" — an
+#: issue on a single `ai-triage` might never have been poked, might have a
+#: session running, or might have had one die.
 STATES = {
-    "triage": "ai-triage",
+    "triage_queued": "ai-triage-queued",
+    "triage_running": "ai-triage-running",
+    "triage_stalled": "ai-triage-stalled",
     "pending_approval": "pending-approval",
     "clarification": "needs-clarification",
     "approved": "ready-for-work",
@@ -121,7 +118,6 @@ class Config:
         "dashboard_issue",
         "commands",
         "fire",
-        "sweep",
     )
 
     def __init__(self, **values):
@@ -133,15 +129,6 @@ class Config:
 
     def label(self, state):
         return self.labels[state]
-
-    def marker(self, name):
-        """An attempt marker's label. Not configurable per repository: the
-        markers are internal bookkeeping the pipeline reads and writes itself,
-        never something an owner types."""
-        return MARKERS[name]
-
-    def markers(self):
-        return tuple(MARKERS.values())
 
     def __repr__(self):
         return f"<Config capabilities={self.capabilities}>"
@@ -195,7 +182,6 @@ def parse_config(text, source=None):
         dashboard_issue=_dashboard_issue(raw, pipeline, problems),
         commands=_commands(raw, problems),
         fire=_fire(raw, problems),
-        sweep=_sweep(raw, problems),
     )
 
     if problems:
@@ -216,14 +202,12 @@ _SCHEMA_KEYS = {
     "dashboard_issue": int,
     "commands": dict,
     "fire": dict,
-    "sweep": dict,
 }
 
 _NESTED_KEYS = {
     "bot": {"identity": str, "login": str, "app_id_secret": str, "private_key_secret": str},
     "commands": {"test": str, "verify": str, "spec_validator": str},
     "fire": {"endpoint_secret": str, "token_secret": str},
-    "sweep": {"ceiling": int, "stale_after": int},
 }
 
 
@@ -388,50 +372,6 @@ def _commands(raw, problems):
         verify=section.get("verify"),
         spec_validator=section.get("spec_validator"),
     )
-
-
-#: What the backstop may spend if nobody says otherwise.
-#:
-#: A circuit breaker rather than a throttle: twenty is comfortably more than an
-#: ordinary board strands at once, so reaching it means something is wrong
-#: rather than busy. Thirty minutes is longer than any analysis that has ever
-#: succeeded, so a warm issue is never poked while its session may still run.
-#:
-#: There is deliberately no give-up *duration*. How many times an issue may be
-#: poked is carried by the markers, which only advance; a duration is measured
-#: against a clock that ordinary activity resets, so it bounds nothing.
-SWEEP_DEFAULTS = {"ceiling": 20, "stale_after": 1800}
-
-
-class _Sweep:
-    __slots__ = ("ceiling", "stale_after")
-
-    def __init__(self, ceiling, stale_after):
-        self.ceiling = ceiling
-        self.stale_after = stale_after
-
-    def __repr__(self):
-        return f"<Sweep ceiling={self.ceiling}>"
-
-
-def _sweep(raw, problems):
-    """The sweep's bounds, defaulted and sanity-checked.
-
-    Refused rather than clamped: a negative bound produces a sweep that
-    silently does nothing, and silence is the one failure this whole feature
-    exists to end.
-    """
-    section = _section(raw, "sweep")
-    values = dict(SWEEP_DEFAULTS)
-    for key in values:
-        given = section.get(key)
-        if given is None:
-            continue
-        if given < 0:
-            problems.append(f"'sweep.{key}' must not be negative")
-            continue
-        values[key] = given
-    return _Sweep(**values)
 
 
 def _fire(raw, problems):

@@ -51,16 +51,22 @@ def main(argv):
     if argv[1] == "sweep":
         # No event payload: the sweep reads the board rather than reacting to
         # one thing, and the scheduled path has no event to read.
+        #
+        # No `Fire` either, deliberately (`GK-140`). The sweep observes and
+        # relabels; deciding to spend another session is a person's job.
         from datetime import datetime, timezone  # noqa: PLC0415
 
         from run_sweep import run, summarise  # noqa: PLC0415
 
-        fire = Fire(os.environ.get("FIRE_ENDPOINT"), os.environ.get("FIRE_TOKEN"))
-        events_only = os.environ.get("EVENTS_ONLY", "true").lower() != "false"
+        stale_after = os.environ.get("STALE_AFTER")
+        if not stale_after:
+            # Required rather than defaulted (`GK-141`): inheriting a number
+            # nobody chose is how a threshold ends up wrong and unnoticed.
+            raise SystemExit("STALE_AFTER is required")
         result = run(
-            api, config, fire,
+            api, config,
             now=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-            events_only=events_only,
+            stale_after=float(stale_after),
         )
         for line in summarise(result):
             print(line)

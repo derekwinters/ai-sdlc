@@ -36,7 +36,7 @@ class TestEligibility(unittest.TestCase):
         self.assertEqual(queue([issue(7)]), [7])
 
     def test_an_issue_in_another_state_is_not(self):  # DEV-001
-        self.assertEqual(queue([issue(7, labels=("ai-triage",))]), [])
+        self.assertEqual(queue([issue(7, labels=("ai-triage-queued",))]), [])
 
     def test_a_closed_issue_is_not(self):  # DEV-002
         self.assertEqual(queue([issue(7, state="closed")]), [])

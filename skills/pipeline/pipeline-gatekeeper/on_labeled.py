@@ -20,7 +20,7 @@ Specification: docs/spec/gatekeeper.md (`GK-122`).
 
 from __future__ import annotations
 
-from downstream import FireResult, record_attempt
+from downstream import FireResult, record_started
 
 
 def on_label_added(api, event, settings):
@@ -31,7 +31,7 @@ def on_label_added(api, event, settings):
     one that never went out.
     """
     added = ((event or {}).get("label") or {}).get("name")
-    wanted = (settings.labels or {}).get("triage")
+    wanted = (settings.labels or {}).get("triage_queued")
 
     if not added or added != wanted:
         return FireResult(attempted=False, detail=f"{added!r} is not the triage label")
@@ -47,5 +47,5 @@ def on_label_added(api, event, settings):
     # The component that knows a poke went out is the one that sent it, so it
     # records the attempt (`GK-138`). A marker, never a pipeline state — that
     # remains the routine's decision, which is what `GK-122` protects.
-    record_attempt(api, issue, result, settings.marker_pending)
+    record_started(api, issue, result, settings.labels)
     return result
