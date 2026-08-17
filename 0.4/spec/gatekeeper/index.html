@@ -1534,7 +1534,11 @@ the cause rather than a safeguard: the body is exactly where the value has to li
 renderer re-emits the marker it read and that is what carries it between two separate workflow
 runs. Found by issuing <code>/focus v0.5</code> on a live board and watching nothing happen.
 - <strong>GK-117</strong> A fire failure is reported but never raised, and never fails the run.
-- <strong>GK-118</strong> The fire request never logs its URL or its secret.
+- <strong>GK-118</strong> Neither the fire request nor its response ever logs a URL, a secret, or a session
+  link. <strong>Invariant — nothing that identifies a private session is written to a log, an issue, or
+  a pull request.</strong> Every repository running this pipeline is public, so a workflow log is a
+  publication: the guarantee is about what reaches the log by <em>any</em> route, not about which line
+  was written deliberately.
 - <strong>GK-119</strong> An unconfigured fire endpoint is a notice, not an error.
 - <strong>GK-122</strong> The analysis routine is fired by <strong>both</strong> the gatekeeper and the label event, and an
   issue entering triage fires exactly once however the label got there. The two paths are disjoint
@@ -1553,12 +1557,28 @@ runs. Found by issuing <code>/focus v0.5</code> on a live board and watching not
   number. The routine parses the issue number out of an untrusted wrapper, so the payload is prose
   rather than a structured record.
 - <strong>GK-125</strong> A fire counts as successful only when the endpoint returns a <code>routine_fire</code> carrying a
-  session URL, which is then reported. Any other answer — including a <code>2xx</code> — is a failure naming
-  its status and body.
+  session URL. Any other answer — including a <code>2xx</code> — is a failure naming its status and body.
+- <strong>GK-126</strong> A run reports <em>whether</em> a session was created, never <em>which</em>. The check that reads the
+  response returns a boolean and not the link it read, so there is no session URL in hand to print
+  by accident; and the failure branch, which reports the raw response body, redacts session links
+  as it already redacts the endpoint and the token.
 - <strong>GK-121</strong> Every run reports what became of the analysis routine: fired, fired and failed with
   the scrubbed detail, not configured, or not a triage transition. <code>GK-119</code>'s silence is about
   not <em>failing</em> the run, never about saying nothing — a deliberate absence and a broken wire must
   not read the same.</p>
+<p><strong>How the spec is changing (#132).</strong> <code>GK-118</code> used to say only that <em>the fire request</em> never logs
+its URL or its secret, and <code>GK-125</code> ended <em>"…carrying a session URL, which is then reported"</em> —
+so the request's URL was treated as sensitive while the response's was printed in full. <code>GK-118</code>
+now covers the response too and states the invariant plainly, and <code>GK-125</code> keeps its truthfulness
+guarantee while <code>GK-126</code> takes over what a run may say about it: whether a session was created,
+never which one.</p>
+<p>The reason is not that a session link is a credential — it is that every repository running this
+pipeline is public, so a workflow log is a publication, and an identifier published there cannot
+be unpublished. That asymmetry decides it: the link saved the owner a lookup in their own
+account, and cost an irreversible disclosure to anyone who reads the log.</p>
+<p>The rule is written as "by any route" because there were two leaks and only one of them was
+deliberate. Removing the printed line would have left the failure branch — which reports the raw
+response body — publishing the link from any response that failed after creating a session.</p>
 <p><strong>How the spec is changing (#123).</strong> <code>GK-110</code> fired the routine from the gatekeeper, which meant
 the routine was reachable only through <code>/admit</code> and only at the instant of the transition. Adding
 <code>ai-triage</code> by hand — the obvious thing to do — fired nothing at all, because the gatekeeper
