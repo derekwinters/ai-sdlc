@@ -1091,7 +1091,9 @@ dependencies is a configuration error, refused at load, not a runtime surprise.<
 <li><strong>CFG-045</strong> <code>commands.test</code>, <code>commands.verify</code> and <code>commands.spec_validator</code> are shell strings,
   each optional.</li>
 <li><strong>CFG-046</strong> <code>fire.endpoint_secret</code> and <code>fire.token_secret</code> name secrets, never values. A literal
-  that looks like a credential is an error.</li>
+  that looks like a credential is an error. <code>adopt</code> reads them to write the gatekeeper caller's
+  <code>secrets:</code> block (<code>ADOPT-070</code>) — they are the only way a repository says which of its secrets
+  hold the analysis routine's endpoint and token, so a repository that omits them has no triage.</li>
 </ul>
 <h2 id="6-the-yaml-subset">6. The YAML subset<a class="headerlink" href="#6-the-yaml-subset" title="Permanent link">&para;</a></h2>
 <p>Parsing is stdlib-only, so the accepted subset is stated rather than inherited.</p>

@@ -1198,12 +1198,30 @@ fewer, or the run cannot start; not more, or adoption quietly widens what the pi
 <li><strong>ADOPT-068</strong> A caller's <code>permissions:</code> block is derived from the reusable workflow it calls. A
   called workflow cannot be granted more than its caller holds, so a caller granting too little
   fails as <code>startup_failure</code> — no jobs, no logs, no annotation, which is close to silent.</li>
-<li><strong>ADOPT-069</strong> Every reusable workflow ai-sdlc ships is reachable: some capability or profile
+<li>
+<p><strong>ADOPT-069</strong> Every reusable workflow ai-sdlc ships is reachable: some capability or profile
   installs a caller for it. A workflow nothing can install is indistinguishable from one that does
   not exist, and this is the gate that makes the next such omission fail here rather than in a
-  consumer's repository.</li>
+  consumer's repository.</p>
+</li>
+<li>
+<p><strong>ADOPT-070</strong> A caller passes the secrets the workflow it calls declares, naming them from
+  configuration. <code>fire.endpoint_secret</code> and <code>fire.token_secret</code> are the only place a repository can
+  say which of its secrets hold the analysis routine's endpoint and token, and a caller that omits
+  them hands the workflow empty strings. Named rather than inherited: <code>secrets: inherit</code> is one
+  line and grants every secret the repository holds, which is the same mistake as a too-wide
+  permissions block. A repository naming none gets no block, and a pipeline with no analysis
+  routine keeps working.</p>
+</li>
 </ul>
 <blockquote>
+<p><strong>How the spec is changing (#118).</strong> §7 covered the caller's <code>uses:</code>, its <code>ref:</code> and its
+<code>permissions:</code>, and said nothing about secrets. Every caller <code>adopt</code> had ever written therefore
+omitted the <code>secrets:</code> block that <code>reusable-gatekeeper-comment.yml</code> declares, so <code>Fire</code> received
+empty strings and reported the routine as unconfigured — silently, because <code>GK-119</code> makes that a
+notice rather than an error. Triage had never run in <code>connor-multiplying-frogs</code> since adoption.
+<code>CFG-046</code> had specified how a repository names those secrets since before the pipeline shipped,
+and nothing read them.</p>
 <p><strong>How the spec is changing (#84).</strong> Five defects of one shape reached a consumer before ADOPT-069
 existed — an import with no file (#71), a workflow with no manifest (#75), a permissions block too
 narrow to start (#78), a profile that installed nothing (#81), and a dashboard nothing could
@@ -1273,9 +1291,14 @@ was right to. <code>VAL-056</code> moved with it, in the same direction.</p>
 <td>ADOPT-068–069</td>
 <td><code>test_adopt_permissions.py</code></td>
 </tr>
+<tr>
+<td>Caller secrets</td>
+<td>ADOPT-070</td>
+<td><code>test_adopt_permissions.py</code></td>
+</tr>
 </tbody>
 </table>
-<p><strong>47 requirements, all <code>auto</code>.</strong></p>
+<p><strong>48 requirements, all <code>auto</code>.</strong></p>
 
 
 
