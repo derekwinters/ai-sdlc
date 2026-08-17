@@ -272,10 +272,23 @@ Replaces the removed comment-replay sweep.
 - **GK-117** A fire failure is reported but never raised, and never fails the run.
 - **GK-118** The fire request never logs its URL or its secret.
 - **GK-119** An unconfigured fire endpoint is a notice, not an error.
+- **GK-122** The analysis routine is fired by the **label event**, not by the gatekeeper. An issue
+  entering triage fires exactly once, however the label got there — a command, a hand, or anything
+  added later. The handler writes nothing: firing is a poke, and what happens next is the routine's
+  decision.
 - **GK-121** Every run reports what became of the analysis routine: fired, fired and failed with
   the scrubbed detail, not configured, or not a triage transition. `GK-119`'s silence is about
   not *failing* the run, never about saying nothing — a deliberate absence and a broken wire must
   not read the same.
+
+> **How the spec is changing (#123).** `GK-110` fired the routine from the gatekeeper, which meant
+> the routine was reachable only through `/admit` and only at the instant of the transition. Adding
+> `ai-triage` by hand — the obvious thing to do — fired nothing at all, because the gatekeeper
+> listens on `issue_comment` and nothing listened to `issues: labeled` except the dashboard. The
+> board-wide catch-up that used to cover this went away with the sweep at adoption. Firing now
+> keys on the label event, and the gatekeeper no longer fires: doing both would poke the routine
+> twice for every `/admit`, and deduplicating two independent workflows is harder than having one.
+> The payload is unchanged, so the routine sees exactly what it saw before.
 
 > **How the spec is changing (#121).** `GK-117`–`GK-119` said a fire failure is reported and never
 > raised, without saying where it is reported *to*. Nothing printed it: `handle_comment` computed

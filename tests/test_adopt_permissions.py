@@ -16,6 +16,7 @@ import unittest
 from _adopt import PIN, repository
 from _support import ROOT
 from adopt import _files_for, apply
+from lib.config import STATES
 
 PERMISSIONS = re.compile(r"^permissions:\n((?:  \S+: \S+\n)+)", re.MULTILINE)
 CALLS = re.compile(r"uses: derekwinters/ai-sdlc/\.github/workflows/(\S+?\.yml)@")
@@ -39,6 +40,10 @@ def _callers():
     class Config:
         capabilities = ALL_CAPABILITIES
         profiles = ALL_PROFILES
+        # A real configuration always carries these; the stub has to as well,
+        # or it under-describes what `_files_for` is handed in production.
+        labels = dict(STATES)
+        fire = None
 
     for path, body in _files_for(Config(), PIN).items():
         called = CALLS.search(body)
