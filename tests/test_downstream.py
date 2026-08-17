@@ -247,6 +247,28 @@ class TestReportingTheOutcome(unittest.TestCase):
 
         self.assertIn("fired", fire_summary(FireResult(attempted=True)).lower())
 
+    def test_a_fired_run_names_the_session_it_created(self):  # GK-125
+        """The session URL is the one thing worth having in that log line.
+
+        It is what turns "something answered" into a session somebody can
+        open, and it is already carried on the result — it was simply never
+        printed.
+        """
+        from downstream import FireResult, fire_summary
+
+        line = fire_summary(
+            FireResult(attempted=True, detail="https://claude.ai/code/session_01X")
+        )
+        self.assertIn("https://claude.ai/code/session_01X", line)
+
+    def test_a_fired_run_without_a_url_still_reads_cleanly(self):  # GK-121
+        from downstream import FireResult, fire_summary
+
+        self.assertEqual(
+            fire_summary(FireResult(attempted=True)),
+            "triage: fired the analysis routine",
+        )
+
     def test_a_failure_says_why(self):  # GK-121
         from downstream import FireResult, fire_summary
 
