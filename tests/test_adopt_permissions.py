@@ -15,7 +15,7 @@ import unittest
 
 from _adopt import PIN, repository
 from _support import ROOT
-from adopt import _files_for
+from adopt import _files_for, apply
 
 PERMISSIONS = re.compile(r"^permissions:\n((?:  \S+: \S+\n)+)", re.MULTILINE)
 CALLS = re.compile(r"uses: derekwinters/ai-sdlc/\.github/workflows/(\S+?\.yml)@")
@@ -117,3 +117,54 @@ class TestEveryReusableWorkflowIsReachable(unittest.TestCase):
             "these reusable workflows are shipped but nothing installs a caller "
             "for them, so no consumer can reach them",
         )
+
+
+class TestTheFireSecretsReachTheCaller(unittest.TestCase):
+    """ADOPT-070 — a configured analysis routine is actually wired to one.
+
+    `reusable-gatekeeper-comment.yml` declares `fire_endpoint` and
+    `fire_token` as optional secrets and maps them to environment variables.
+    Every caller `adopt` wrote omitted the `secrets:` block entirely, so both
+    arrived empty and `Fire` treated the routine as unconfigured — silently,
+    because GK-119 makes an unconfigured endpoint a notice rather than an
+    error. Triage therefore never ran in `connor-multiplying-frogs` (#118).
+
+    `fire.endpoint_secret` and `fire.token_secret` were the only way a
+    repository could say which of its secrets to use, and nothing read them.
+    """
+
+    def _apply(self, fire):
+        root = repository({
+            ".claude/repo-config.yml": (
+                "capabilities:\n  - hygiene\n  - consistency\n  - labels\n"
+                "  - release\n  - pipeline\n"
+                "owners:\n  - derekwinters\n"
+                "dashboard_issue: 163\n" + fire
+            ),
+        })
+        apply(root, pin=PIN)
+        return (root / ".github/workflows/gatekeeper-comment.yml").read_text()
+
+    def test_the_named_secrets_are_passed(self):  # ADOPT-070
+        text = self._apply(
+            "fire:\n  endpoint_secret: AI_TRIAGE_URL\n  token_secret: AI_TRIAGE_SECRET\n")
+        self.assertIn("    secrets:", text)
+        self.assertIn("fire_endpoint: ${{ secrets.AI_TRIAGE_URL }}", text)
+        self.assertIn("fire_token: ${{ secrets.AI_TRIAGE_SECRET }}", text)
+
+    def test_a_repository_naming_none_gets_no_block(self):  # ADOPT-070
+        """A repository may legitimately run the pipeline with no routine.
+
+        GK-119 keeps that a notice rather than an error, so the absence of a
+        block has to stay the absence of a routine — not a broken wire.
+        """
+        self.assertNotIn("secrets:", self._apply(""))
+
+    def test_the_secrets_are_named_never_inlined(self):  # ADOPT-070
+        """`adopt` writes a reference; the value never passes through it."""
+        text = self._apply(
+            "fire:\n  endpoint_secret: AI_TRIAGE_URL\n  token_secret: AI_TRIAGE_SECRET\n")
+        self.assertNotIn("secrets.fire_endpoint", text)
+        for line in text.splitlines():
+            if "fire_endpoint:" in line:
+                self.assertIn("${{ secrets.", line)
