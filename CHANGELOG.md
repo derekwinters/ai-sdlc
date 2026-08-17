@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.16](https://github.com/derekwinters/ai-sdlc/compare/v0.4.15...v0.4.16) (2026-08-17)
+
+
+### Fixes
+
+* **gatekeeper:** never report the session a fire created ([#133](https://github.com/derekwinters/ai-sdlc/issues/133)) ([d6f6884](https://github.com/derekwinters/ai-sdlc/commit/d6f68847f5c70ac8bbdcc55695e06aaf00220b60)), closes [#132](https://github.com/derekwinters/ai-sdlc/issues/132)
+
 ## [0.4.15](https://github.com/derekwinters/ai-sdlc/compare/v0.4.14...v0.4.15) (2026-08-17)
 
 
