@@ -22,7 +22,7 @@ from apply_actions import final_state, plan_labels
 from arguments import check_arguments
 from authority import Authority
 from catchup import unfinished_comments
-from downstream import fires_triage, should_rerender
+from downstream import NOT_TRIAGE, fires_triage, should_rerender
 from refresh import refresh_quietly
 from gates import run_gates
 from lib.github import GitHubError
@@ -75,7 +75,7 @@ class Result:
     __slots__ = ("applied", "refused", "reply", "fired", "rerender", "overrides",
                  "unverifiable")
 
-    def __init__(self, applied=(), refused=(), reply=None, fired=False,
+    def __init__(self, applied=(), refused=(), reply=None, fired=NOT_TRIAGE,
                  rerender=False, overrides=None, unverifiable=()):
         self.applied = list(applied)
         self.refused = list(refused)
@@ -162,9 +162,12 @@ def _apply(api, issue_number, comment, settings, watermark):
     if reply:
         api.comment(issue_number, reply)
 
-    fired = False
+    fired = NOT_TRIAGE
     if fires_triage(before, after, settings.labels["triage"]) and settings.fire:
-        fired = settings.fire.send(issue_number, api.repository).attempted
+        # The whole FireResult, not just `attempted`: a request the endpoint
+        # rejected and one never sent are different facts, and a run that
+        # reported neither is why #118 went unnoticed (#121).
+        fired = settings.fire.send(issue_number, api.repository)
 
     rerender = should_rerender(before, after) or bool(overrides)
     if rerender:

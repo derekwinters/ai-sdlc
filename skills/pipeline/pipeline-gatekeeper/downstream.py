@@ -54,8 +54,37 @@ class FireResult:
         self.failed = failed
         self.detail = detail
 
+    def __bool__(self):
+        """Truthy when the routine was actually asked.
+
+        So `result.fired` reads as "did it fire", while the object still
+        carries why it did not.
+        """
+        return bool(self.attempted)
+
     def __repr__(self):
         return f"<FireResult attempted={self.attempted} failed={self.failed}>"
+
+
+#: The outcome when a run never reached the question — the labels did not
+#: move an issue into triage, so there was nothing to fire about.
+NOT_TRIAGE = FireResult(attempted=False, detail="no triage transition")
+
+
+def fire_summary(fired):
+    """One line saying what happened to the analysis routine.
+
+    Every branch says something. A run that fired and a run that silently
+    skipped used to produce identical logs, which left "working", "rejected",
+    "unwired" and "no routine at all" indistinguishable from the outside.
+    """
+    if fired is None:
+        return "triage: not evaluated"
+    if fired.attempted and fired.failed:
+        return f"triage: fired and FAILED — {fired.detail}"
+    if fired.attempted:
+        return "triage: fired the analysis routine"
+    return f"triage: not fired — {fired.detail or 'no reason recorded'}"
 
 
 class Fire:
@@ -75,8 +104,10 @@ class Fire:
     def send(self, issue, repository):
         if not self._endpoint or not self._token:
             # Not configured is a notice, not an error: a repository may run
-            # the pipeline without an analysis routine at all.
-            return FireResult(attempted=False)
+            # the pipeline without an analysis routine at all. It still has to
+            # be *said*, or a deliberate absence and a broken wire read the
+            # same — which is how #118 survived from adoption (#121).
+            return FireResult(attempted=False, detail="no analysis routine configured")
 
         body = json.dumps(
             {"version": PAYLOAD_VERSION, "repository": repository, "issue": int(issue)}

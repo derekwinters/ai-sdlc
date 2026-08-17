@@ -272,6 +272,18 @@ Replaces the removed comment-replay sweep.
 - **GK-117** A fire failure is reported but never raised, and never fails the run.
 - **GK-118** The fire request never logs its URL or its secret.
 - **GK-119** An unconfigured fire endpoint is a notice, not an error.
+- **GK-121** Every run reports what became of the analysis routine: fired, fired and failed with
+  the scrubbed detail, not configured, or not a triage transition. `GK-119`'s silence is about
+  not *failing* the run, never about saying nothing — a deliberate absence and a broken wire must
+  not read the same.
+
+> **How the spec is changing (#121).** `GK-117`–`GK-119` said a fire failure is reported and never
+> raised, without saying where it is reported *to*. Nothing printed it: `handle_comment` computed
+> the outcome, the entry point printed what it applied and refused, and the value was dropped. A
+> run that fired the routine and one that skipped it produced byte-identical logs, so "working",
+> "rejected", "unwired" and "no routine at all" were indistinguishable — which is why #118 survived
+> from adoption until somebody noticed triage had never run. Found while trying to verify #118's
+> own fix and being unable to tell whether the request had gone out.
 
 ---
 
