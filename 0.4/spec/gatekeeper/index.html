@@ -1535,7 +1535,18 @@ renderer re-emits the marker it read and that is what carries it between two sep
 runs. Found by issuing <code>/focus v0.5</code> on a live board and watching nothing happen.
 - <strong>GK-117</strong> A fire failure is reported but never raised, and never fails the run.
 - <strong>GK-118</strong> The fire request never logs its URL or its secret.
-- <strong>GK-119</strong> An unconfigured fire endpoint is a notice, not an error.</p>
+- <strong>GK-119</strong> An unconfigured fire endpoint is a notice, not an error.
+- <strong>GK-121</strong> Every run reports what became of the analysis routine: fired, fired and failed with
+  the scrubbed detail, not configured, or not a triage transition. <code>GK-119</code>'s silence is about
+  not <em>failing</em> the run, never about saying nothing — a deliberate absence and a broken wire must
+  not read the same.</p>
+<p><strong>How the spec is changing (#121).</strong> <code>GK-117</code>–<code>GK-119</code> said a fire failure is reported and never
+raised, without saying where it is reported <em>to</em>. Nothing printed it: <code>handle_comment</code> computed
+the outcome, the entry point printed what it applied and refused, and the value was dropped. A
+run that fired the routine and one that skipped it produced byte-identical logs, so "working",
+"rejected", "unwired" and "no routine at all" were indistinguishable — which is why #118 survived
+from adoption until somebody noticed triage had never run. Found while trying to verify #118's
+own fix and being unable to tell whether the request had gone out.</p>
 </blockquote>
 <hr />
 <h2 id="9-architecture-and-configuration">9. Architecture and configuration<a class="headerlink" href="#9-architecture-and-configuration" title="Permanent link">&para;</a></h2>
