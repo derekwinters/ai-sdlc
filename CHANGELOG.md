@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.12](https://github.com/derekwinters/ai-sdlc/compare/v0.4.11...v0.4.12) (2026-08-17)
+
+
+### Fixes
+
+* **adopt:** pass the analysis routine's secrets to the caller ([0a1457b](https://github.com/derekwinters/ai-sdlc/commit/0a1457b29e3858e99a5957af9f91a2e3a2eeffaa)), closes [#118](https://github.com/derekwinters/ai-sdlc/issues/118)
+
 ## [0.4.11](https://github.com/derekwinters/ai-sdlc/compare/v0.4.10...v0.4.11) (2026-08-16)
 
 
