@@ -176,6 +176,22 @@ than a formatting one: a reusable workflow runs with the **caller's** token, on 
   not exist, and this is the gate that makes the next such omission fail here rather than in a
   consumer's repository.
 
+- **ADOPT-070** A caller passes the secrets the workflow it calls declares, naming them from
+  configuration. `fire.endpoint_secret` and `fire.token_secret` are the only place a repository can
+  say which of its secrets hold the analysis routine's endpoint and token, and a caller that omits
+  them hands the workflow empty strings. Named rather than inherited: `secrets: inherit` is one
+  line and grants every secret the repository holds, which is the same mistake as a too-wide
+  permissions block. A repository naming none gets no block, and a pipeline with no analysis
+  routine keeps working.
+
+> **How the spec is changing (#118).** §7 covered the caller's `uses:`, its `ref:` and its
+> `permissions:`, and said nothing about secrets. Every caller `adopt` had ever written therefore
+> omitted the `secrets:` block that `reusable-gatekeeper-comment.yml` declares, so `Fire` received
+> empty strings and reported the routine as unconfigured — silently, because `GK-119` makes that a
+> notice rather than an error. Triage had never run in `connor-multiplying-frogs` since adoption.
+> `CFG-046` had specified how a repository names those secrets since before the pipeline shipped,
+> and nothing read them.
+
 > **How the spec is changing (#84).** Five defects of one shape reached a consumer before ADOPT-069
 > existed — an import with no file (#71), a workflow with no manifest (#75), a permissions block too
 > narrow to start (#78), a profile that installed nothing (#81), and a dashboard nothing could
@@ -205,5 +221,6 @@ than a formatting one: a reusable workflow runs with the **caller's** token, on 
 | Pinning a caller | ADOPT-060–066 | `test_adopt_pin.py` |
 | What a callee may do | ADOPT-067 | `test_reusable_workflows.py` |
 | Caller permissions | ADOPT-068–069 | `test_adopt_permissions.py` |
+| Caller secrets | ADOPT-070 | `test_adopt_permissions.py` |
 
-**47 requirements, all `auto`.**
+**48 requirements, all `auto`.**

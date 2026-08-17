@@ -86,7 +86,9 @@ Every requirement below is `auto` (covered by a named test) unless marked otherw
 - **CFG-045** `commands.test`, `commands.verify` and `commands.spec_validator` are shell strings,
   each optional.
 - **CFG-046** `fire.endpoint_secret` and `fire.token_secret` name secrets, never values. A literal
-  that looks like a credential is an error.
+  that looks like a credential is an error. `adopt` reads them to write the gatekeeper caller's
+  `secrets:` block (`ADOPT-070`) — they are the only way a repository says which of its secrets
+  hold the analysis routine's endpoint and token, so a repository that omits them has no triage.
 
 ## 6. The YAML subset
 

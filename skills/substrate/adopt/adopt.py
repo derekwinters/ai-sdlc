@@ -408,6 +408,11 @@ def _files_for(config, pin):
         files[".github/workflows/gatekeeper-comment.yml"] = _caller(
             "gatekeeper-comment", "reusable-gatekeeper-comment.yml", pin,
             trigger="  issue_comment:\n    types: [created]\n",
+            # The only place a repository can say which of its secrets hold the
+            # analysis routine's endpoint and token. Without this the workflow
+            # receives empty strings and `Fire` reports the routine as
+            # unconfigured — silently, by design (#118).
+            secrets=_fire_secrets(config),
         )
         files[".github/workflows/gatekeeper-close.yml"] = _caller(
             "gatekeeper-close", "reusable-gatekeeper-close.yml", pin,
@@ -471,7 +476,7 @@ GRANTS = {
 }
 
 
-def _caller(name, reusable, pin, trigger):
+def _caller(name, reusable, pin, trigger, secrets=None):
     """A thin caller. All logic lives in the reusable workflow.
 
     ``pin`` is ``(version, sha)``. The reference is the **SHA**, with the
@@ -482,6 +487,12 @@ def _caller(name, reusable, pin, trigger):
 
     `ref:` is that same SHA rather than the version, so the workflow and the
     code it checks out cannot come from two different commits.
+
+    ``secrets`` maps a called workflow's secret input to the name of a secret
+    in the consumer's repository. Named rather than inherited: `secrets:
+    inherit` is one line and hands the called workflow every secret the
+    repository holds, which is the opposite of ADOPT-068. A repository naming
+    none gets no block, and keeps a routine-less pipeline working (#118).
     """
     version, sha = pin
     grants = "".join(
@@ -503,7 +514,33 @@ def _caller(name, reusable, pin, trigger):
         f"    uses: {SOURCE}/.github/workflows/{reusable}@{sha} # {version}\n"
         f"    with:\n"
         f"      ref: {sha}\n"
+        + _secrets(secrets)
     )
+
+
+def _secrets(secrets):
+    """The `secrets:` block, or nothing at all.
+
+    The value never passes through here — only the *name* of a secret, which
+    GitHub resolves at run time in the consumer's own repository.
+    """
+    if not secrets:
+        return ""
+    lines = "".join(
+        f"      {given}: ${{{{ secrets.{named} }}}}\n"
+        for given, named in sorted(secrets.items())
+    )
+    return f"    secrets:\n{lines}"
+
+
+def _fire_secrets(config):
+    """Map the called workflow's secret inputs to the repository's own names."""
+    fire = getattr(config, "fire", None)
+    named = {
+        "fire_endpoint": getattr(fire, "endpoint_secret", None),
+        "fire_token": getattr(fire, "token_secret", None),
+    }
+    return {given: name for given, name in named.items() if name}
 
 
 def _load_config(root):
