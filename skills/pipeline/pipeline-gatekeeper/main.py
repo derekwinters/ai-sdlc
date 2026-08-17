@@ -22,6 +22,7 @@ from downstream import Fire, fire_summary  # noqa: E402
 from lib.config import load  # noqa: E402
 from lib.github import GitHub  # noqa: E402
 from lifecycle import on_issue_closed  # noqa: E402
+from on_labeled import on_label_added  # noqa: E402
 from run_comment_event import Settings, handle_comment  # noqa: E402
 
 
@@ -41,8 +42,8 @@ def _client(config):
 
 
 def main(argv):
-    if len(argv) != 2 or argv[1] not in ("comment", "closed"):
-        raise SystemExit(f"usage: {argv[0]} comment|closed")
+    if len(argv) != 2 or argv[1] not in ("comment", "closed", "labeled"):
+        raise SystemExit(f"usage: {argv[0]} comment|closed|labeled")
 
     config = load()
     api = _client(config)
@@ -54,13 +55,18 @@ def main(argv):
         return 0
 
     fire = Fire(os.environ.get("FIRE_ENDPOINT"), os.environ.get("FIRE_TOKEN"))
+
+    if argv[1] == "labeled":
+        settings = Settings.from_config(config, fire=fire)
+        print(fire_summary(on_label_added(api, event, settings)))
+        return 0
+
     result = handle_comment(api, event, Settings.from_config(config, fire=fire))
 
     print(f"applied: {[a.command for a in result.applied] or '(nothing)'}")
     print(f"refused: {[s.reason for s in result.refused] or '(nothing)'}")
     # Every run says what became of the analysis routine. Without this a run
     # that fired and one that silently skipped are indistinguishable (#121).
-    print(fire_summary(result.fired))
     if result.unverifiable:
         print(f"unverifiable dependencies: {[b['number'] for b in result.unverifiable]}")
     return 0

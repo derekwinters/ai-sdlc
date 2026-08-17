@@ -414,6 +414,18 @@ def _files_for(config, pin):
             # unconfigured — silently, by design (#118).
             secrets=_fire_secrets(config),
         )
+        # Firing keyed on the label event rather than on the gatekeeper, so an
+        # issue entering triage fires exactly once however the label got there
+        # — including by hand, which used to fire nothing at all (#123).
+        files[".github/workflows/triage.yml"] = _caller(
+            "triage", "reusable-triage.yml", pin,
+            trigger="  issues:\n    types: [labeled]\n",
+            condition=(
+                "github.event.label.name == "
+                f"'{config.labels['triage']}'"
+            ),
+            secrets=_fire_secrets(config),
+        )
         files[".github/workflows/gatekeeper-close.yml"] = _caller(
             "gatekeeper-close", "reusable-gatekeeper-close.yml", pin,
             trigger="  issues:\n    types: [closed]\n",
@@ -471,12 +483,13 @@ GRANTS = {
     "reusable-docs-gate.yml": {"contents": "read"},
     "reusable-labels-sync.yml": {"contents": "read", "issues": "write"},
     "reusable-gatekeeper-comment.yml": {"contents": "read", "issues": "write"},
+    "reusable-triage.yml": {"contents": "read"},
     "reusable-gatekeeper-close.yml": {"contents": "read", "issues": "write"},
     "reusable-dashboard.yml": {"contents": "read", "issues": "write"},
 }
 
 
-def _caller(name, reusable, pin, trigger, secrets=None):
+def _caller(name, reusable, pin, trigger, secrets=None, condition=None):
     """A thin caller. All logic lives in the reusable workflow.
 
     ``pin`` is ``(version, sha)``. The reference is the **SHA**, with the
@@ -511,9 +524,14 @@ def _caller(name, reusable, pin, trigger, secrets=None):
         f"permissions:\n{grants}\n"
         f"jobs:\n"
         f"  {name}:\n"
-        f"    uses: {SOURCE}/.github/workflows/{reusable}@{sha} # {version}\n"
-        f"    with:\n"
-        f"      ref: {sha}\n"
+        # A job-level condition, where the trigger alone is too broad — the
+        # `labeled` event fires for every label, and only one of them means
+        # triage. A workflow condition cannot read configuration, so the
+        # configured name is written in here.
+        + (f"    if: {condition}\n" if condition else "")
+        + f"    uses: {SOURCE}/.github/workflows/{reusable}@{sha} # {version}\n"
+        + f"    with:\n"
+        + f"      ref: {sha}\n"
         + _secrets(secrets)
     )
 
