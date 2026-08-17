@@ -149,3 +149,47 @@ class TestTheRequest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestReportingTheOutcome(unittest.TestCase):
+    """GK-121 — a run says whether it fired, and why not when it did not.
+
+    A run that fired the routine and one that silently skipped it produced
+    byte-identical logs, so "working", "rejected", "unwired" and "no routine
+    at all" were indistinguishable. That is why #118 survived from adoption
+    until somebody noticed triage had never run.
+    """
+
+    def test_a_fired_run_says_so(self):  # GK-121
+        from downstream import FireResult, fire_summary
+
+        self.assertIn("fired", fire_summary(FireResult(attempted=True)).lower())
+
+    def test_a_failure_says_why(self):  # GK-121
+        from downstream import FireResult, fire_summary
+
+        line = fire_summary(FireResult(True, failed=True, detail="502 from the endpoint"))
+        self.assertIn("502 from the endpoint", line)
+
+    def test_an_unconfigured_routine_is_named_as_such(self):  # GK-121
+        """GK-119 keeps this a notice rather than an error.
+
+        It must still be *visible*, or a deliberate absence and a broken wire
+        read the same.
+        """
+        from downstream import Fire, fire_summary
+
+        line = fire_summary(Fire(None, None).send(7, "owner/repo"))
+        self.assertIn("no analysis routine", line.lower())
+
+    def test_not_a_triage_transition_is_distinguished(self):  # GK-121
+        from downstream import NOT_TRIAGE, fire_summary
+
+        self.assertIn("no triage transition", fire_summary(NOT_TRIAGE).lower())
+
+    def test_a_result_is_falsy_when_it_did_not_fire(self):  # GK-121
+        """So `result.fired` keeps meaning what four existing tests assert."""
+        from downstream import FireResult
+
+        self.assertFalse(FireResult(attempted=False))
+        self.assertTrue(FireResult(attempted=True))

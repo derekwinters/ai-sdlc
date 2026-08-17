@@ -18,7 +18,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path.cwd()))
 
-from downstream import Fire  # noqa: E402
+from downstream import Fire, fire_summary  # noqa: E402
 from lib.config import load  # noqa: E402
 from lib.github import GitHub  # noqa: E402
 from lifecycle import on_issue_closed  # noqa: E402
@@ -58,6 +58,9 @@ def main(argv):
 
     print(f"applied: {[a.command for a in result.applied] or '(nothing)'}")
     print(f"refused: {[s.reason for s in result.refused] or '(nothing)'}")
+    # Every run says what became of the analysis routine. Without this a run
+    # that fired and one that silently skipped are indistinguishable (#121).
+    print(fire_summary(result.fired))
     if result.unverifiable:
         print(f"unverifiable dependencies: {[b['number'] for b in result.unverifiable]}")
     return 0
