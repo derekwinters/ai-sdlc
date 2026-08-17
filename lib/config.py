@@ -112,6 +112,7 @@ class Config:
         "dashboard_issue",
         "commands",
         "fire",
+        "sweep",
     )
 
     def __init__(self, **values):
@@ -176,6 +177,7 @@ def parse_config(text, source=None):
         dashboard_issue=_dashboard_issue(raw, pipeline, problems),
         commands=_commands(raw, problems),
         fire=_fire(raw, problems),
+        sweep=_sweep(raw, problems),
     )
 
     if problems:
@@ -196,12 +198,14 @@ _SCHEMA_KEYS = {
     "dashboard_issue": int,
     "commands": dict,
     "fire": dict,
+    "sweep": dict,
 }
 
 _NESTED_KEYS = {
     "bot": {"identity": str, "login": str, "app_id_secret": str, "private_key_secret": str},
     "commands": {"test": str, "verify": str, "spec_validator": str},
     "fire": {"endpoint_secret": str, "token_secret": str},
+    "sweep": {"ceiling": int, "stale_after": int, "give_up_after": int},
 }
 
 
@@ -366,6 +370,56 @@ def _commands(raw, problems):
         verify=section.get("verify"),
         spec_validator=section.get("spec_validator"),
     )
+
+
+#: What the backstop may spend if nobody says otherwise.
+#:
+#: A circuit breaker rather than a throttle: twenty is comfortably more than an
+#: ordinary board strands at once, so reaching it means something is wrong
+#: rather than busy. Thirty minutes is longer than any analysis that has ever
+#: succeeded, so a warm issue is never poked twice. Six hours of retrying is
+#: several scheduled attempts and then a stop — past that, poking is not what
+#: the issue needs.
+SWEEP_DEFAULTS = {"ceiling": 20, "stale_after": 1800, "give_up_after": 21600}
+
+
+class _Sweep:
+    __slots__ = ("ceiling", "stale_after", "give_up_after")
+
+    def __init__(self, ceiling, stale_after, give_up_after):
+        self.ceiling = ceiling
+        self.stale_after = stale_after
+        self.give_up_after = give_up_after
+
+    def __repr__(self):
+        return f"<Sweep ceiling={self.ceiling}>"
+
+
+def _sweep(raw, problems):
+    """The sweep's bounds, defaulted and sanity-checked.
+
+    Refused rather than clamped: a negative ceiling or a horizon shorter than
+    the staleness threshold both produce a sweep that silently does nothing,
+    and silence is the one failure this whole feature exists to end.
+    """
+    section = _section(raw, "sweep")
+    values = dict(SWEEP_DEFAULTS)
+    for key in values:
+        given = section.get(key)
+        if given is None:
+            continue
+        if given < 0:
+            problems.append(f"'sweep.{key}' must not be negative")
+            continue
+        values[key] = given
+
+    if values["give_up_after"] <= values["stale_after"]:
+        problems.append(
+            "'sweep.give_up_after' must be longer than 'sweep.stale_after'; "
+            "otherwise an issue is abandoned before it is ever eligible and "
+            "the sweep requeues nothing"
+        )
+    return _Sweep(**values)
 
 
 def _fire(raw, problems):

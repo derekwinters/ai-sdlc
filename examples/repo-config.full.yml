@@ -30,3 +30,12 @@ commands:
 fire:
   endpoint_secret: ROUTINE_FIRE_URL
   token_secret: ROUTINE_FIRE_TOKEN
+
+# What the scheduled backstop may spend. A circuit breaker, not a throttle:
+# the ceiling is set well above what an ordinary board strands at once, so
+# reaching it means something is wrong rather than busy. `give_up_after`
+# bounds a single issue across every run, which the ceiling alone does not.
+sweep:
+  ceiling: 20
+  stale_after: 1800
+  give_up_after: 21600

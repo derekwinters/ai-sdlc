@@ -101,6 +101,19 @@ Parsing is stdlib-only, so the accepted subset is stated rather than inherited.
 - **CFG-054** Anchors, aliases, multi-document files and flow style are not supported, and using
   one is an error that says so rather than misreading the file.
 
+### The sweep's bounds
+
+- **CFG-055** `sweep.ceiling`, `sweep.stale_after` and `sweep.give_up_after` default to values that
+  bound the backstop without being configured. **Invariant — a repository that says nothing about
+  the sweep still has every bound.** These are the only thing between a reconciliation fault and an
+  account's usage limits, so absent configuration cannot mean absent limits. The default ceiling is
+  a circuit breaker rather than a throttle: high enough that ordinary operation never reaches it,
+  so reaching it is evidence of a fault.
+- **CFG-056** A negative bound, or a `give_up_after` no longer than `stale_after`, is refused at
+  load. The second combination abandons every issue before it is ever eligible, so the sweep
+  silently requeues nothing — and silence is the failure the sweep exists to end, which makes
+  discovering it as an absence of behaviour the worst available outcome.
+
 ---
 
 ## Traceability
@@ -113,6 +126,7 @@ Parsing is stdlib-only, so the accepted subset is stated rather than inherited.
 | Identity | CFG-030–034 | `test_config_identity.py` |
 | Pipeline settings | CFG-040–046 | `test_config_pipeline.py` |
 | The YAML subset | CFG-050–054 | `test_yaml_subset.py` |
+| The sweep’s bounds | CFG-055–056 | `test_config_sweep.py` |
 | Schema agreement | CFG-010 | `test_config_schema.py` |
 
-**39 requirements, 38 `auto` and 1 `manual`.**
+**41 requirements, 40 `auto` and 1 `manual`.**

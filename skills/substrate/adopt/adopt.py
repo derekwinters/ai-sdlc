@@ -430,6 +430,17 @@ def _files_for(config, pin):
             "gatekeeper-close", "reusable-gatekeeper-close.yml", pin,
             trigger="  issues:\n    types: [closed]\n",
         )
+        # The backstop for a lost poke (#136). Hourly rather than on the
+        # dashboard's daily schedule: an issue whose routine never started is
+        # dead until something notices, and a day of that is a day of nothing
+        # happening. `events_only: false` is what makes this the only caller
+        # permitted to requeue — see GK-142 for why the event path is not.
+        files[".github/workflows/gatekeeper-sweep.yml"] = _caller(
+            "gatekeeper-sweep", "reusable-gatekeeper-sweep.yml", pin,
+            trigger="  schedule:\n    - cron: \"17 * * * *\"\n  workflow_dispatch:\n",
+            inputs="      events_only: false\n",
+            secrets=_fire_secrets(config),
+        )
         # The other half of report-rather-than-repair: nothing silently fixes
         # drift, so the board has to show it. A pipeline with no dashboard is
         # the half that repairs nothing without the half that reports it (#84).
@@ -486,10 +497,13 @@ GRANTS = {
     "reusable-triage.yml": {"contents": "read"},
     "reusable-gatekeeper-close.yml": {"contents": "read", "issues": "write"},
     "reusable-dashboard.yml": {"contents": "read", "issues": "write"},
+    # Reads the board and pokes the routine; it moves no labels, so it needs
+    # no write. The one workflow that spends money has the narrowest grant.
+    "reusable-gatekeeper-sweep.yml": {"contents": "read", "issues": "read"},
 }
 
 
-def _caller(name, reusable, pin, trigger, secrets=None, condition=None):
+def _caller(name, reusable, pin, trigger, secrets=None, condition=None, inputs=""):
     """A thin caller. All logic lives in the reusable workflow.
 
     ``pin`` is ``(version, sha)``. The reference is the **SHA**, with the
@@ -500,6 +514,10 @@ def _caller(name, reusable, pin, trigger, secrets=None, condition=None):
 
     `ref:` is that same SHA rather than the version, so the workflow and the
     code it checks out cannot come from two different commits.
+
+    ``inputs`` is extra lines for the `with:` block, already indented. Used by
+    the sweep, where the caller's trigger is what decides whether that run may
+    requeue — the reusable workflow cannot tell a schedule from an event.
 
     ``secrets`` maps a called workflow's secret input to the name of a secret
     in the consumer's repository. Named rather than inherited: `secrets:
@@ -532,6 +550,7 @@ def _caller(name, reusable, pin, trigger, secrets=None, condition=None):
         + f"    uses: {SOURCE}/.github/workflows/{reusable}@{sha} # {version}\n"
         + f"    with:\n"
         + f"      ref: {sha}\n"
+        + inputs
         + _secrets(secrets)
     )
 

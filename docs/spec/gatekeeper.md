@@ -377,6 +377,58 @@ Replaces the removed comment-replay sweep.
 
 ---
 
+## The sweep
+
+Firing is a poke, and a poke can be lost. A routine that never starts, starts and dies, or is
+refused leaves the issue exactly as it was — in triage, with no analysis, and with nothing that
+will ever look at it again. The sweep is the backstop: a scheduled pass that finds issues stranded
+that way and pokes them again.
+
+A backstop that starts sessions is a backstop that spends money while nobody is watching, so what
+bounds it is specified rather than left to the implementation. Two independent bounds, because they
+fail differently: a ceiling limits how much one run can do, and a give-up horizon limits how many
+times one issue can ever cost anything.
+
+- **GK-138** A sweep requeues an issue only when it is open, carries the triage label, has no
+  analysis, and has been untouched for longer than the staleness threshold. An issue that something
+  is still doing is not stranded.
+- **GK-139** A sweep run requeues at most `sweep.ceiling` issues. **Invariant — a sweep never
+  starts an unbounded number of sessions.** The ceiling is configuration with a conservative
+  default, not a constant in code, and it is a circuit breaker rather than a throttle: it is set
+  high enough that ordinary operation never reaches it, so reaching it is evidence of a fault.
+- **GK-140** A run that reaches its ceiling reports what it did not requeue. A silent truncation
+  reads as "the board is clear" when it is not.
+- **GK-141** An issue stranded for longer than `sweep.give_up_after` is reported and never
+  requeued again. **Invariant — the number of sessions one stranded issue can ever cost is
+  bounded.** A ceiling alone does not give this: a permanently broken issue inside a per-run
+  ceiling is retried on every run for as long as it exists, which is the runaway the ceiling was
+  supposed to prevent.
+- **GK-142** Requeueing is withheld on the event path and produced only on the scheduled path.
+  **Invariant — no sweep reachable from a webhook may requeue.** A merge or a label change can
+  momentarily make a healthy issue look stranded — a just-merged issue before GitHub finishes
+  closing it, a just-set state label before the analysis comment is visible — and requeueing in
+  that window is what turns two states into a loop that fires a session on every flip. A genuine
+  stall has no triggering event, so deferring to the schedule loses nothing.
+- **GK-143** Selection is deterministic and ordered by issue number, so a run that hits the ceiling
+  takes the same issues every time and the board drains in a stable order rather than starving one
+  end of it.
+- **GK-144** Reaching the ceiling, or finding nothing to do, is a successful run. A red workflow on
+  a working backstop trains its owner to ignore it.
+
+> **How the spec is changing (#136).** The sweep is not new behaviour being invented here — it is
+> behaviour this project had before extraction and lost. `lucas-doggiehood` runs one, and the
+> commit that moved firing to the label event (`c6396ba`) recorded the gap in passing: *"The
+> board-wide catch-up that used to cover this went away with the sweep at adoption."* What is new
+> is that its bounds are specified. In the original the re-pick gate was a parameter on a function
+> and the reason lived in a docstring, which is why the loop it prevents had to be discovered twice
+> before it was written down.
+>
+> `GK-141` has no counterpart in the original. The original bounds a run and not an issue, so an
+> issue that can never succeed is retried for as long as it stays on the board — the failure mode
+> the ceiling appears to cover and does not.
+
+---
+
 ## Traceability
 
 | Section | IDs | Tests |
@@ -392,5 +444,6 @@ Replaces the removed comment-replay sweep.
 | Lifecycle | GK-100–106 | `test_lifecycle.py` |
 | Downstream | GK-110–119 | `test_downstream.py` |
 | Architecture | GK-130–137 | `test_architecture.py`, `test_github_api.py` |
+| The sweep | GK-138–144 | `test_sweep.py` |
 
-**92 requirements, 90 `auto` and 2 `manual`.**
+**99 requirements, 97 `auto` and 2 `manual`.**

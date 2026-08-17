@@ -63,9 +63,38 @@ wait for your next comment there — catch-up processes stalled commands on the 
 
 Two comments, deliberately — approving and scheduling are separate decisions.
 
+## The sweep
+
+Firing the analysis routine is a poke, and a poke can be lost. When one is, the issue sits in
+triage with no analysis and nothing that will ever look at it again — the failure that stranded
+eight issues in `connor-multiplying-frogs` overnight. `gatekeeper-sweep.yml` runs hourly, finds
+issues in that state, and pokes them once more.
+
+It pokes the routine directly rather than removing and re-applying the triage label. Both would
+start a session, but a label round-trip also emits `labeled`, which the label handler answers with
+a second poke — one intent, two sessions.
+
+**A scheduled job that starts sessions spends the owner's usage limits while nobody is watching**,
+so what it may spend is bounded twice, and the two bounds fail differently:
+
+| Bound | Default | What it stops |
+|---|---|---|
+| `sweep.ceiling` | 20 | one faulty run turning a whole board into sessions |
+| `sweep.give_up_after` | 6h | one broken issue being retried for as long as it exists |
+
+The ceiling is a circuit breaker, not a throttle: it sits well above what an ordinary board strands
+at once, so reaching it means something is wrong rather than busy — and the run says what it
+skipped. `ceiling: 0` turns the sweep off without a code change.
+
+**Requeueing happens only on the scheduled path.** The event path may report but never requeue: a
+merge or a label change can briefly make a healthy issue look stranded — a just-merged issue before
+GitHub finishes closing it, a just-set label before the analysis comment is visible — and
+requeueing in that window is what turns two states into a loop that fires a session on every flip.
+A genuine stall has no triggering event, so waiting for the schedule loses nothing.
+
 ## Configuration
 
 From `.claude/repo-config.yml`: `owners`, `bot.login`, `dashboard_issue`, `milestone_ordering`,
-and the `labels` vocabulary. See `docs/spec/configuration.md`.
+the `labels` vocabulary, and `sweep`. See `docs/spec/configuration.md`.
 
-Specification: `docs/spec/gatekeeper.md` (`GK`), 92 requirements.
+Specification: `docs/spec/gatekeeper.md` (`GK`), 99 requirements.
