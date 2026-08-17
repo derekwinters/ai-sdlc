@@ -494,12 +494,12 @@ GRANTS = {
     "reusable-docs-gate.yml": {"contents": "read"},
     "reusable-labels-sync.yml": {"contents": "read", "issues": "write"},
     "reusable-gatekeeper-comment.yml": {"contents": "read", "issues": "write"},
-    "reusable-triage.yml": {"contents": "read"},
+    "reusable-triage.yml": {"contents": "read", "issues": "write"},
     "reusable-gatekeeper-close.yml": {"contents": "read", "issues": "write"},
     "reusable-dashboard.yml": {"contents": "read", "issues": "write"},
     # Reads the board and pokes the routine; it moves no labels, so it needs
     # no write. The one workflow that spends money has the narrowest grant.
-    "reusable-gatekeeper-sweep.yml": {"contents": "read", "issues": "read"},
+    "reusable-gatekeeper-sweep.yml": {"contents": "read", "issues": "write"},
 }
 
 

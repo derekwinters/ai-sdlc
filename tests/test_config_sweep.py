@@ -49,7 +49,6 @@ class TestDefaults(unittest.TestCase):
         """Absent configuration must not mean an unbounded sweep."""
         sweep = config(tmp=self.tmp).sweep
         self.assertGreater(sweep.ceiling, 0)
-        self.assertGreater(sweep.give_up_after, 0)
         self.assertGreater(sweep.stale_after, 0)
 
     def test_the_default_ceiling_clears_an_ordinary_board(self):  # CFG-055
@@ -58,11 +57,11 @@ class TestDefaults(unittest.TestCase):
         """
         self.assertGreaterEqual(config(tmp=self.tmp).sweep.ceiling, 10)
 
-    def test_staleness_is_shorter_than_the_give_up_horizon(self):  # CFG-055
-        """Otherwise an issue is abandoned before it is ever eligible, and the
-        sweep silently never requeues anything."""
-        sweep = config(tmp=self.tmp).sweep
-        self.assertLess(sweep.stale_after, sweep.give_up_after)
+    def test_there_is_no_give_up_duration(self):  # CFG-055
+        """How many times an issue may be poked is carried by the markers, not
+        by a clock. A duration was tried and removed: every clock available
+        here is reset by ordinary activity, so it bounded nothing."""
+        self.assertFalse(hasattr(config(tmp=self.tmp).sweep, "give_up_after"))
 
 
 class TestOverrides(unittest.TestCase):
@@ -88,12 +87,16 @@ class TestOverrides(unittest.TestCase):
         with self.assertRaises(ConfigError):
             config("sweep:\n  celing: 3\n", tmp=self.tmp)
 
-    def test_a_horizon_shorter_than_staleness_is_refused(self):  # CFG-056
-        """The combination that makes the sweep a no-op, caught at load rather
-        than discovered as silence."""
+    def test_a_negative_staleness_is_refused(self):  # CFG-056
         with self.assertRaises(ConfigError):
-            config("sweep:\n  stale_after: 7200\n  give_up_after: 3600\n",
-                   tmp=self.tmp)
+            config("sweep:\n  stale_after: -1\n", tmp=self.tmp)
+
+    def test_a_removed_key_is_refused_rather_than_ignored(self):  # CFG-056
+        """`give_up_after` was real for one version. A repository still setting
+        it should be told, not silently given an unbounded-looking sweep whose
+        bound now lives somewhere else."""
+        with self.assertRaises(ConfigError):
+            config("sweep:\n  give_up_after: 3600\n", tmp=self.tmp)
 
 
 if __name__ == "__main__":

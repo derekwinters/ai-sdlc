@@ -31,6 +31,7 @@ for _sibling in ("issue-blockers",):
         sys.path.insert(0, str(_path))
 
 from issue_blockers import Blockers, prose_blockers  # noqa: E402
+from lib.config import MARKERS  # noqa: E402
 from lib.github import GitHubError  # noqa: E402
 
 #: The markers the dashboard keeps in its own body. The renderer writes them
@@ -62,6 +63,12 @@ def fetch(api, labels, bot_login, dashboard_issue=None, overrides=None):
         unresolved = [b.number for b in found if not b.resolved]
         closed = issue.get("state") == "closed"
         milestone = issue.get("milestone") or {}
+
+        if not closed and MARKERS["triage_stalled"] in names:
+            # Bounding the retries converts "retried for ever" into "ignored
+            # for ever" unless somebody is told (`GK-146`). Without this the
+            # issue sits in Waiting for triage looking like ordinary work.
+            faults["stalled_triage"].append({"issue": issue["number"]})
 
         if closed:
             if state_label:
@@ -114,6 +121,7 @@ def _empty_faults():
         "unverifiable_dependency": [],
         "prose_dependency": [],
         "stale_state": [],
+        "stalled_triage": [],
     }
 
 

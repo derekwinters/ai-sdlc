@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """The backstop: find issues a lost fire left stranded, and poke them again.
 
-Firing is best-effort by design — the label move is the gatekeeper's job, and
-a routine that never starts must not fail the run. The cost of that choice is
+Firing is best-effort by design — the label move is the gatekeeper's job, and a
+routine that never starts must not fail the run. The cost of that choice is
 that a lost poke is silent: the issue sits in triage, with no analysis, and
 nothing looks at it again. This decides which of those to poke.
 
@@ -10,25 +10,27 @@ Pure, and deliberately so. A scheduled job that starts sessions spends the
 owner's usage limits while nobody is watching, so the rules that bound it are
 worth asserting directly rather than through a network.
 
-Two bounds, because they fail differently:
+Two bounds, and they fail differently:
 
-  * the **ceiling** limits one run — a fault that marks the whole board
-    stranded cannot turn into a hundred sessions;
-  * the **give-up horizon** limits one issue across every run — an issue that
-    can never succeed stops costing anything, which a ceiling alone does not
-    give you, since a permanently broken issue inside the ceiling is retried
-    forever.
+  * the **ceiling** limits one run, so a fault that marks the whole board
+    stranded cannot become a hundred sessions;
+  * the **markers** limit one issue across every run. Whoever fires the routine
+    records that it did, as a label, and the record only advances: absent →
+    pending → stalled, and a stalled issue is never poked again.
 
-Specification: docs/spec/gatekeeper.md (`GK-138`–`GK-144`).
+The markers replaced a give-up *duration*, which did not work. A duration is
+measured against a clock — last update, last comment — and ordinary activity
+resets every clock available here, so a passing comment resurrected issues that
+had already been given up on. Marker state has nothing to reset.
+
+Specification: docs/spec/gatekeeper.md (`GK-138`–`GK-146`).
 """
 
 from __future__ import annotations
 
 from datetime import datetime, timezone
 
-#: Requeueing is the only action here that costs money, so it is the only one
-#: the event path is denied. Reporting is free and stays on both paths.
-__all__ = ["plan", "seconds_between"]
+__all__ = ["plan", "next_marker", "seconds_between"]
 
 
 def _parsed(stamp):
@@ -40,13 +42,10 @@ def _parsed(stamp):
     if not stamp:
         return None
     try:
-        text = stamp.replace("Z", "+00:00")
-        parsed = datetime.fromisoformat(text)
-    except (ValueError, TypeError, AttributeError):
+        parsed = datetime.fromisoformat(str(stamp).replace("Z", "+00:00"))
+    except (ValueError, TypeError):
         return None
-    if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=timezone.utc)
-    return parsed
+    return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
 
 
 def seconds_between(earlier, later):
@@ -57,46 +56,68 @@ def seconds_between(earlier, later):
     return (end - start).total_seconds()
 
 
-def _is_stranded(issue, triage_label):
-    """Open, in triage, and nothing has analysed it (`GK-138`).
+def next_marker(present, markers):
+    """The marker a poke would advance to, or `None` when there is no next one.
 
-    The analysis flag is what separates "the routine never ran" from "the
-    routine ran and the label is stale". Requeueing the second would re-analyse
-    finished work, which costs a session to produce a duplicate.
+    `markers` is the progression in order, ending at the terminal one. Both
+    markers present at once is somebody's hand or a half-applied write; the
+    terminal reading wins, because the safe interpretation of an ambiguous
+    board is the one that spends nothing.
     """
-    if issue.get("state", "open") != "open":
-        return False
-    if triage_label not in (issue.get("labels") or []):
-        return False
-    return not issue.get("has_analysis")
+    terminal = markers[-1]
+    if terminal in present:
+        return None
+    for marker in markers:
+        if marker not in present:
+            return marker
+    return None
 
 
-def plan(board, *, triage_label, ceiling, stale_after, give_up_after,
-         events_only=False):
+def plan(board, *, triage_label, markers, ceiling, stale_after, events_only=False):
     """Decide what one sweep run should do.
 
-    Returns four disjoint lists of issue numbers, each sorted:
+    Returns, each sorted or keyed by issue number:
 
-      ``requeue``    poke these now
-      ``skipped``    stranded, but past this run's ceiling
-      ``abandoned``  stranded so long that retrying is no longer justified
-      ``withheld``   stranded, but this is the event path, which may not requeue
+      ``requeue``   poke these now
+      ``mark``      issue -> the marker to apply, recording that poke
+      ``skipped``   stranded, but past this run's ceiling
+      ``stalled``   already terminal; reported so somebody sees them
+      ``clear``     carrying a marker they should no longer carry
+      ``withheld``  stranded, but this is the event path, which may not requeue
 
-    `events_only` is the re-pick gate (`GK-142`). On a webhook, a healthy issue
+    `events_only` is the re-pick gate (`GK-142`). On a webhook a healthy issue
     can momentarily look stranded — a just-merged issue before GitHub finishes
     closing it, a just-set label before the analysis comment is visible — and
     requeueing in that window is what turns two states into a loop that fires a
-    session on every flip. A genuine stall has no triggering event, so waiting
-    for the schedule loses nothing.
+    session on every flip. Clearing is still done on that path: it spends
+    nothing and cannot loop, so withholding it would only let dead markers
+    accumulate between schedules.
     """
     now = (board or {}).get("now")
-    stranded, abandoned = [], []
+    terminal = markers[-1]
+    candidates, stalled, clear = [], [], []
 
     for issue in (board or {}).get("issues") or []:
-        if not _is_stranded(issue, triage_label):
-            continue
         number = issue.get("number")
         if number is None:
+            continue
+        labels = set(issue.get("labels") or [])
+        carried = labels & set(markers)
+        in_triage = (triage_label in labels
+                     and issue.get("state", "open") == "open")
+
+        if not in_triage:
+            # Left triage, or closed, and still carrying a marker. A marker
+            # that outlives its episode is a slower version of the bug it
+            # prevents: the next episode inherits a spent budget (`GK-145`).
+            if carried:
+                clear.append(number)
+            continue
+
+        if issue.get("has_analysis"):
+            continue
+        if terminal in carried:
+            stalled.append(number)
             continue
 
         age = seconds_between(issue.get("updated_at"), now)
@@ -104,31 +125,30 @@ def plan(board, *, triage_label, ceiling, stale_after, give_up_after,
             # Still warm: something may be working on it, and a second poke is
             # how one stranded issue becomes two concurrent sessions.
             continue
-        if age > give_up_after:
-            # Past saving by poking (`GK-141`). Reported, never requeued, and
-            # deliberately not counted against the ceiling — otherwise a
-            # handful of permanently broken issues would crowd out every issue
-            # the sweep could still help.
-            abandoned.append(number)
-            continue
-        stranded.append(number)
+        candidates.append((number, carried))
 
-    # Ordered before truncation (`GK-143`), so a run that hits the ceiling takes
-    # the same issues every time and the board drains from one end instead of
-    # starving whichever issues sort late.
-    stranded.sort()
+    # Ordered before truncation (`GK-143`), so a capped run drains the board
+    # from one end instead of starving whichever issues sort late.
+    candidates.sort()
+    stalled.sort()
+    clear.sort()
 
     if events_only:
         return {
-            "requeue": [],
-            "skipped": [],
-            "abandoned": sorted(abandoned),
-            "withheld": stranded,
+            "requeue": [], "mark": {}, "skipped": [],
+            "stalled": stalled, "clear": clear,
+            "withheld": [n for n, _ in candidates],
         }
 
+    taken, remainder = candidates[:ceiling], candidates[ceiling:]
     return {
-        "requeue": stranded[:ceiling],
-        "skipped": stranded[ceiling:],
-        "abandoned": sorted(abandoned),
+        "requeue": [n for n, _ in taken],
+        # Only what is actually poked is marked: a mark records an attempt, and
+        # recording one for an issue the ceiling skipped would spend a retry on
+        # a session that never happened.
+        "mark": {n: next_marker(carried, markers) for n, carried in taken},
+        "skipped": [n for n, _ in remainder],
+        "stalled": stalled,
+        "clear": clear,
         "withheld": [],
     }

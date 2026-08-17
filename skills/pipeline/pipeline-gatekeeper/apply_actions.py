@@ -34,19 +34,27 @@ MOVES = {
 WRITTEN_BY_OTHERS = {"pending_approval", "clarification", "building"}
 
 
-def plan_labels(current, actions, labels):
+def plan_labels(current, actions, labels, markers=()):
     """The label set after applying `actions` in order.
 
     `labels` maps a state name to the label this repository uses for it.
+
+    `markers` are the triage attempt markers, dropped by any state move. A
+    marker that outlives its episode is a slower version of the bug it prevents
+    — the next episode starts with a spent budget and is never retried at all
+    (`GK-145`). Re-entering triage clears them for the same reason from the
+    other direction: a fresh `/admit` is a new episode and deserves a fresh
+    budget (`GK-141`).
     """
     state_labels = set(labels.values())
+    dropped = state_labels | set(markers)
     result = list(current)
 
     for action in actions:
         state = MOVES.get(action.command)
         if state is None:
             continue
-        result = [name for name in result if name not in state_labels]
+        result = [name for name in result if name not in dropped]
         result.append(labels[state])
 
     return result

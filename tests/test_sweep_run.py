@@ -21,9 +21,13 @@ sys.path.insert(
 )
 
 from lib.fake_github import FakeGitHub  # noqa: E402
+from downstream import FireResult  # noqa: E402
 from run_sweep import board, has_analysis, run, summarise  # noqa: E402
 
 TRIAGE = "ai-triage"
+PENDING = "ai-triage-pending"
+STALLED = "ai-triage-stalled"
+MARKERS = (PENDING, STALLED)
 OLD = "2026-08-17T06:00:00Z"
 NOW = "2026-08-17T12:00:00Z"
 
@@ -34,22 +38,28 @@ class _Config:
     class _Sweep:
         ceiling = 10
         stale_after = 1800
-        give_up_after = 21600
 
     sweep = _Sweep()
 
     def label(self, state):
         return TRIAGE
 
+    def markers(self):
+        return MARKERS
+
 
 class _Fire:
-    """Records pokes instead of sending them."""
+    """Records pokes instead of sending them, and reports each as a real fire
+    so the marker path runs."""
 
-    def __init__(self):
+    def __init__(self, ok=True):
         self.sent = []
+        self.ok = ok
 
     def send(self, issue, repository):
         self.sent.append(issue)
+        return FireResult(attempted=True) if self.ok else FireResult(
+            True, failed=True, detail="502")
 
 
 def api_with(*issues, comments=None):
@@ -117,6 +127,41 @@ class TestPoking(unittest.TestCase):
         self.assertEqual(fire.sent, [])
 
 
+class TestTheMarkerIsActuallyApplied(unittest.TestCase):
+    """GK-140 — the bound is only real if the record survives the run."""
+
+    def labels(self, api, number):
+        return {l["name"] for l in api.issue(number).get("labels") or []}
+
+    def test_poking_an_unmarked_issue_marks_it_pending(self):  # GK-140
+        api, fire = api_with(an_issue(322)), _Fire()
+        run(api, _Config(), fire, now=NOW, events_only=False)
+        self.assertIn(PENDING, self.labels(api, 322))
+
+    def test_poking_a_pending_issue_advances_it_to_stalled(self):  # GK-140
+        api = api_with(an_issue(322, labels=(TRIAGE, PENDING)))
+        run(api, _Config(), _Fire(), now=NOW, events_only=False)
+        marks = self.labels(api, 322)
+        self.assertIn(STALLED, marks)
+        self.assertNotIn(PENDING, marks)  # advanced, not accumulated
+
+    def test_a_failed_fire_leaves_the_marker_alone(self):  # GK-138
+        """No session started, so the issue has not spent its retry."""
+        api = api_with(an_issue(322))
+        run(api, _Config(), _Fire(ok=False), now=NOW, events_only=False)
+        self.assertNotIn(PENDING, self.labels(api, 322))
+
+    def test_a_marker_outside_triage_is_cleared(self):  # GK-145
+        api = api_with(an_issue(322, labels=("pending-approval", PENDING)))
+        run(api, _Config(), _Fire(), now=NOW, events_only=False)
+        self.assertNotIn(PENDING, self.labels(api, 322))
+
+    def test_clearing_keeps_the_other_labels(self):  # GK-145
+        api = api_with(an_issue(322, labels=("pending-approval", PENDING, "area:ui")))
+        run(api, _Config(), _Fire(), now=NOW, events_only=False)
+        self.assertIn("area:ui", self.labels(api, 322))
+
+
 class TestTheBoardRead(unittest.TestCase):
     def test_pull_requests_are_not_issues(self):  # GK-138
         """GitHub returns pull requests from the issues endpoint. A PR carrying
@@ -131,19 +176,19 @@ class TestTheBoardRead(unittest.TestCase):
 class TestReporting(unittest.TestCase):
     """GK-140/GK-144 — a run that hides what it skipped reads as a clear board."""
 
-    def test_the_skipped_remainder_is_named(self):  # GK-140
-        lines = summarise({"requeue": [1], "skipped": [2, 3],
-                           "abandoned": [], "withheld": []})
-        self.assertTrue(any("2, 3" in l or "[2, 3]" in l for l in lines))
+    EMPTY = {"requeue": [], "skipped": [], "stalled": [], "clear": [],
+             "withheld": [], "mark": {}}
 
-    def test_the_abandoned_are_named(self):  # GK-141
-        lines = summarise({"requeue": [], "skipped": [],
-                           "abandoned": [9], "withheld": []})
+    def test_the_skipped_remainder_is_named(self):  # GK-144
+        lines = summarise(dict(self.EMPTY, requeue=[1], skipped=[2, 3]))
+        self.assertTrue(any("[2, 3]" in l for l in lines))
+
+    def test_the_stalled_are_named(self):  # GK-146
+        lines = summarise(dict(self.EMPTY, stalled=[9]))
         self.assertTrue(any("9" in l for l in lines))
 
     def test_an_empty_run_still_says_something(self):  # GK-144
-        lines = summarise({"requeue": [], "skipped": [],
-                           "abandoned": [], "withheld": []})
+        lines = summarise(dict(self.EMPTY))
         self.assertTrue(lines and "0" in lines[0])
 
 

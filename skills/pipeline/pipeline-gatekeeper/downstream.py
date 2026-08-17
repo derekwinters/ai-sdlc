@@ -126,6 +126,34 @@ def _created_session(status, text):
     return bool(parsed.get("claude_code_session_url"))
 
 
+def record_attempt(api, issue, result, marker):
+    """Record that a poke went out, by adding the pending marker.
+
+    Only when a session actually started (`GK-138`). A fire that failed to
+    reach the endpoint started nothing, so recording an attempt would spend the
+    issue's one retry on a session that never existed — and the sweep would
+    then advance it straight to stalled without the routine ever having been
+    asked twice.
+
+    Never raises. The poke has already gone out by the time this runs, so
+    failing here would report a fire that happened as a fire that did not, and
+    would fail a workflow whose actual job already succeeded.
+    """
+    if not (result and result.attempted and not result.failed and marker):
+        return False
+    try:
+        current = [label["name"] for label in
+                   (api.issue(issue).get("labels") or [])]
+        if marker in current:
+            # A write that changes nothing is still a write: it shows in the
+            # audit trail and invites a re-render.
+            return False
+        api.set_labels(issue, current + [marker])
+    except Exception:  # noqa: BLE001 - bookkeeping must not fail the run
+        return False
+    return True
+
+
 class Fire:
     """Asks the analysis routine to look at an issue. Never fails the run."""
 

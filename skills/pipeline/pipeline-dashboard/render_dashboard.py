@@ -92,6 +92,13 @@ FAULTS = {
             f"native relationship."
         ),
     ),
+    "stalled_triage": (
+        "Triage that never answered",
+        lambda e: (
+            f"- **#{e['issue']}** — poked twice and the analysis routine never "
+            f"answered. It will not be poked again; this one needs a human."
+        ),
+    ),
     "stale_state": (
         "Closed issues still carrying state",
         lambda e: (

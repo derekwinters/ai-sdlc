@@ -32,9 +32,10 @@ on:
       fire_token:
         required: false
 
+# `issues: write` advances and clears the attempt markers. No pipeline state.
 permissions:
   contents: read
-  issues: read
+  issues: write
 
 concurrency:
   # One sweep at a time, and never cancelled: two concurrent sweeps would each

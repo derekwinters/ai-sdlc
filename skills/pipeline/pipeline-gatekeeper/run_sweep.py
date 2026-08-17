@@ -79,16 +79,22 @@ def summarise(result):
     one — a backstop nobody can see working is one nobody trusts (`GK-144`).
     """
     lines = [f"sweep: requeued {len(result['requeue'])}"]
+    if result["clear"]:
+        lines.append(
+            f"sweep: cleared stale markers from {len(result['clear'])} issues: "
+            f"{result['clear']}"
+        )
+    if result["stalled"]:
+        lines.append(
+            f"sweep: {len(result['stalled'])} issues were poked twice and never "
+            f"answered — these need a human, not another poke: "
+            f"{result['stalled']}"
+        )
     if result["skipped"]:
         lines.append(
             f"sweep: {len(result['skipped'])} stranded issues left for the next "
             f"run — the ceiling was reached, which means something is wrong "
             f"rather than busy: {result['skipped']}"
-        )
-    if result["abandoned"]:
-        lines.append(
-            f"sweep: {len(result['abandoned'])} issues stranded past the give-up "
-            f"horizon and will not be requeued again: {result['abandoned']}"
         )
     if result["withheld"]:
         lines.append(
@@ -98,19 +104,48 @@ def summarise(result):
     return lines
 
 
+def set_marker(api, number, marker, markers):
+    """Advance an issue to `marker`, replacing whichever it carried.
+
+    One write, not a remove and an add: two writes are two events, two audit
+    entries, and a window in which the issue carries no marker at all — which
+    is the window a concurrent read would misinterpret as "never poked".
+    """
+    try:
+        current = [l["name"] for l in (api.issue(number).get("labels") or [])]
+        wanted = [n for n in current if n not in set(markers)]
+        if marker:
+            wanted.append(marker)
+        if set(wanted) != set(current):
+            api.set_labels(number, wanted)
+    except Exception:  # noqa: BLE001 - bookkeeping must not fail the run
+        return False
+    return True
+
+
 def run(api, config, fire, *, now, events_only):
     """Plan and apply one sweep. Returns the plan, for the caller to report."""
+    markers = config.markers()
     result = plan(
         board(api, triage_label=config.label("triage"), now=now),
         triage_label=config.label("triage"),
+        markers=markers,
         ceiling=config.sweep.ceiling,
         stale_after=config.sweep.stale_after,
-        give_up_after=config.sweep.give_up_after,
         events_only=events_only,
     )
+
     for number in result["requeue"]:
         # Best-effort, exactly as the gatekeeper's own fire is: a backstop that
         # fails the run when the routine is unreachable is a backstop that goes
         # red overnight and gets muted.
-        fire.send(number, api.repository)
+        sent = fire.send(number, api.repository)
+        # Marked only when a session actually started, so a routine that could
+        # not be reached does not consume the issue's one retry (`GK-138`).
+        if sent and sent.attempted and not sent.failed:
+            set_marker(api, number, result["mark"].get(number), markers)
+
+    for number in result["clear"]:
+        set_marker(api, number, None, markers)
+
     return result

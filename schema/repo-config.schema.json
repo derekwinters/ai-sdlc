@@ -138,7 +138,7 @@
       }
     },
     "sweep": {
-      "description": "Bounds on what the scheduled backstop may spend. A circuit breaker against a fault requeueing without limit, not a throttle for ordinary operation.",
+      "description": "Bounds on what the scheduled backstop may spend. A circuit breaker against a fault requeueing without limit, not a throttle for ordinary operation. How many times one issue may be poked is carried by the attempt-marker labels, not by a duration.",
       "type": "object",
       "additionalProperties": false,
       "properties": {
@@ -153,12 +153,6 @@
           "type": "integer",
           "minimum": 0,
           "default": 1800
-        },
-        "give_up_after": {
-          "description": "Seconds after which a stranded issue is reported and never requeued again. Must exceed stale_after.",
-          "type": "integer",
-          "minimum": 0,
-          "default": 21600
         }
       }
     }

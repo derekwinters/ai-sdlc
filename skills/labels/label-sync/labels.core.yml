@@ -11,6 +11,17 @@ labels:
   - name: ai-triage
     color: "1D76DB"
     description: In the pipeline, awaiting or undergoing analysis
+
+  # ------------------------------------------------ triage attempt markers
+  # Not states: an issue carrying one is still in triage. They record how many
+  # pokes this episode has had, so a lost one is retried exactly once and a
+  # hopeless one stops costing sessions. Written by whatever fires the routine.
+  - name: ai-triage-pending
+    color: "C5DEF5"
+    description: A poke went out; the analysis routine has not answered yet
+  - name: ai-triage-stalled
+    color: "B60205"
+    description: Poked twice and never answered — needs a human, not another poke
   - name: pending-approval
     color: "FBCA04"
     description: Analysis produced a plan; awaiting the owner's decision

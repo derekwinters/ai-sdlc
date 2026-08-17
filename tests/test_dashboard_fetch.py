@@ -133,6 +133,18 @@ class TestFaultDetection(unittest.TestCase):
         github = api([issue(7, ["in-progress"], state="closed")])
         self.assertEqual([f["issue"] for f in state(github)["faults"]["stale_state"]], [7])
 
+    def test_a_stalled_triage_is_flagged(self):  # GK-146
+        """Bounding the retries turns "retried for ever" into "ignored for
+        ever" unless somebody is told. Without this the issue sits in Waiting
+        for triage looking exactly like ordinary waiting work."""
+        github = api([issue(7, ["ai-triage", "ai-triage-stalled"])])
+        self.assertEqual(
+            [f["issue"] for f in state(github)["faults"]["stalled_triage"]], [7])
+
+    def test_an_ordinary_triage_raises_no_stalled_fault(self):  # GK-146
+        github = api([issue(7, ["ai-triage"])])
+        self.assertEqual(state(github)["faults"]["stalled_triage"], [])
+
     def test_a_prose_dependency_is_flagged(self):  # DASH-026
         github = api([issue(7, ["ready-for-work"], body="Blocked by #42")])
         found = state(github)["faults"]["prose_dependency"]

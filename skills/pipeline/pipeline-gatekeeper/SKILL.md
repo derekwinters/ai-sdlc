@@ -77,14 +77,32 @@ a second poke — one intent, two sessions.
 **A scheduled job that starts sessions spends the owner's usage limits while nobody is watching**,
 so what it may spend is bounded twice, and the two bounds fail differently:
 
-| Bound | Default | What it stops |
+| Bound | Set by | What it stops |
 |---|---|---|
-| `sweep.ceiling` | 20 | one faulty run turning a whole board into sessions |
-| `sweep.give_up_after` | 6h | one broken issue being retried for as long as it exists |
+| `sweep.ceiling` (default 20) | configuration | one faulty run turning a whole board into sessions |
+| the attempt markers | labels on the issue | one broken issue being retried for as long as it exists |
 
 The ceiling is a circuit breaker, not a throttle: it sits well above what an ordinary board strands
 at once, so reaching it means something is wrong rather than busy — and the run says what it
 skipped. `ceiling: 0` turns the sweep off without a code change.
+
+**The markers are how an issue's retries are bounded.** Whoever fires the routine records that it
+did, as a label, and the record only ever advances:
+
+| Marker | Meaning |
+|---|---|
+| *(none)* | in triage, no poke has gone out |
+| `ai-triage-pending` | a poke went out; the routine has not answered |
+| `ai-triage-stalled` | poked twice, still nothing — terminal, and shown on the dashboard |
+
+A marker is not a pipeline state: an issue carrying one is still in triage. They are cleared when
+the issue leaves triage, is closed, or re-enters triage — a fresh `/admit` is a new episode and
+deserves a fresh budget.
+
+This replaced a give-up *duration*, which did not work. A duration is measured against a clock, and
+every clock available here — last update, last comment — is reset by ordinary activity, so a
+passing comment resurrected issues that had already been given up on. Marker state has nothing to
+reset.
 
 **Requeueing happens only on the scheduled path.** The event path may report but never requeue: a
 merge or a label change can briefly make a healthy issue look stranded — a just-merged issue before
@@ -97,4 +115,4 @@ A genuine stall has no triggering event, so waiting for the schedule loses nothi
 From `.claude/repo-config.yml`: `owners`, `bot.login`, `dashboard_issue`, `milestone_ordering`,
 the `labels` vocabulary, and `sweep`. See `docs/spec/configuration.md`.
 
-Specification: `docs/spec/gatekeeper.md` (`GK`), 99 requirements.
+Specification: `docs/spec/gatekeeper.md` (`GK`), 101 requirements.

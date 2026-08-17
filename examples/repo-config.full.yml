@@ -33,9 +33,9 @@ fire:
 
 # What the scheduled backstop may spend. A circuit breaker, not a throttle:
 # the ceiling is set well above what an ordinary board strands at once, so
-# reaching it means something is wrong rather than busy. `give_up_after`
-# bounds a single issue across every run, which the ceiling alone does not.
+# reaching it means something is wrong rather than busy. How many times one
+# issue may be poked is bounded by the attempt-marker labels instead of by a
+# duration — a duration is measured against a clock ordinary activity resets.
 sweep:
   ceiling: 20
   stale_after: 1800
-  give_up_after: 21600

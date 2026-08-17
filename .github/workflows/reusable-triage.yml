@@ -10,9 +10,9 @@ name: triage
 # token authored, so its own label move never reaches this workflow. See the
 # invariant on GK-122 before giving the gatekeeper a different token.
 #
-# Writes nothing. Firing is a poke; what happens next is the routine's
-# decision, and a workflow that also moved labels would be a second
-# gatekeeper.
+# Writes the pending marker and nothing else. Firing is a poke; what happens
+# next is the routine's decision, and a workflow that also moved pipeline
+# states would be a second gatekeeper.
 
 on:
   workflow_call:
@@ -27,8 +27,13 @@ on:
       fire_token:
         required: false
 
+# `issues: write` is for the pending marker (GK-138) and nothing else — never a
+# pipeline state, which stays the routine's decision (GK-122). Safe to write
+# from here: it is written with GITHUB_TOKEN, so it starts no workflow run, and
+# it is not the triage label, so this caller's own `if:` would drop it anyway.
 permissions:
   contents: read
+  issues: write
 
 concurrency:
   # Per issue: two label events on one issue would fire twice for the same
