@@ -23,6 +23,7 @@ Specification: docs/spec/gatekeeper.md (`GK`), §8.
 from __future__ import annotations
 
 import json
+import re
 
 from lib.github import MAX_DETAIL, post_json
 
@@ -34,6 +35,17 @@ ANTHROPIC_VERSION = "2023-06-01"
 #: The `/fire` endpoint is in research preview behind this dated beta header.
 #: Request and response shapes may change under a future one.
 ROUTINE_BETA = "experimental-cc-routine-2026-04-01"
+
+#: Anything naming a private Claude Code session. A session link is not itself
+#: a credential, but a workflow log on a public repository is world-readable
+#: and permanent, and an identifier published there cannot be unpublished. The
+#: session id is matched as well as the URL, because the id is the part that
+#: identifies; a bare `session_…` in an error message discloses as much as the
+#: link around it.
+PRIVATE_LINK = re.compile(
+    r"https?://[^\s\"'<>]*claude\.ai[^\s\"'<>]*|session_[A-Za-z0-9_-]+",
+    re.IGNORECASE,
+)
 
 #: Below this length a value is not a credential, and replacing every
 #: occurrence of it would shred the message instead of protecting anything —
@@ -89,30 +101,29 @@ def fire_summary(fired):
     if fired.attempted and fired.failed:
         return f"triage: fired and FAILED — {fired.detail}"
     if fired.attempted:
-        # The session URL, when there is one: it is what turns "something
-        # answered" into a session somebody can open and read.
-        if fired.detail:
-            return f"triage: fired the analysis routine -> {fired.detail}"
+        # Whether a session was created, never which one. This line lands in a
+        # workflow log, and every repository running this pipeline is public.
         return "triage: fired the analysis routine"
     return f"triage: not fired — {fired.detail or 'no reason recorded'}"
 
 
-def _session_url(status, text):
-    """The session URL a real `routine_fire` carries, or `None`.
+def _created_session(status, text):
+    """Whether the response is a real `routine_fire` that created a session.
 
-    Proof that a session was actually created, rather than that something
-    answered. Returning `None` for every other shape is what keeps a
-    misdirected endpoint from reporting success.
+    A boolean rather than the link it read, deliberately. Proof that a session
+    exists is what keeps a misdirected endpoint from reporting success; the
+    link itself is private, and a value that is never returned is one that
+    cannot later be printed by accident (`GK-126`).
     """
     if not 200 <= status < 300:
-        return None
+        return False
     try:
         parsed = json.loads(text or "")
     except (ValueError, TypeError):
-        return None
+        return False
     if not isinstance(parsed, dict):
-        return None
-    return parsed.get("claude_code_session_url") or None
+        return False
+    return bool(parsed.get("claude_code_session_url"))
 
 
 class Fire:
@@ -156,8 +167,7 @@ class Fire:
         except Exception as error:  # noqa: BLE001 - nothing may escape
             return FireResult(True, failed=True, detail=self._scrub(str(error)))
 
-        session_url = _session_url(status, text)
-        if session_url is None:
+        if not _created_session(status, text):
             # Not "not 2xx": a 2xx that is not a `routine_fire` means the
             # endpoint is not the one we think it is, and reporting that as
             # fired is how a broken wire passes for a working one.
@@ -165,16 +175,24 @@ class Fire:
                 True, failed=True, detail=f"status {status}: {self._scrub(text)}"
             )
 
-        return FireResult(attempted=True, detail=session_url)
+        return FireResult(attempted=True)
 
     def _scrub(self, text):
-        """Remove the endpoint and token, then bound the length.
+        """Remove the endpoint, the token and any session link, then bound the
+        length.
 
         A transport error routinely quotes the URL it failed to reach, so
         scrubbing the message is not paranoia — it is the common case.
+
+        Session links are stripped here as well as suppressed at the success
+        path, because this branch reports the *raw response body*. A response
+        that fails after a session was created carries the link inside that
+        body, so deleting the line that printed one deliberately would have
+        left the accidental route open (`GK-126`).
         """
         cleaned = text or ""
         for secret in (self._endpoint, self._token):
             if secret and len(secret) >= MIN_SECRET_LENGTH:
                 cleaned = cleaned.replace(secret, "<redacted>")
+        cleaned = PRIVATE_LINK.sub("<redacted>", cleaned)
         return cleaned[:MAX_DETAIL]

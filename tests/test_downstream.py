@@ -203,10 +203,18 @@ class TestOnlyARealFireIsSuccess(unittest.TestCase):
         self.assertTrue(result.attempted)
         self.assertFalse(result.failed)
 
-    def test_the_session_url_is_reported(self):  # GK-125
+    def test_the_session_url_is_never_reported(self):  # GK-126
+        """A session link is private, and a workflow log is not.
+
+        Every repository adopting this pipeline is public, so anything the
+        run prints is readable by anyone. Verifying the `routine_fire` shape
+        is what makes success truthful; carrying the link back out of that
+        check is what published it.
+        """
         result = Fire("https://example.com", "t",
                       transport=lambda *a, **k: (200, ROUTINE_FIRE)).send(7, "o/r")
-        self.assertIn("https://claude.ai/code/session_01X", result.detail)
+        self.assertNotIn("claude.ai", result.detail or "")
+        self.assertNotIn("session_01X", result.detail or "")
 
     def test_a_2xx_carrying_no_session_url_is_a_failure(self):  # GK-125
         result = Fire("https://example.com", "t",
@@ -228,9 +236,24 @@ class TestOnlyARealFireIsSuccess(unittest.TestCase):
                       transport=lambda *a, **k: (202, "{}")).send(7, "o/r")
         self.assertIn("202", result.detail)
 
+    def test_a_failing_response_carrying_a_session_link_is_scrubbed(self):  # GK-126
+        """The leak that survives deleting the success path.
 
-if __name__ == "__main__":
-    unittest.main()
+        `_session_url` returns `None` for any non-2xx, so the run falls to the
+        failure branch and reports the raw body. A response that failed *after*
+        creating a session would carry the link straight into the log, and
+        `_scrub` only knew about the endpoint and the token.
+        """
+        body = ('{"type": "routine_fire", '
+                '"claude_code_session_url": "https://claude.ai/code/session_01X", '
+                '"error": "downstream timeout"}')
+        result = Fire("https://example.com", "t",
+                      transport=lambda *a, **k: (503, body)).send(7, "o/r")
+        self.assertTrue(result.failed)
+        self.assertNotIn("claude.ai", result.detail)
+        self.assertNotIn("session_01X", result.detail)
+        # Still says enough to act on.
+        self.assertIn("503", result.detail)
 
 
 class TestReportingTheOutcome(unittest.TestCase):
@@ -247,19 +270,21 @@ class TestReportingTheOutcome(unittest.TestCase):
 
         self.assertIn("fired", fire_summary(FireResult(attempted=True)).lower())
 
-    def test_a_fired_run_names_the_session_it_created(self):  # GK-125
-        """The session URL is the one thing worth having in that log line.
+    def test_a_fired_run_never_names_the_session_it_created(self):  # GK-126
+        """Belt to `test_the_session_url_is_never_reported`'s suspenders.
 
-        It is what turns "something answered" into a session somebody can
-        open, and it is already carried on the result — it was simply never
-        printed.
+        Even handed a result that somehow carries a link, the summary must not
+        print it — the guarantee is about what reaches the log, so the last
+        thing before the log is the right place to enforce it too.
         """
         from downstream import FireResult, fire_summary
 
         line = fire_summary(
             FireResult(attempted=True, detail="https://claude.ai/code/session_01X")
         )
-        self.assertIn("https://claude.ai/code/session_01X", line)
+        self.assertNotIn("claude.ai", line)
+        self.assertNotIn("session_01X", line)
+        self.assertIn("fired", line.lower())
 
     def test_a_fired_run_without_a_url_still_reads_cleanly(self):  # GK-121
         from downstream import FireResult, fire_summary

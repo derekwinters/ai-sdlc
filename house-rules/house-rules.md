@@ -61,6 +61,18 @@ issue.
 
 **Do not mark an acceptance check done that you have not verified.**
 
+**Never publish a private link.** Session links, signed URLs, invite and share links, anything
+carrying a token in a query string — none of it goes into a workflow log, an issue, a pull request,
+a commit message, or a comment. These repositories are public, so all five are publications, and an
+identifier published once cannot be unpublished. The test is not "is this a credential" but "would
+I post it in public", and a link that exists to reach something private fails that test whether or
+not a login stands behind it. Say *that* the thing happened and let whoever owns it look it up:
+"fired the analysis routine" is as useful as the link and costs nothing.
+
+This applies to text you did not write. Error messages, response bodies, and stack traces quote the
+values they were handed, so a branch that reports a raw body needs redaction rather than trust —
+which is why a leak usually survives deleting the line that was leaking on purpose.
+
 ## Work only a human can do
 
 Repository settings, secrets, external accounts, physical devices, and taste calls are not yours.
