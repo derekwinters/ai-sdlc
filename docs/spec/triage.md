@@ -29,7 +29,12 @@ Every requirement below is `auto` (covered by a named test) unless marked otherw
 
 ## 1. Selecting
 
-- **TRI-001** An issue is eligible when it carries the triage label.
+- **TRI-001** An issue is eligible when it is queued for triage or already running. Both, because
+  the handler that fires a session and the label write that records it are two operations: a
+  session can reach this check before its own `running` label lands, and rejecting it then would
+  make the routine refuse the very issue it was woken for.
+- **TRI-009** A stalled issue is not eligible. The sweep gave up on it deliberately, and only
+  `/admit` puts it back in the queue.
 - **TRI-002** A closed issue is never eligible.
 - **TRI-003** A parked issue is never eligible.
 - **TRI-004** An issue already at pending approval is not eligible; its plan is waiting on a human.
@@ -38,6 +43,7 @@ Every requirement below is `auto` (covered by a named test) unless marked otherw
 - **TRI-007** Selection is capped, and the cap is reported when it truncates. A silent cap makes a
   partial run look like a complete one.
 - **TRI-008** Eligibility is computed from labels alone; it never reads issue bodies.
+
 
 ## 2. Routing
 
@@ -85,10 +91,10 @@ Every triaged issue ends in exactly one of three places.
 
 | Section | IDs | Tests |
 |---|---|---|
-| Selecting | TRI-001–008 | `test_triage_select.py` |
+| Selecting | TRI-001–009 | `test_triage_select.py` |
 | Routing | TRI-010–015 | `test_triage_route.py` |
 | What a plan contains | TRI-020–025 | `test_triage_plan.py` |
 | Asking instead of guessing | TRI-030–033 | `test_triage_plan.py` |
 | Hand-back | TRI-040–043 | `test_triage_route.py` |
 
-**26 requirements, 25 `auto` and 1 `manual`.**
+**27 requirements, 26 `auto` and 1 `manual`.**

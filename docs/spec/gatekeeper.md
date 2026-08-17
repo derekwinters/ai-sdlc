@@ -40,28 +40,33 @@ configurable; the defaults are given here.
 | State | Default label | Meaning | Written by |
 |---|---|---|---|
 | untracked | *(no pipeline label)* | not in the pipeline | — |
-| triage | `ai-triage` | admitted; awaiting or undergoing analysis | gatekeeper |
+| triage queued | `ai-triage-queued` | admitted; no analysis session started yet | gatekeeper |
+| triage running | `ai-triage-running` | an analysis session was started and has not answered | fire handler |
+| triage stalled | `ai-triage-stalled` | the session never answered; needs a person | sweep |
 | pending approval | `pending-approval` | analysis produced a plan; awaiting the owner's decision | analysis |
 | clarification | `needs-clarification` | analysis needs a human answer | analysis |
 | approved | `ready-for-work` | plan accepted; eligible for the builder | gatekeeper |
 | building | `in-progress` | a builder has taken it | builder |
 | parked | `parked` | deliberately set aside | gatekeeper |
 
-An issue may additionally carry one **attempt marker** — `ai-triage-pending` or
-`ai-triage-stalled`. Markers are not states: an issue carrying one is still *in* triage, and the
-marker records how many pokes that episode has had. They are listed in §"The sweep".
+Triage is three states rather than one because a single `ai-triage` could not answer the question
+that matters when something goes wrong: *has it happened?* An issue sitting in it might never have
+been poked, might have a session running, or might have had one die — and telling those apart was
+impossible from the board. Each state now says which.
 
-- **GK-001** An issue carries at most one pipeline-state label at any time. An attempt marker is
-  not a pipeline state and does not count against this.
+- **GK-001** An issue carries at most one pipeline-state label at any time.
 - **GK-002** Applying a state removes whatever state label was present, and only state labels.
 - **GK-003** Labels outside the state vocabulary — `area:*`, `type:*`, `skip-docs` — are never
   added or removed by the gatekeeper. A state change that dropped them would discard the triage
   decision.
 - **GK-004** `type:epic` and `type:wireframe` are classification labels, not states, and are never
   altered.
-- **GK-005** The gatekeeper never writes `pending-approval`, `needs-clarification`, or
-  `in-progress`. Those states are entered by analysis and by the builder; the gatekeeper only
-  reads them and moves issues out of them.
+- **GK-005** The gatekeeper never writes `ai-triage-running`, `ai-triage-stalled`,
+  `pending-approval`, `needs-clarification`, or `in-progress`. Those states are entered by the fire
+  handler, the sweep, analysis, and the builder; the gatekeeper only reads them and moves issues
+  out of them. **Invariant — a state is written by the one component that can know it is true.**
+  Only the thing that fired can say a session started, and only something watching over time can
+  say one never answered.
 
 ---
 
@@ -288,11 +293,11 @@ Replaces the removed comment-replay sweep.
   move never reaches the label handler. The gatekeeper covers its own moves; the label event covers
   every label applied by a human or an app. **Invariant — the gatekeeper writes labels with
   `GITHUB_TOKEN` and nothing else.** Giving it a personal access token or an app token would make
-  both paths fire for one `/admit`. In response to a fire a handler writes the pending **marker**
-  and nothing else — never a pipeline state, which remains the routine's decision. The marker is
-  safe to write from the label handler for the same reason the gatekeeper's own moves are: it is
-  written with `GITHUB_TOKEN`, so it starts no workflow run, and it is not the triage label, so the
-  caller's `if:` would drop it even if it did.
+  both paths fire for one `/admit`. In response to a fire the handler moves the issue from queued
+  to running, and writes nothing else — a component that could write any state would be a second
+  gatekeeper. Writing it from the label handler cannot loop: it is written with `GITHUB_TOKEN`, so
+  it starts no workflow run, and the caller's `if:` names the queued label, which this write
+  removes rather than adds.
 - **GK-123** The fire request carries `anthropic-version` and the `/fire` endpoint's dated
   `anthropic-beta` research-preview header, alongside its bearer token. These are conditions of
   the endpoint, not of one deployment: without the first it answers `400` and the routine is never
@@ -388,83 +393,51 @@ Replaces the removed comment-replay sweep.
 ## The sweep
 
 Firing is a poke, and a poke can be lost. A routine that never starts, starts and dies, or is
-refused leaves the issue exactly as it was — in triage, with no analysis, and with nothing that
-will ever look at it again. The sweep is the backstop: a scheduled pass that finds issues stranded
-that way and pokes them again.
+refused leaves the issue exactly as it was, and nothing looks at it again. The sweep is the
+backstop — but it is a **detector**, not a retrier. It watches for sessions that never answered and
+says so; deciding to spend another session is a person's job.
 
-A backstop that starts sessions is a backstop that spends money while nobody is watching, so what
-bounds it is specified rather than left to the implementation. Two independent bounds, because they
-fail differently: a ceiling limits how much one run can do, and the **attempt markers** limit how
-many times one issue can ever cost anything.
+That division is deliberate. An earlier design had the sweep re-poke automatically, which meant a
+scheduled job could start sessions unattended, which meant it needed a per-run ceiling, a per-issue
+budget, and a gate stopping the event path from looping. A sweep that cannot start a session needs
+none of them: whatever it gets wrong, it writes a label.
 
-### The attempt markers
+- **GK-138** A fire that starts a session moves the issue from queued to running. A fire that fails
+  leaves it queued, so the next sweep still sees work waiting rather than a session that does not
+  exist.
+- **GK-139** The sweep moves an issue from running to stalled when it has been running longer than
+  the staleness threshold and no analysis has appeared. An issue something is still working on is
+  not stalled.
+- **GK-140** **Invariant — the sweep starts no sessions.** It observes and relabels, nothing more.
+  A scheduled job that can start sessions can spend an account's usage limits while nobody is
+  watching; one that only writes labels cannot, however wrong it is.
+- **GK-141** The staleness threshold is a **required input** to the sweep workflow, written by
+  `adopt` at thirty minutes. Required rather than defaulted in the reusable workflow: a caller that
+  omits it fails loudly instead of inheriting a number nobody chose, and the value it does carry is
+  visible and editable in the repository it governs.
+- **GK-142** Nothing leaves the stalled state on its own. Returning a stalled issue to the queue is
+  `/admit` — a person deciding another session is worth spending. **Invariant — no automatic
+  transition out of stalled exists**, which is what makes the state terminal rather than a slow
+  loop.
+- **GK-143** A run reports what it moved and that it ran at all, including a run that changed
+  nothing. A backstop nobody can see working is one nobody trusts.
 
-Whoever fires the routine records that it did. The record is a label, so it is durable, visible on
-the board, and — the property that matters — **monotonic**: it only ever advances.
-
-| Marker | Meaning |
-|---|---|
-| *(none)* | in triage, no poke has gone out |
-| pending | a poke went out and the routine has not answered |
-| stalled | poked again, still nothing. Terminal. |
-
-- **GK-138** Whoever fires the routine adds the pending marker, and only on a fire that actually
-  started a session. A poke that failed to reach the endpoint started nothing, so recording an
-  attempt would spend the issue's one retry on an attempt that never happened.
-- **GK-139** A sweep requeues an issue only when it is open, carries the triage label, has no
-  analysis, is not already stalled, and has been untouched for longer than `sweep.stale_after`. An
-  issue something is still working on is not stranded.
-- **GK-140** A requeue advances the marker: absent becomes pending, pending becomes stalled. A
-  stalled issue is never requeued again. **Invariant — the markers only ever advance, so no issue
-  is poked more than twice per triage episode.** The bound is structural rather than temporal,
-  which is the whole reason for it: every clock available here — last update, last comment — is
-  reset by ordinary activity, so a horizon measured against one lets a passing comment resurrect an
-  issue that had already been given up on, indefinitely.
-- **GK-141** Re-entering triage clears the markers, and that is the *only* way they are cleared
-  while an issue remains in triage. A fresh `/admit` is a new episode and deserves a fresh budget;
-  nothing else may reset one.
-- **GK-142** Requeueing is withheld on the event path and produced only on the scheduled path.
-  **Invariant — no sweep reachable from a webhook may requeue.** A merge or a label change can
-  momentarily make a healthy issue look stranded — a just-merged issue before GitHub finishes
-  closing it, a just-set state label before the analysis comment is visible — and requeueing in
-  that window is what turns two states into a loop that fires a session on every flip. A genuine
-  stall has no triggering event, so deferring to the schedule loses nothing.
-- **GK-143** A sweep run requeues at most `sweep.ceiling` issues, and selection is ordered by issue
-  number before it is truncated. **Invariant — a sweep never starts an unbounded number of
-  sessions.** The ceiling is configuration with a conservative default, not a constant in code, and
-  it is a circuit breaker rather than a throttle: set high enough that ordinary operation never
-  reaches it, so reaching it is evidence of a fault. Ordering before truncation keeps a capped run
-  draining the board from one end instead of starving whichever issues sort late.
-- **GK-144** A run reports what it did not requeue, what it stalled, and that it ran at all.
-  Reaching the ceiling, or finding nothing to do, is a successful run: a silent truncation reads as
-  "the board is clear" when it is not, and a red workflow on a working backstop trains its owner to
-  ignore it.
-- **GK-145** The markers are removed when an issue leaves triage or is closed. A marker that
-  outlives its episode is a slower version of the bug it prevents — the next episode inherits a
-  spent budget and is never retried at all.
-- **GK-146** A run names the issues it has stopped retrying, so bounding the retries does not
-  convert "retried for ever" into "ignored for ever". How the board shows them is `DASH-029`; this
-  is only about the run saying it.
-
-> **How the spec is changing (#136).** The sweep is not new behaviour being invented here — it is
-> behaviour this project had before extraction and lost. `lucas-doggiehood` runs one, and the
-> commit that moved firing to the label event (`c6396ba`) recorded the gap in passing: *"The
-> board-wide catch-up that used to cover this went away with the sweep at adoption."* What is new
-> is that its bounds are specified. In the original the re-pick gate was a parameter on a function
-> and the reason lived in a docstring, which is why the loop it prevents had to be discovered twice
-> before it was written down.
+> **How the spec is changing (#136).** Three changes, and the third replaced the first two.
 >
-> The markers have no counterpart in the original, and replaced a `give_up_after` horizon that was
-> in this specification for one day. That horizon was measured from the issue's last update, which
-> is *"last touched by anything"* — so a comment on a stranded issue reset it, and an issue already
-> given up on became eligible again. The bound existed on paper and not in fact. Marker state
-> cannot be reset by activity, only by re-entering triage, which is the one reset that should
-> reset it.
+> Triage was one state, `ai-triage`. It could not say whether a session had never started, was
+> running, or had died, which is exactly the question that mattered when eight issues in
+> `connor-multiplying-frogs` stranded overnight. It is now three states that each answer it.
 >
-> `GK-122` also changes: it used to end *"neither handler writes anything in response to a fire"*.
-> A handler now writes the pending marker, because the component that knows a poke went out is the
-> component that sent it. It still writes no pipeline state, which is what that clause was
-> protecting.
+> The sweep is restored behaviour rather than new: `lucas-doggiehood` runs one, and the commit that
+> moved firing to the label event (`c6396ba`) recorded the loss in passing — *"The board-wide
+> catch-up that used to cover this went away with the sweep at adoption."*
+>
+> The first draft of that sweep re-poked automatically, and everything expensive about this design
+> came from that one choice: a `sweep.ceiling` to bound a run, a `give_up_after` horizon to bound an
+> issue, attempt markers when the horizon turned out to be resettable by any passing comment, and a
+> re-pick gate to stop the event path looping. Making stalls a human decision deleted all four. The
+> lesson is worth keeping: the original problem was that a lost poke was *invisible*, and automatic
+> retry was never what it asked for.
 
 ---
 
@@ -483,7 +456,6 @@ the board, and — the property that matters — **monotonic**: it only ever adv
 | Lifecycle | GK-100–106 | `test_lifecycle.py` |
 | Downstream | GK-110–119 | `test_downstream.py` |
 | Architecture | GK-130–137 | `test_architecture.py`, `test_github_api.py` |
-| The sweep | GK-139–144 | `test_sweep.py`, `test_sweep_run.py` |
-| Attempt markers | GK-138, GK-145–146 | `test_markers.py`, `test_dashboard_fetch.py` |
+| The sweep | GK-138–143 | `test_sweep.py`, `test_sweep_run.py` |
 
-**101 requirements, 99 `auto` and 2 `manual`.**
+**98 requirements, 96 `auto` and 2 `manual`.**

@@ -72,6 +72,12 @@ The page is two charts and then five sections, in that order.
 
 - **DASH-016** Five sections — ready for work, pending approval, needs clarification, waiting for
   triage, parked — each collapsible, each carrying its count, each containing exactly one table.
+- **DASH-035** All three triage states share the waiting-for-triage section, and the Status column
+  is what tells them apart. They are one section because they are one answer to "what has not been
+  analysed yet", and splitting them would put a thirty-second-old session under its own heading for
+  the minute it exists. A stalled issue is additionally raised as `DASH-029`: it is listed here
+  because it is genuinely still unanalysed, and flagged there because it is the only one of the
+  three that will stay that way without somebody acting.
 - **DASH-017** A section renders even when empty, showing zero. The board's shape is then
   constant, and a missing section means a defect rather than an empty queue.
 - **DASH-018** Every row links the issue, its milestone and its blockers, and shows `-` where
@@ -116,12 +122,11 @@ Each of these corresponds to a repair the pipeline deliberately does not perform
 > a decision the board cannot show on its own.
 
 - **DASH-026** **Prose dependency** — a `Blocked by #N` written as text, invisible to the queue.
-- **DASH-029** **Stalled triage** — an open issue carrying the terminal triage attempt marker: the
-  analysis routine was poked twice and never answered, and the sweep will not poke it again.
-  **Invariant — an issue the sweep has stopped retrying appears here.** Bounding the retries is
-  what stops one broken issue consuming sessions for ever, and it converts "retried for ever" into
-  "ignored for ever" unless the board says so. The issue also remains in *Waiting for triage*,
-  where it genuinely is, annotated so the section does not report it as ordinary waiting work.
+- **DASH-029** **Stalled triage** — an open issue in the stalled state: a session was started and
+  never answered, and nothing will start another without a person asking. **Invariant — an issue
+  the sweep has given up on appears here.** The sweep deliberately does not retry, so the board is
+  the only thing that can turn a dead session into something somebody knows about; without this the
+  bounded design would trade "retried for ever" for "ignored for ever".
 - **DASH-027** A fault section with nothing in it is omitted rather than shown empty, so a page
   with nothing wrong carries no fault report at all. The charts and the five issue sections are a
   fixed skeleton and always render (`DASH-017`), so it is the presence of a fault heading, not the
@@ -169,9 +174,9 @@ Each of these corresponds to a repair the pipeline deliberately does not perform
 |---|---|---|
 | Fetching and rendering | DASH-001–005 | `test_dashboard_fetch.py` |
 | What it shows — charts | DASH-010–015 | `test_dashboard_render.py` |
-| What it shows — sections | DASH-016–019 | `test_dashboard_render.py` |
+| What it shows — sections | DASH-016–019, DASH-035 | `test_dashboard_render.py` |
 | What is counted | DASH-006–008 | `test_dashboard_fetch.py` |
 | Fault flags | DASH-020–029 | `test_dashboard_faults.py`, `test_dashboard_fetch.py`, `test_dashboard_render.py` |
 | Focus and cap | DASH-030–034 | `test_dashboard_fetch.py` |
 
-**32 requirements, all `auto`.**
+**33 requirements, all `auto`.**
