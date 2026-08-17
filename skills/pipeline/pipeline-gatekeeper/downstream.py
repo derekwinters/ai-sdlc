@@ -89,6 +89,10 @@ def fire_summary(fired):
     if fired.attempted and fired.failed:
         return f"triage: fired and FAILED — {fired.detail}"
     if fired.attempted:
+        # The session URL, when there is one: it is what turns "something
+        # answered" into a session somebody can open and read.
+        if fired.detail:
+            return f"triage: fired the analysis routine -> {fired.detail}"
         return "triage: fired the analysis routine"
     return f"triage: not fired — {fired.detail or 'no reason recorded'}"
 
