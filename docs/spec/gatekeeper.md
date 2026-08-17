@@ -270,7 +270,11 @@ Replaces the removed comment-replay sweep.
 > renderer re-emits the marker it read and that is what carries it between two separate workflow
 > runs. Found by issuing `/focus v0.5` on a live board and watching nothing happen.
 - **GK-117** A fire failure is reported but never raised, and never fails the run.
-- **GK-118** The fire request never logs its URL or its secret.
+- **GK-118** Neither the fire request nor its response ever logs a URL, a secret, or a session
+  link. **Invariant — nothing that identifies a private session is written to a log, an issue, or
+  a pull request.** Every repository running this pipeline is public, so a workflow log is a
+  publication: the guarantee is about what reaches the log by *any* route, not about which line
+  was written deliberately.
 - **GK-119** An unconfigured fire endpoint is a notice, not an error.
 - **GK-122** The analysis routine is fired by **both** the gatekeeper and the label event, and an
   issue entering triage fires exactly once however the label got there. The two paths are disjoint
@@ -289,12 +293,31 @@ Replaces the removed comment-replay sweep.
   number. The routine parses the issue number out of an untrusted wrapper, so the payload is prose
   rather than a structured record.
 - **GK-125** A fire counts as successful only when the endpoint returns a `routine_fire` carrying a
-  session URL, which is then reported. Any other answer — including a `2xx` — is a failure naming
-  its status and body.
+  session URL. Any other answer — including a `2xx` — is a failure naming its status and body.
+- **GK-126** A run reports *whether* a session was created, never *which*. The check that reads the
+  response returns a boolean and not the link it read, so there is no session URL in hand to print
+  by accident; and the failure branch, which reports the raw response body, redacts session links
+  as it already redacts the endpoint and the token.
 - **GK-121** Every run reports what became of the analysis routine: fired, fired and failed with
   the scrubbed detail, not configured, or not a triage transition. `GK-119`'s silence is about
   not *failing* the run, never about saying nothing — a deliberate absence and a broken wire must
   not read the same.
+
+> **How the spec is changing (#132).** `GK-118` used to say only that *the fire request* never logs
+> its URL or its secret, and `GK-125` ended *"…carrying a session URL, which is then reported"* —
+> so the request's URL was treated as sensitive while the response's was printed in full. `GK-118`
+> now covers the response too and states the invariant plainly, and `GK-125` keeps its truthfulness
+> guarantee while `GK-126` takes over what a run may say about it: whether a session was created,
+> never which one.
+>
+> The reason is not that a session link is a credential — it is that every repository running this
+> pipeline is public, so a workflow log is a publication, and an identifier published there cannot
+> be unpublished. That asymmetry decides it: the link saved the owner a lookup in their own
+> account, and cost an irreversible disclosure to anyone who reads the log.
+>
+> The rule is written as "by any route" because there were two leaks and only one of them was
+> deliberate. Removing the printed line would have left the failure branch — which reports the raw
+> response body — publishing the link from any response that failed after creating a session.
 
 > **How the spec is changing (#123).** `GK-110` fired the routine from the gatekeeper, which meant
 > the routine was reachable only through `/admit` and only at the instant of the transition. Adding
