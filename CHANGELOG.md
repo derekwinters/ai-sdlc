@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.4.13](https://github.com/derekwinters/ai-sdlc/compare/v0.4.12...v0.4.13) (2026-08-17)
+
+
+### Features
+
+* **pipeline:** fire triage from the label event, not the gatekeeper ([c6396ba](https://github.com/derekwinters/ai-sdlc/commit/c6396ba3482c2236271cae1d95a2cb52e9302110)), closes [#123](https://github.com/derekwinters/ai-sdlc/issues/123)
+
+
+### Fixes
+
+* **gatekeeper:** report what became of the analysis routine ([c8300b6](https://github.com/derekwinters/ai-sdlc/commit/c8300b665d9ed852ffa702c4b7a0387798ea785c)), closes [#121](https://github.com/derekwinters/ai-sdlc/issues/121)
+
+
+### Chores
+
+* release 0.4.13 ([bbb7032](https://github.com/derekwinters/ai-sdlc/commit/bbb70323562ac3c4cb145bb6306ff89696634322))
+
 ## [0.4.12](https://github.com/derekwinters/ai-sdlc/compare/v0.4.11...v0.4.12) (2026-08-17)
 
 
