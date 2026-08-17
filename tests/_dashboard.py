@@ -41,7 +41,7 @@ def state(**overrides):
 
 
 def issue(number, title="A thing", state_label="ready-for-work", milestone="v0.2",
-          milestone_number=2, blockers=(), has_pr=False, closed=False):
+          milestone_number=2, blockers=(), has_pr=False, closed=False, marker=None):
     """One issue as fetch prepares it.
 
     `closed` matters: the focus chart's Done bucket is closed issues by
@@ -52,6 +52,7 @@ def issue(number, title="A thing", state_label="ready-for-work", milestone="v0.2
         "number": number,
         "title": title,
         "state_label": state_label,
+        "marker": marker,
         "milestone": milestone,
         "milestone_number": milestone_number,
         "blockers": list(blockers),

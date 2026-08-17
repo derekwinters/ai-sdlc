@@ -301,6 +301,23 @@ class TestSections(unittest.TestCase):
         self.assertIn("#6", block)
         self.assertIn("#7", block)
 
+    def test_a_stalled_issue_is_annotated_in_its_section(self):  # DASH-029
+        """It genuinely is waiting for triage, so removing it would make the
+        count wrong. Listing it unmarked beside live work is the other
+        failure: the section would report a dead issue as ordinary waiting."""
+        page = render(state(issues=[
+            issue(6, state_label="ai-triage", marker="ai-triage-stalled")]))
+        block = _section(page, "Waiting for triage")
+        self.assertIn("triage stalled", block)
+        self.assertIn("Waiting for triage</b> — 1", block)
+
+    def test_a_pending_issue_is_not_annotated(self):  # DASH-029
+        """Transient bookkeeping most issues carry for minutes. Annotating the
+        normal case teaches the reader to skip the annotation."""
+        page = render(state(issues=[
+            issue(6, state_label="ai-triage", marker="ai-triage-pending")]))
+        self.assertNotIn("triage stalled", _section(page, "Waiting for triage"))
+
     def test_a_closed_issue_is_in_no_section(self):  # DASH-017
         """It still counts towards Done on the chart."""
         page = render(state(issues=[issue(1, closed=True)]))

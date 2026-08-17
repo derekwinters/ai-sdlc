@@ -442,9 +442,9 @@ the board, and — the property that matters — **monotonic**: it only ever adv
 - **GK-145** The markers are removed when an issue leaves triage or is closed. A marker that
   outlives its episode is a slower version of the bug it prevents — the next episode inherits a
   spent budget and is never retried at all.
-- **GK-146** A stalled issue is surfaced as a fault rather than left looking like ordinary waiting
-  work. Bounding the retries converts "retried for ever" into "ignored for ever" unless somebody is
-  told.
+- **GK-146** A run names the issues it has stopped retrying, so bounding the retries does not
+  convert "retried for ever" into "ignored for ever". How the board shows them is `DASH-029`; this
+  is only about the run saying it.
 
 > **How the spec is changing (#136).** The sweep is not new behaviour being invented here — it is
 > behaviour this project had before extraction and lost. `lucas-doggiehood` runs one, and the

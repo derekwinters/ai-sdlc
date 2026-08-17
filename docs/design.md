@@ -323,8 +323,9 @@ in the `Direct Involvement Needed` milestone; it is off by default.
 
 ### 8.5 Labels
 
-The label taxonomy is the pipeline's state machine, so it lives in git and is applied from there
-rather than configured through the GitHub interface.
+The label taxonomy carries the pipeline's state machine — and, alongside it, the attempt markers
+that record how many times a lost poke has been retried. Both live in git and are applied from
+there rather than configured through the GitHub interface.
 
 | File | Owner | Contents |
 |---|---|---|

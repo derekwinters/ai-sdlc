@@ -20,6 +20,8 @@ from __future__ import annotations
 import json
 import re
 
+from lib.config import MARKERS
+
 #: Focus buckets, in render order — Unplanned first, so the chart reads as a
 #: flow downward towards Done.
 BUCKETS = ("Unplanned", "In planning", "Ready", "Done")
@@ -341,13 +343,30 @@ def _row(state, issue, status):
     repository = state.get("repository", "")
     cells = [
         _issue_link(repository, issue["number"]),
-        _cell(issue.get("title", "")),
+        _cell(issue.get("title", "")) + _marker_note(issue),
         _milestone_link(repository, issue),
         _blocker_links(repository, issue),
     ]
     if status:
         cells.append(issue.get("state_label") or "-")
     return "| " + " | ".join(cells) + " |"
+
+
+def _marker_note(issue):
+    """What to append to a title when triage has stopped retrying (`DASH-029`).
+
+    Annotated rather than moved out of the section: the issue genuinely *is*
+    waiting for triage, so removing it would make the section's count wrong.
+    Leaving it unmarked is the other failure — a section that lists a dead
+    issue beside live ones reports it as ordinary waiting work.
+
+    Only the terminal marker is shown. `pending` is transient bookkeeping that
+    most issues carry for a few minutes, and a board that annotates the normal
+    case teaches its reader to skip the annotation.
+    """
+    if issue.get("marker") == MARKERS["triage_stalled"]:
+        return " — **triage stalled**"
+    return ""
 
 
 def _cell(text):

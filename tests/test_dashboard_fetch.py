@@ -133,7 +133,7 @@ class TestFaultDetection(unittest.TestCase):
         github = api([issue(7, ["in-progress"], state="closed")])
         self.assertEqual([f["issue"] for f in state(github)["faults"]["stale_state"]], [7])
 
-    def test_a_stalled_triage_is_flagged(self):  # GK-146
+    def test_a_stalled_triage_is_flagged(self):  # DASH-029
         """Bounding the retries turns "retried for ever" into "ignored for
         ever" unless somebody is told. Without this the issue sits in Waiting
         for triage looking exactly like ordinary waiting work."""
@@ -141,7 +141,7 @@ class TestFaultDetection(unittest.TestCase):
         self.assertEqual(
             [f["issue"] for f in state(github)["faults"]["stalled_triage"]], [7])
 
-    def test_an_ordinary_triage_raises_no_stalled_fault(self):  # GK-146
+    def test_an_ordinary_triage_raises_no_stalled_fault(self):  # DASH-029
         github = api([issue(7, ["ai-triage"])])
         self.assertEqual(state(github)["faults"]["stalled_triage"], [])
 

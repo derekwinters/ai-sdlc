@@ -64,6 +64,8 @@ def fetch(api, labels, bot_login, dashboard_issue=None, overrides=None):
         closed = issue.get("state") == "closed"
         milestone = issue.get("milestone") or {}
 
+        marker = next((n for n in names if n in set(MARKERS.values())), None)
+
         if not closed and MARKERS["triage_stalled"] in names:
             # Bounding the retries converts "retried for ever" into "ignored
             # for ever" unless somebody is told (`GK-146`). Without this the
@@ -91,6 +93,9 @@ def fetch(api, labels, bot_login, dashboard_issue=None, overrides=None):
                 "number": issue["number"],
                 "title": issue.get("title", ""),
                 "state_label": state_label,
+                # Carried so the section can annotate a stalled issue rather than
+                # listing it as ordinary waiting work (`DASH-029`).
+                "marker": marker,
                 "milestone": milestone.get("title"),
                 "milestone_number": milestone.get("number"),
                 "blockers": unresolved,

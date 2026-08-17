@@ -116,6 +116,12 @@ Each of these corresponds to a repair the pipeline deliberately does not perform
 > a decision the board cannot show on its own.
 
 - **DASH-026** **Prose dependency** — a `Blocked by #N` written as text, invisible to the queue.
+- **DASH-029** **Stalled triage** — an open issue carrying the terminal triage attempt marker: the
+  analysis routine was poked twice and never answered, and the sweep will not poke it again.
+  **Invariant — an issue the sweep has stopped retrying appears here.** Bounding the retries is
+  what stops one broken issue consuming sessions for ever, and it converts "retried for ever" into
+  "ignored for ever" unless the board says so. The issue also remains in *Waiting for triage*,
+  where it genuinely is, annotated so the section does not report it as ordinary waiting work.
 - **DASH-027** A fault section with nothing in it is omitted rather than shown empty, so a page
   with nothing wrong carries no fault report at all. The charts and the five issue sections are a
   fixed skeleton and always render (`DASH-017`), so it is the presence of a fault heading, not the
@@ -165,7 +171,7 @@ Each of these corresponds to a repair the pipeline deliberately does not perform
 | What it shows — charts | DASH-010–015 | `test_dashboard_render.py` |
 | What it shows — sections | DASH-016–019 | `test_dashboard_render.py` |
 | What is counted | DASH-006–008 | `test_dashboard_fetch.py` |
-| Fault flags | DASH-020–028 | `test_dashboard_faults.py` |
+| Fault flags | DASH-020–029 | `test_dashboard_faults.py`, `test_dashboard_fetch.py`, `test_dashboard_render.py` |
 | Focus and cap | DASH-030–034 | `test_dashboard_fetch.py` |
 
-**31 requirements, all `auto`.**
+**32 requirements, all `auto`.**

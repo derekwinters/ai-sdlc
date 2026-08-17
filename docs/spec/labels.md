@@ -1,6 +1,6 @@
 # Specification — Labels (`LBL`)
 
-The label taxonomy is the pipeline's state machine. It therefore lives in git and is applied from
+The label taxonomy carries the pipeline's state machine, and the attempt markers beside it. It therefore lives in git and is applied from
 there, rather than being clicked into the GitHub interface where nothing records what it should be
 or notices when it drifts.
 
