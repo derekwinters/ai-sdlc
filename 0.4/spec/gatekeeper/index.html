@@ -1536,10 +1536,25 @@ runs. Found by issuing <code>/focus v0.5</code> on a live board and watching not
 - <strong>GK-117</strong> A fire failure is reported but never raised, and never fails the run.
 - <strong>GK-118</strong> The fire request never logs its URL or its secret.
 - <strong>GK-119</strong> An unconfigured fire endpoint is a notice, not an error.
-- <strong>GK-122</strong> The analysis routine is fired by the <strong>label event</strong>, not by the gatekeeper. An issue
-  entering triage fires exactly once, however the label got there — a command, a hand, or anything
-  added later. The handler writes nothing: firing is a poke, and what happens next is the routine's
-  decision.
+- <strong>GK-122</strong> The analysis routine is fired by <strong>both</strong> the gatekeeper and the label event, and an
+  issue entering triage fires exactly once however the label got there. The two paths are disjoint
+  by construction, not by deduplication: the gatekeeper writes labels with <code>GITHUB_TOKEN</code>, and
+  GitHub starts no workflow run from an event that token authored, so the gatekeeper's own label
+  move never reaches the label handler. The gatekeeper covers its own moves; the label event covers
+  every label applied by a human or an app. <strong>Invariant — the gatekeeper writes labels with
+  <code>GITHUB_TOKEN</code> and nothing else.</strong> Giving it a personal access token or an app token would make
+  both paths fire for one <code>/admit</code>. Neither handler writes anything in response to a fire: firing
+  is a poke, and what happens next is the routine's decision.
+- <strong>GK-123</strong> The fire request carries <code>anthropic-version</code> and the <code>/fire</code> endpoint's dated
+  <code>anthropic-beta</code> research-preview header, alongside its bearer token. These are conditions of
+  the endpoint, not of one deployment: without the first it answers <code>400</code> and the routine is never
+  reached.
+- <strong>GK-124</strong> The body is the routine's freeform <code>text</code> payload, naming the repository and the issue
+  number. The routine parses the issue number out of an untrusted wrapper, so the payload is prose
+  rather than a structured record.
+- <strong>GK-125</strong> A fire counts as successful only when the endpoint returns a <code>routine_fire</code> carrying a
+  session URL, which is then reported. Any other answer — including a <code>2xx</code> — is a failure naming
+  its status and body.
 - <strong>GK-121</strong> Every run reports what became of the analysis routine: fired, fired and failed with
   the scrubbed detail, not configured, or not a triage transition. <code>GK-119</code>'s silence is about
   not <em>failing</em> the run, never about saying nothing — a deliberate absence and a broken wire must
@@ -1552,6 +1567,22 @@ board-wide catch-up that used to cover this went away with the sweep at adoption
 keys on the label event, and the gatekeeper no longer fires: doing both would poke the routine
 twice for every <code>/admit</code>, and deduplicating two independent workflows is harder than having one.
 The payload is unchanged, so the routine sees exactly what it saw before.</p>
+<p><strong>How the spec is changing (#126).</strong> Two corrections, one to the request and one to who sends it.</p>
+<p><code>GK-123</code>–<code>GK-125</code> are new because the request was never a working one. It carried neither
+<code>anthropic-version</code> nor the research-preview <code>anthropic-beta</code> header, and its body was a
+<code>{"version", "repository", "issue"}</code> record the endpoint does not accept. Every fire since
+<code>0.1.0</code> was rejected with <code>400 anthropic-version: header is required</code>. <code>GK-121</code> had already made
+the outcome visible; what it revealed was that the outcome had always been failure. The old
+"the payload is unchanged" reassurance above is exactly the problem — the payload was unchanged
+and had never worked.</p>
+<p><code>GK-122</code> said the gatekeeper <em>no longer</em> fires, on the reasoning that firing in both places would
+poke the routine twice for every <code>/admit</code>. It cannot: the gatekeeper labels with <code>GITHUB_TOKEN</code>,
+and GitHub deliberately starts no workflow run from an event that token authored, so the label
+handler never sees the gatekeeper's own label move. The reasoning had the consequence backwards —
+rather than double-firing, <code>/admit</code> fired <em>nothing</em>, because the gatekeeper had stopped firing and
+the label event it triggered was suppressed. Both paths now fire, and the disjointness that makes
+that safe is recorded as an invariant so a later change to the gatekeeper's token does not quietly
+reintroduce the double fire the old note feared.</p>
 <p><strong>How the spec is changing (#121).</strong> <code>GK-117</code>–<code>GK-119</code> said a fire failure is reported and never
 raised, without saying where it is reported <em>to</em>. Nothing printed it: <code>handle_comment</code> computed
 the outcome, the entry point printed what it applied and refused, and the value was dropped. A
