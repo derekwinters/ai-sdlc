@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.17](https://github.com/derekwinters/ai-sdlc/compare/v0.4.16...v0.4.17) (2026-08-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* **pipeline:** the `ai-triage` label is replaced by `ai-triage-queued`, `ai-triage-running` and `ai-triage-stalled`. An adopting repository must relabel issues carrying `ai-triage` to `ai-triage-queued` after adopting this version. `ai-triage` is deliberately not deleted by label sync: deleting a label strips it from every issue holding it, so any issue not yet relabelled would fall out of the pipeline with no state at all.
+
+### Features
+
+* **pipeline:** three triage states, and a sweep that only detects ([#137](https://github.com/derekwinters/ai-sdlc/issues/137)) ([1d5b25e](https://github.com/derekwinters/ai-sdlc/commit/1d5b25e7147f1089217e0591e4dbf7adcb7e2518)), closes [#136](https://github.com/derekwinters/ai-sdlc/issues/136)
+* **substrate:** install and update a consumer's skills, never overwriting one ([#146](https://github.com/derekwinters/ai-sdlc/issues/146)) ([30f6500](https://github.com/derekwinters/ai-sdlc/commit/30f6500c13bc61a9959cc207726d9dcf5bfa9fa6)), closes [#144](https://github.com/derekwinters/ai-sdlc/issues/144)
+
 ## [0.4.16](https://github.com/derekwinters/ai-sdlc/compare/v0.4.15...v0.4.16) (2026-08-17)
 
 
