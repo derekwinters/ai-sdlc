@@ -1105,6 +1105,12 @@ shorter one entirely. Every chart is single-series.</p>
 <ul>
 <li><strong>DASH-016</strong> Five sections — ready for work, pending approval, needs clarification, waiting for
   triage, parked — each collapsible, each carrying its count, each containing exactly one table.</li>
+<li><strong>DASH-035</strong> All three triage states share the waiting-for-triage section, and the Status column
+  is what tells them apart. They are one section because they are one answer to "what has not been
+  analysed yet", and splitting them would put a thirty-second-old session under its own heading for
+  the minute it exists. A stalled issue is additionally raised as <code>DASH-029</code>: it is listed here
+  because it is genuinely still unanalysed, and flagged there because it is the only one of the
+  three that will stay that way without somebody acting.</li>
 <li><strong>DASH-017</strong> A section renders even when empty, showing zero. The board's shape is then
   constant, and a missing section means a defect rather than an empty queue.</li>
 <li><strong>DASH-018</strong> Every row links the issue, its milestone and its blockers, and shows <code>-</code> where
@@ -1151,6 +1157,11 @@ a decision the board cannot show on its own.</p>
 </blockquote>
 <ul>
 <li><strong>DASH-026</strong> <strong>Prose dependency</strong> — a <code>Blocked by #N</code> written as text, invisible to the queue.</li>
+<li><strong>DASH-029</strong> <strong>Stalled triage</strong> — an open issue in the stalled state: a session was started and
+  never answered, and nothing will start another without a person asking. <strong>Invariant — an issue
+  the sweep has given up on appears here.</strong> The sweep deliberately does not retry, so the board is
+  the only thing that can turn a dead session into something somebody knows about; without this the
+  bounded design would trade "retried for ever" for "ignored for ever".</li>
 <li><strong>DASH-027</strong> A fault section with nothing in it is omitted rather than shown empty, so a page
   with nothing wrong carries no fault report at all. The charts and the five issue sections are a
   fixed skeleton and always render (<code>DASH-017</code>), so it is the presence of a fault heading, not the
@@ -1214,7 +1225,7 @@ derivable.</p>
 </tr>
 <tr>
 <td>What it shows — sections</td>
-<td>DASH-016–019</td>
+<td>DASH-016–019, DASH-035</td>
 <td><code>test_dashboard_render.py</code></td>
 </tr>
 <tr>
@@ -1224,8 +1235,8 @@ derivable.</p>
 </tr>
 <tr>
 <td>Fault flags</td>
-<td>DASH-020–028</td>
-<td><code>test_dashboard_faults.py</code></td>
+<td>DASH-020–029</td>
+<td><code>test_dashboard_faults.py</code>, <code>test_dashboard_fetch.py</code>, <code>test_dashboard_render.py</code></td>
 </tr>
 <tr>
 <td>Focus and cap</td>
@@ -1234,7 +1245,7 @@ derivable.</p>
 </tr>
 </tbody>
 </table>
-<p><strong>31 requirements, all <code>auto</code>.</strong></p>
+<p><strong>33 requirements, all <code>auto</code>.</strong></p>
 
 
 

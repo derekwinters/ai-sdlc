@@ -731,6 +731,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#the-sweep" class="md-nav__link">
+    <span class="md-ellipsis">
+      The sweep
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#traceability" class="md-nav__link">
     <span class="md-ellipsis">
       Traceability
@@ -1135,6 +1144,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#the-sweep" class="md-nav__link">
+    <span class="md-ellipsis">
+      The sweep
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#traceability" class="md-nav__link">
     <span class="md-ellipsis">
       Traceability
@@ -1204,10 +1222,22 @@ configurable; the defaults are given here.</p>
 <td>—</td>
 </tr>
 <tr>
-<td>triage</td>
-<td><code>ai-triage</code></td>
-<td>admitted; awaiting or undergoing analysis</td>
+<td>triage queued</td>
+<td><code>ai-triage-queued</code></td>
+<td>admitted; no analysis session started yet</td>
 <td>gatekeeper</td>
+</tr>
+<tr>
+<td>triage running</td>
+<td><code>ai-triage-running</code></td>
+<td>an analysis session was started and has not answered</td>
+<td>fire handler</td>
+</tr>
+<tr>
+<td>triage stalled</td>
+<td><code>ai-triage-stalled</code></td>
+<td>the session never answered; needs a person</td>
+<td>sweep</td>
 </tr>
 <tr>
 <td>pending approval</td>
@@ -1241,6 +1271,10 @@ configurable; the defaults are given here.</p>
 </tr>
 </tbody>
 </table>
+<p>Triage is three states rather than one because a single <code>ai-triage</code> could not answer the question
+that matters when something goes wrong: <em>has it happened?</em> An issue sitting in it might never have
+been poked, might have a session running, or might have had one die — and telling those apart was
+impossible from the board. Each state now says which.</p>
 <ul>
 <li><strong>GK-001</strong> An issue carries at most one pipeline-state label at any time.</li>
 <li><strong>GK-002</strong> Applying a state removes whatever state label was present, and only state labels.</li>
@@ -1249,9 +1283,12 @@ configurable; the defaults are given here.</p>
   decision.</li>
 <li><strong>GK-004</strong> <code>type:epic</code> and <code>type:wireframe</code> are classification labels, not states, and are never
   altered.</li>
-<li><strong>GK-005</strong> The gatekeeper never writes <code>pending-approval</code>, <code>needs-clarification</code>, or
-  <code>in-progress</code>. Those states are entered by analysis and by the builder; the gatekeeper only
-  reads them and moves issues out of them.</li>
+<li><strong>GK-005</strong> The gatekeeper never writes <code>ai-triage-running</code>, <code>ai-triage-stalled</code>,
+  <code>pending-approval</code>, <code>needs-clarification</code>, or <code>in-progress</code>. Those states are entered by the fire
+  handler, the sweep, analysis, and the builder; the gatekeeper only reads them and moves issues
+  out of them. <strong>Invariant — a state is written by the one component that can know it is true.</strong>
+  Only the thing that fired can say a session started, and only something watching over time can
+  say one never answered.</li>
 </ul>
 <hr />
 <h2 id="2-authority-and-identity">2. Authority and identity<a class="headerlink" href="#2-authority-and-identity" title="Permanent link">&para;</a></h2>
@@ -1547,8 +1584,11 @@ runs. Found by issuing <code>/focus v0.5</code> on a live board and watching not
   move never reaches the label handler. The gatekeeper covers its own moves; the label event covers
   every label applied by a human or an app. <strong>Invariant — the gatekeeper writes labels with
   <code>GITHUB_TOKEN</code> and nothing else.</strong> Giving it a personal access token or an app token would make
-  both paths fire for one <code>/admit</code>. Neither handler writes anything in response to a fire: firing
-  is a poke, and what happens next is the routine's decision.
+  both paths fire for one <code>/admit</code>. In response to a fire the handler moves the issue from queued
+  to running, and writes nothing else — a component that could write any state would be a second
+  gatekeeper. Writing it from the label handler cannot loop: it is written with <code>GITHUB_TOKEN</code>, so
+  it starts no workflow run, and the caller's <code>if:</code> names the queued label, which this write
+  removes rather than adds.
 - <strong>GK-123</strong> The fire request carries <code>anthropic-version</code> and the <code>/fire</code> endpoint's dated
   <code>anthropic-beta</code> research-preview header, alongside its bearer token. These are conditions of
   the endpoint, not of one deployment: without the first it answers <code>400</code> and the routine is never
@@ -1631,6 +1671,52 @@ own fix and being unable to tell whether the request had gone out.</p>
 <li><strong>GK-136</strong> No test performs network I/O.</li>
 </ul>
 <hr />
+<h2 id="the-sweep">The sweep<a class="headerlink" href="#the-sweep" title="Permanent link">&para;</a></h2>
+<p>Firing is a poke, and a poke can be lost. A routine that never starts, starts and dies, or is
+refused leaves the issue exactly as it was, and nothing looks at it again. The sweep is the
+backstop — but it is a <strong>detector</strong>, not a retrier. It watches for sessions that never answered and
+says so; deciding to spend another session is a person's job.</p>
+<p>That division is deliberate. An earlier design had the sweep re-poke automatically, which meant a
+scheduled job could start sessions unattended, which meant it needed a per-run ceiling, a per-issue
+budget, and a gate stopping the event path from looping. A sweep that cannot start a session needs
+none of them: whatever it gets wrong, it writes a label.</p>
+<ul>
+<li><strong>GK-138</strong> A fire that starts a session moves the issue from queued to running. A fire that fails
+  leaves it queued, so the next sweep still sees work waiting rather than a session that does not
+  exist.</li>
+<li><strong>GK-139</strong> The sweep moves an issue from running to stalled when it has been running longer than
+  the staleness threshold and no analysis has appeared. An issue something is still working on is
+  not stalled.</li>
+<li><strong>GK-140</strong> <strong>Invariant — the sweep starts no sessions.</strong> It observes and relabels, nothing more.
+  A scheduled job that can start sessions can spend an account's usage limits while nobody is
+  watching; one that only writes labels cannot, however wrong it is.</li>
+<li><strong>GK-141</strong> The staleness threshold is a <strong>required input</strong> to the sweep workflow, written by
+  <code>adopt</code> at thirty minutes. Required rather than defaulted in the reusable workflow: a caller that
+  omits it fails loudly instead of inheriting a number nobody chose, and the value it does carry is
+  visible and editable in the repository it governs.</li>
+<li><strong>GK-142</strong> Nothing leaves the stalled state on its own. Returning a stalled issue to the queue is
+  <code>/admit</code> — a person deciding another session is worth spending. <strong>Invariant — no automatic
+  transition out of stalled exists</strong>, which is what makes the state terminal rather than a slow
+  loop.</li>
+<li><strong>GK-143</strong> A run reports what it moved and that it ran at all, including a run that changed
+  nothing. A backstop nobody can see working is one nobody trusts.</li>
+</ul>
+<blockquote>
+<p><strong>How the spec is changing (#136).</strong> Three changes, and the third replaced the first two.</p>
+<p>Triage was one state, <code>ai-triage</code>. It could not say whether a session had never started, was
+running, or had died, which is exactly the question that mattered when eight issues in
+<code>connor-multiplying-frogs</code> stranded overnight. It is now three states that each answer it.</p>
+<p>The sweep is restored behaviour rather than new: <code>lucas-doggiehood</code> runs one, and the commit that
+moved firing to the label event (<code>c6396ba</code>) recorded the loss in passing — <em>"The board-wide
+catch-up that used to cover this went away with the sweep at adoption."</em></p>
+<p>The first draft of that sweep re-poked automatically, and everything expensive about this design
+came from that one choice: a <code>sweep.ceiling</code> to bound a run, a <code>give_up_after</code> horizon to bound an
+issue, attempt markers when the horizon turned out to be resettable by any passing comment, and a
+re-pick gate to stop the event path looping. Making stalls a human decision deleted all four. The
+lesson is worth keeping: the original problem was that a lost poke was <em>invisible</em>, and automatic
+retry was never what it asked for.</p>
+</blockquote>
+<hr />
 <h2 id="traceability">Traceability<a class="headerlink" href="#traceability" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -1696,9 +1782,14 @@ own fix and being unable to tell whether the request had gone out.</p>
 <td>GK-130–137</td>
 <td><code>test_architecture.py</code>, <code>test_github_api.py</code></td>
 </tr>
+<tr>
+<td>The sweep</td>
+<td>GK-138–143</td>
+<td><code>test_sweep.py</code>, <code>test_sweep_run.py</code></td>
+</tr>
 </tbody>
 </table>
-<p><strong>92 requirements, 90 <code>auto</code> and 2 <code>manual</code>.</strong></p>
+<p><strong>98 requirements, 96 <code>auto</code> and 2 <code>manual</code>.</strong></p>
 
 
 

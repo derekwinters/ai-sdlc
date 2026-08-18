@@ -1015,7 +1015,12 @@ already carrying a plan replaces nothing until it is sent back deliberately.</p>
 <hr />
 <h2 id="1-selecting">1. Selecting<a class="headerlink" href="#1-selecting" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>TRI-001</strong> An issue is eligible when it carries the triage label.</li>
+<li><strong>TRI-001</strong> An issue is eligible when it is queued for triage or already running. Both, because
+  the handler that fires a session and the label write that records it are two operations: a
+  session can reach this check before its own <code>running</code> label lands, and rejecting it then would
+  make the routine refuse the very issue it was woken for.</li>
+<li><strong>TRI-009</strong> A stalled issue is not eligible. The sweep gave up on it deliberately, and only
+  <code>/admit</code> puts it back in the queue.</li>
 <li><strong>TRI-002</strong> A closed issue is never eligible.</li>
 <li><strong>TRI-003</strong> A parked issue is never eligible.</li>
 <li><strong>TRI-004</strong> An issue already at pending approval is not eligible; its plan is waiting on a human.</li>
@@ -1077,7 +1082,7 @@ already carrying a plan replaces nothing until it is sent back deliberately.</p>
 <tbody>
 <tr>
 <td>Selecting</td>
-<td>TRI-001–008</td>
+<td>TRI-001–009</td>
 <td><code>test_triage_select.py</code></td>
 </tr>
 <tr>
@@ -1102,7 +1107,7 @@ already carrying a plan replaces nothing until it is sent back deliberately.</p>
 </tr>
 </tbody>
 </table>
-<p><strong>26 requirements, 25 <code>auto</code> and 1 <code>manual</code>.</strong></p>
+<p><strong>27 requirements, 26 <code>auto</code> and 1 <code>manual</code>.</strong></p>
 
 
 
