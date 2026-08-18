@@ -1051,7 +1051,7 @@
 
 
 <h1 id="specification-configuration-cfg">Specification — Configuration (<code>CFG</code>)<a class="headerlink" href="#specification-configuration-cfg" title="Permanent link">&para;</a></h1>
-<p>A consuming repository describes itself in <code>.claude/repo-config.yml</code>. Nothing else varies between
+<p>A consuming repository describes itself in <code>.ai-sdlc/repo-config.yml</code>. Nothing else varies between
 repositories: the skills, workflows and specs are identical everywhere, and this file is how one
 repository differs from another.</p>
 <p><code>CFG</code> belongs to the <strong>substrate</strong> capability and depends only on <code>API</code>.</p>
@@ -1071,7 +1071,9 @@ dependencies is a configuration error, refused at load, not a runtime surprise.<
 <hr />
 <h2 id="1-loading">1. Loading<a class="headerlink" href="#1-loading" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>CFG-001</strong> Configuration is read from <code>.claude/repo-config.yml</code> relative to the repository root.</li>
+<li><strong>CFG-001</strong> Configuration is read from <code>.ai-sdlc/repo-config.yml</code> relative to the repository
+  root. The directory is ai-sdlc's own: <code>.claude/</code> is a vendor namespace, and a workflow parsing
+  <code>capabilities</code> and <code>owners</code> has nothing to do with an AI coding assistant.</li>
 <li><strong>CFG-002</strong> The path is injectable, so tests and <code>adopt</code> can load a candidate file.</li>
 <li><strong>CFG-003</strong> A missing file is an error naming the expected path, not an empty configuration.</li>
 <li><strong>CFG-004</strong> Unparseable YAML is an error naming the file and the parse problem.</li>
@@ -1079,7 +1081,18 @@ dependencies is a configuration error, refused at load, not a runtime surprise.<
   I/O and never mutates the file.</li>
 <li><strong>CFG-006</strong> Parsing uses no third-party library. The subset of YAML accepted is documented in
   §6 and is a deliberate restriction, not an accident.</li>
+<li><strong>CFG-007</strong> Finding <strong>only</strong> the pre-0.4.18 path — <code>.claude/repo-config.yml</code> — is an error
+  naming both locations and the command that migrates. The old path is never a fallback: a
+  repository reading one path from CI while <code>adopt verify</code> checks the other is worse off than one
+  that has not migrated at all. "No configuration file at <code>.ai-sdlc/repo-config.yml</code>" would send
+  the reader looking for a file sitting right there under a different name.</li>
 </ul>
+<blockquote>
+<p><strong>How the spec is changing (#150).</strong> <code>CFG-001</code> named <code>.claude/</code> and <code>CFG-003</code> said a missing file
+is an error naming the expected path. After the move, those two together would have told every
+unmigrated repository that it had no configuration — which is both true and useless. <code>CFG-007</code>
+makes the one case that is really a migration say so.</p>
+</blockquote>
 <h2 id="2-validation">2. Validation<a class="headerlink" href="#2-validation" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>CFG-010</strong> A loaded configuration is validated in code, and <code>schema/repo-config.schema.json</code>
@@ -1210,7 +1223,7 @@ dependencies is a configuration error, refused at load, not a runtime surprise.<
 </tr>
 </tbody>
 </table>
-<p><strong>43 requirements, 42 <code>auto</code> and 1 <code>manual</code>.</strong></p>
+<p><strong>44 requirements, 43 <code>auto</code> and 1 <code>manual</code>.</strong></p>
 
 
 

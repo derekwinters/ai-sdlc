@@ -352,9 +352,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-write-clauderepo-configyml" class="md-nav__link">
+  <a href="#2-write-ai-sdlcrepo-configyml" class="md-nav__link">
     <span class="md-ellipsis">
-      2. Write .claude/repo-config.yml
+      2. Write .ai-sdlc/repo-config.yml
     </span>
   </a>
   
@@ -382,6 +382,24 @@
   <a href="#5-name-the-skills-you-install" class="md-nav__link">
     <span class="md-ellipsis">
       5. Name the skills you install
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-it-all-lives" class="md-nav__link">
+    <span class="md-ellipsis">
+      Where it all lives
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#upgrading-from-before-0418" class="md-nav__link">
+    <span class="md-ellipsis">
+      Upgrading from before 0.4.18
     </span>
   </a>
   
@@ -941,9 +959,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-write-clauderepo-configyml" class="md-nav__link">
+  <a href="#2-write-ai-sdlcrepo-configyml" class="md-nav__link">
     <span class="md-ellipsis">
-      2. Write .claude/repo-config.yml
+      2. Write .ai-sdlc/repo-config.yml
     </span>
   </a>
   
@@ -971,6 +989,24 @@
   <a href="#5-name-the-skills-you-install" class="md-nav__link">
     <span class="md-ellipsis">
       5. Name the skills you install
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-it-all-lives" class="md-nav__link">
+    <span class="md-ellipsis">
+      Where it all lives
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#upgrading-from-before-0418" class="md-nav__link">
+    <span class="md-ellipsis">
+      Upgrading from before 0.4.18
     </span>
   </a>
   
@@ -1061,7 +1097,7 @@ repository that only wants Conventional Commits enforcement and the closing-keyw
 </table>
 <p>A capability may depend only on capabilities below it. Enabling one without its dependencies is a
 configuration error refused at load — not a runtime surprise.</p>
-<h2 id="2-write-clauderepo-configyml">2. Write <code>.claude/repo-config.yml</code><a class="headerlink" href="#2-write-clauderepo-configyml" title="Permanent link">&para;</a></h2>
+<h2 id="2-write-ai-sdlcrepo-configyml">2. Write <code>.ai-sdlc/repo-config.yml</code><a class="headerlink" href="#2-write-ai-sdlcrepo-configyml" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><span class="nt">capabilities</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">hygiene</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">consistency</span>
@@ -1121,14 +1157,65 @@ stops that skill being updated, and <code>skills-update</code> will say so on ev
 Workflow permissions → Allow GitHub Actions to create and approve pull requests</strong>. Without it the
 job pushes its branch and then cannot open the pull request.</p>
 <p>See <a href="../spec/distribution/">Distribution</a> for the whole mechanism.</p>
+<h2 id="where-it-all-lives">Where it all lives<a class="headerlink" href="#where-it-all-lives" title="Permanent link">&para;</a></h2>
+<p>Everything ai-sdlc owns in your repository sits in one directory:</p>
+<table>
+<thead>
+<tr>
+<th>Path</th>
+<th>Holds</th>
+<th>Written by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.ai-sdlc/repo-config.yml</code></td>
+<td>Everything your repository decides for itself</td>
+<td>You</td>
+</tr>
+<tr>
+<td><code>.ai-sdlc/ai-sdlc.pin</code></td>
+<td>The version installed, and the commit it resolves to</td>
+<td><code>adopt</code></td>
+</tr>
+<tr>
+<td><code>.ai-sdlc/house-rules.md</code></td>
+<td>The shared rules, imported by your <code>CLAUDE.md</code></td>
+<td><code>adopt</code></td>
+</tr>
+<tr>
+<td><code>.ai-sdlc/adoption.md</code></td>
+<td>What is installed here, generated from your configuration</td>
+<td><code>adopt</code></td>
+</tr>
+<tr>
+<td><code>.claude/skills/ai-sdlc/SKILL.md</code></td>
+<td>A pointer at the three above, for an agent</td>
+<td><code>adopt</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>.claude/skills/</code> is the one exception, and it is Claude Code's required path rather than a choice.
+Everything else is ai-sdlc's, so it is under ai-sdlc's own name: a workflow parsing <code>capabilities</code>
+and <code>owners</code> is not an AI coding assistant's business.</p>
+<p><code>adoption.md</code> restates nothing. It says what is installed and at what version, and links the
+specification at the exact commit your repository runs — because a copy of an explanation drifts
+from the explanation, and then somebody believes the copy.</p>
+<h2 id="upgrading-from-before-0418">Upgrading from before 0.4.18<a class="headerlink" href="#upgrading-from-before-0418" title="Permanent link">&para;</a></h2>
+<p>Those files used to live under <code>.claude/</code>. <code>adopt apply</code> moves them as part of the upgrade, in one
+commit with the rest of it: your <code>repo-config.yml</code> moves byte-for-byte with its comments intact,
+the old copies are removed, and the import line in your <code>CLAUDE.md</code> is repointed.</p>
+<p>You do not migrate by hand, and you should not half-migrate. A repository with a file in both
+places is refused rather than guessed at — one of the two is what CI reads and the other is what
+somebody will edit next, and nothing can tell which.</p>
 <h2 id="the-shared-rules">The shared rules<a class="headerlink" href="#the-shared-rules" title="Permanent link">&para;</a></h2>
-<p>Adoption installs <a href="../house-rules/"><code>house-rules.md</code></a> into <code>.claude/ai-sdlc/</code> and appends one import
+<p>Adoption installs <a href="../house-rules/"><code>house-rules.md</code></a> into <code>.ai-sdlc/</code> and appends one import
 line to your <code>CLAUDE.md</code>. Your own file is never rewritten — it is usually the most carefully
 considered file a repository has, and everything specific to your repository stays in it.</p>
 <p>A repository with no <code>CLAUDE.md</code> gets one reported rather than created. What that file should say
 is your decision.</p>
 <h2 id="ai-sdlcs-own-adoption">ai-sdlc's own adoption<a class="headerlink" href="#ai-sdlcs-own-adoption" title="Permanent link">&para;</a></h2>
-<p>ai-sdlc is its first consumer. <code>.claude/repo-config.yml</code> in this repository enables <code>hygiene</code> and
+<p>ai-sdlc is its first consumer. <code>.ai-sdlc/repo-config.yml</code> in this repository enables <code>hygiene</code> and
 <code>consistency</code>, and the closing-keyword check runs on its own pull requests — so a change that
 breaks the check breaks this repository before it reaches anyone else's.</p>
 <p><code>pipeline</code> is deliberately not enabled here yet: it needs the label taxonomy and a dashboard issue,

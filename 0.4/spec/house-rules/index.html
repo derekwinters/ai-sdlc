@@ -1018,6 +1018,13 @@ to mentally ignore.</p>
 <li><strong>RULES-015</strong> Specification before code, and a failing test before an implementation.</li>
 <li><strong>RULES-016</strong> Ask rather than invent a design decision.</li>
 <li><strong>RULES-017</strong> Tasks needing a human are filed one per issue, never collected into one.</li>
+<li><strong>RULES-018</strong> Where the installed files are: the fragment names <code>.ai-sdlc/adoption.md</code>,
+  <code>.ai-sdlc/repo-config.yml</code> and the <code>ai-sdlc</code> skill, so discovery does not depend on the skill
+  firing. Skill discovery is probabilistic — a skill loads when the model judges its description
+  matches the task — and that is useless for the failure this prevents: an agent editing a stale
+  pipeline document does not know ai-sdlc governs that file, so it never goes looking. You cannot
+  search for what you do not know exists. The import is always-on, so one sentence in it closes
+  the gap at the cost of a line.</li>
 </ul>
 <h2 id="3-what-it-does-not-contain">3. What it does not contain<a class="headerlink" href="#3-what-it-does-not-contain" title="Permanent link">&para;</a></h2>
 <ul>
@@ -1044,7 +1051,7 @@ to mentally ignore.</p>
 </tr>
 <tr>
 <td>What it contains</td>
-<td>RULES-010–017</td>
+<td>RULES-010–018</td>
 <td><code>test_house_rules.py</code></td>
 </tr>
 <tr>
@@ -1054,7 +1061,7 @@ to mentally ignore.</p>
 </tr>
 </tbody>
 </table>
-<p><strong>16 requirements, all <code>auto</code>.</strong></p>
+<p><strong>17 requirements, all <code>auto</code>.</strong></p>
 
 
 

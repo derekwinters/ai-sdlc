@@ -479,6 +479,24 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#8-migrating-out-of-claude" class="md-nav__link">
+    <span class="md-ellipsis">
+      8. Migrating out of .claude/
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-being-findable" class="md-nav__link">
+    <span class="md-ellipsis">
+      9. Being findable
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#6-verifying" class="md-nav__link">
     <span class="md-ellipsis">
       6. Verifying
@@ -1006,6 +1024,24 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#8-migrating-out-of-claude" class="md-nav__link">
+    <span class="md-ellipsis">
+      8. Migrating out of .claude/
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-being-findable" class="md-nav__link">
+    <span class="md-ellipsis">
+      9. Being findable
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#6-verifying" class="md-nav__link">
     <span class="md-ellipsis">
       6. Verifying
@@ -1068,6 +1104,12 @@ else is a conflict for the owner to resolve, not a file to overwrite.</p>
 Two handlers on one event is worse than none: they race, and both write.</p>
 <p><strong>Invariant — <code>apply</code> works on a branch, never the default branch.</strong> Every adoption and every
 upgrade is a reviewable pull request.</p>
+<p><strong>Invariant — ai-sdlc's files live in <code>.ai-sdlc/</code>, and nothing of ai-sdlc's lives in <code>.claude/</code>
+except a skill.</strong> <code>.claude/</code> is a vendor namespace the way <code>.github/</code> and <code>.vscode/</code> are. A
+GitHub Actions job parsing <code>capabilities</code> and <code>owners</code> is not an AI coding assistant's business,
+and squatting there takes a dependency on somebody else's namespace semantics for nothing.</p>
+<p><strong>Invariant — a repository is migrated or it is not.</strong> Half-migrated is worse than either
+location, because CI would read one path while <code>verify</code> checked the other.</p>
 </blockquote>
 <hr />
 <h2 id="1-detecting">1. Detecting<a class="headerlink" href="#1-detecting" title="Permanent link">&para;</a></h2>
@@ -1163,6 +1205,77 @@ no <code>house-rules.md</code> (#71), and <code>labels-sync.yml</code> with no <
 when something runs — long after the review that should have caught them — and both were found by
 the first real consumer rather than by this repository. ADOPT-047 states the completeness rule
 that was assumed and unwritten.</p>
+</blockquote>
+<h2 id="8-migrating-out-of-claude">8. Migrating out of <code>.claude/</code><a class="headerlink" href="#8-migrating-out-of-claude" title="Permanent link">&para;</a></h2>
+<p>Until 0.4.18, <code>repo-config.yml</code>, <code>ai-sdlc.pin</code> and <code>house-rules.md</code> lived under <code>.claude/</code>. They
+live under <code>.ai-sdlc/</code> now. <code>adopt</code> moves an existing adopter as part of the same run that upgrades
+it, because an upgrade that left the files where they were would produce exactly the half-migrated
+repository the invariant forbids.</p>
+<ul>
+<li><strong>ADOPT-080</strong> <code>apply</code> migrates a repository out of <code>.claude/</code> before it writes anything else, so
+  the rest of the run reads and writes one location.</li>
+<li><strong>ADOPT-081</strong> <code>repo-config.yml</code> moves <strong>byte-for-byte</strong>. It is authored by the repository and
+  never written by this tool: a consumer's copy carries hand-written comments explaining every
+  choice, and it gains no provenance header on the way.</li>
+<li><strong>ADOPT-082</strong> The old location is removed, never left alongside the new one. A stale copy beside
+  a live one is a file somebody edits eventually. <code>.claude/ai-sdlc/</code> is removed too, unless it
+  holds something adoption did not put there.</li>
+<li><strong>ADOPT-083</strong> The <code>CLAUDE.md</code> import is repointed at the moved file, in place. It is the one
+  line adoption itself wrote, and leaving it would dangle — the rules would silently stop reaching
+  the agent.</li>
+<li><strong>ADOPT-084</strong> Migration is idempotent: it is driven by what is on disk, so a repository with
+  nothing left in the old location has nothing to move.</li>
+<li><strong>ADOPT-085</strong> A file present in <strong>both</strong> locations is refused, naming both. One of them is what
+  CI reads and the other is what somebody will edit next, and nothing here can tell which.</li>
+<li><strong>ADOPT-086</strong> <code>plan</code> reports the pending moves and writes nothing; <code>verify</code> reports an
+  unmigrated repository as a problem rather than reading the old path and passing.</li>
+<li><strong>ADOPT-087</strong> Nothing under <code>.claude/skills/</code> moves. That path is Claude Code's own, and the
+  seam is drawn on ownership rather than on tidiness.</li>
+</ul>
+<blockquote>
+<p><strong>How the spec is changing (#150).</strong> <code>ADOPT</code> said where files went without saying whose namespace
+that was, and every reusable workflow read <code>capabilities</code>, <code>owners</code> and <code>fire.endpoint_secret</code> out
+of a directory named after an AI coding assistant. The paths are now split on ownership:
+<code>.ai-sdlc/</code> for ai-sdlc's, <code>.claude/skills/</code> for the one file that is genuinely Claude Code's.
+The migration is stated here rather than left to a release note because it relocates a file
+<code>adopt</code> does not own, which is the only operation in this specification that can lose a
+consumer's work.</p>
+</blockquote>
+<h2 id="9-being-findable">9. Being findable<a class="headerlink" href="#9-being-findable" title="Permanent link">&para;</a></h2>
+<p>A directory nothing points at is a directory nobody reads. Two surfaces, and they are not
+alternatives: the <code>CLAUDE.md</code> import is always-on and cannot be missed, and a skill is loaded on
+demand and can therefore afford detail.</p>
+<blockquote>
+<p><strong>Invariant — the generated page holds resolved state, never an explanation.</strong> How something
+behaves is in the specification, linked. A restatement is the thing that rots.</p>
+</blockquote>
+<ul>
+<li><strong>ADOPT-090</strong> Every adoption installs a generated page carrying this repository's resolved
+  state — the pin, the capabilities and profiles in force, the pipeline-state labels it actually
+  uses, the callers installed, the skills installed — derived from <code>repo-config.yml</code> so it cannot
+  disagree with it.</li>
+<li><strong>ADOPT-091</strong> The page carries the managed provenance header, so <code>verify</code> catches drift in it
+  exactly as it does in a caller, and an upgrade rewrites it.</li>
+<li><strong>ADOPT-092</strong> The page explains nothing. It links the specification pages that apply to this
+  repository, pinned to the commit it runs.</li>
+<li><strong>ADOPT-093</strong> Every adoption installs <code>.claude/skills/ai-sdlc/SKILL.md</code>. Its <code>description</code> is
+  written for triggering rather than for reading: it is the only text a model sees when deciding
+  whether to load anything, so it names the things an agent is about to touch — issues, labels,
+  milestones, triage, workflows, releases — rather than offering context in the abstract.</li>
+<li><strong>ADOPT-094</strong> The skill's provenance header sits <strong>inside</strong> its frontmatter block. A comment
+  before a <code>---</code> block stops it being frontmatter at all, and a skill whose frontmatter does not
+  parse is a skill no agent ever loads.</li>
+</ul>
+<blockquote>
+<p><strong>How the spec is changing (#150).</strong> The <code>CLAUDE.md</code> import was the whole discovery mechanism,
+and an import has a context budget, which is what stops it becoming a manual. Skill discovery is
+the other half — but it is probabilistic, and useless for the failure this is meant to prevent:
+an agent editing a stale pipeline document does not know ai-sdlc governs that file, so it never
+goes looking for a skill about it. You cannot search for what you do not know exists. So both,
+with one sentence in the always-on half pointing at the on-demand half. The evidence for the
+generated page: a consumer hand-maintained a label table that disagreed with <code>labels.core.yml</code>
+in four colours, and 27 references to a pipeline state that no longer existed — both copies of
+things ai-sdlc already generates.</p>
 </blockquote>
 <h2 id="6-verifying">6. Verifying<a class="headerlink" href="#6-verifying" title="Permanent link">&para;</a></h2>
 <ul>
@@ -1325,9 +1438,19 @@ was right to. <code>VAL-056</code> moved with it, in the same direction.</p>
 <td>ADOPT-070</td>
 <td><code>test_adopt_permissions.py</code></td>
 </tr>
+<tr>
+<td>Migrating out of <code>.claude/</code></td>
+<td>ADOPT-080–087</td>
+<td><code>test_adopt_migrate.py</code></td>
+</tr>
+<tr>
+<td>Being findable</td>
+<td>ADOPT-090–094</td>
+<td><code>test_adopt_surface.py</code></td>
+</tr>
 </tbody>
 </table>
-<p><strong>49 requirements, all <code>auto</code>.</strong></p>
+<p><strong>62 requirements, all <code>auto</code>.</strong></p>
 
 
 

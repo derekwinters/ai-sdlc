@@ -1129,10 +1129,21 @@ skill without putting the repository root on <code>PYTHONPATH</code> fails on th
 anything at all.</p>
 <ul>
 <li><strong>API-060</strong> A reusable workflow running a skill that imports <code>lib</code> sets <code>PYTHONPATH</code> to the root
-  it checked out, and refers to that root by variable rather than hard-coding <code>.ai-sdlc</code> — which is
-  where a <em>consumer</em> checks ai-sdlc out and is not where ai-sdlc itself is.</li>
+  it checked out, and refers to that root by variable rather than hard-coding the checkout path —
+  which is where a <em>consumer</em> checks ai-sdlc out and is not where ai-sdlc itself is.</li>
+<li><strong>API-061</strong> A reusable workflow checks ai-sdlc out into <code>.ai-sdlc-checkout/</code>, never into the
+  consumer's <code>.ai-sdlc/</code> configuration directory, and the <code>path:</code> it fetches to is the same
+  directory <code>SKILL_ROOT</code> reads from. <code>actions/checkout</code> empties the directory it writes into, so
+  fetching over <code>.ai-sdlc/</code> would replace the consumer's <code>repo-config.yml</code> with ai-sdlc's own —
+  same name, same place, wrong repository — and every skill in that run would read the wrong
+  configuration without saying so.</li>
 </ul>
 <blockquote>
+<p><strong>How the spec is changing (#150).</strong> <code>.ai-sdlc/</code> was the checkout path and nothing else, so
+naming it as the consumer's configuration directory made two different things share one name in
+one working directory. The checkout path is an implementation detail of these workflows and
+nothing outside them names it; the configuration directory is committed, documented and pointed
+at. So the checkout moved. Found while drawing the seam in #150, before any consumer ran it.</p>
 <p><strong>How the spec is changing (#87).</strong> <code>API</code> described the module and said nothing about reaching
 it. The gatekeeper workflow ran <code>python3 .ai-sdlc/…/main.py</code> with no <code>PYTHONPATH</code> and died on
 <code>ModuleNotFoundError: No module named 'lib'</code> — the pipeline's central workflow, which had never
@@ -1190,7 +1201,7 @@ the kind of thing a test should hold still.</p>
 </tr>
 <tr>
 <td>Reaching it from a workflow</td>
-<td>API-060</td>
+<td>API-060–061</td>
 <td><code>test_reusable_workflows.py</code></td>
 </tr>
 <tr>
@@ -1200,7 +1211,7 @@ the kind of thing a test should hold still.</p>
 </tr>
 </tbody>
 </table>
-<p><strong>51 requirements, 50 <code>auto</code> and 1 <code>manual</code>.</strong></p>
+<p><strong>52 requirements, 51 <code>auto</code> and 1 <code>manual</code>.</strong></p>
 
 
 

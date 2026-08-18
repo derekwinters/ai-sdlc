@@ -1370,7 +1370,7 @@ profile adds behaviour; it never alters a capability's behaviour.</p>
 </tbody>
 </table>
 <h3 id="31b-per-repository-configuration">3.1b Per-repository configuration<a class="headerlink" href="#31b-per-repository-configuration" title="Permanent link">&para;</a></h3>
-<p>Small values only, in <code>.claude/repo-config.yml</code>, validated against a published JSON schema:
+<p>Small values only, in <code>.ai-sdlc/repo-config.yml</code>, validated against a published JSON schema:
 enabled capabilities and profiles, test and verify commands, spec validator, owner logins, bot
 identity, label vocabulary, milestone ordering strategy, dashboard issue number, domain terms.</p>
 <p><strong>Invariant — a difference between repositories is expressed as configuration, never as a
@@ -1411,10 +1411,15 @@ profile membership are expressed by directory position and require no registry f
 installs a capability by installing its scope.</p>
 <h3 id="33-a-consuming-repository">3.3 A consuming repository<a class="headerlink" href="#33-a-consuming-repository" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code>&lt;consumer&gt;/
+  .ai-sdlc/
+    repo-config.yml      # hand-written — the only file here ai-sdlc never writes
+    ai-sdlc.pin          # installed — the version, and the commit it resolves to
+    house-rules.md       # installed, pinned
+    adoption.md          # generated from repo-config.yml — what is installed here
   .claude/
     skills/…             # installed by gh skill, pinned, not hand-edited
+    skills/ai-sdlc/      # installed by adopt — the discovery surface
     agents/dev.md        # installed
-    repo-config.yml      # hand-written
   .github/
     labels.core.yml      # installed, pinned — the pipeline state vocabulary
     labels.repo.yml      # hand-written — this repository's domain labels
@@ -1422,6 +1427,11 @@ installs a capability by installing its scope.</p>
     workflows/           # thin callers: uses: …/reusable-&lt;x&gt;.yml@&lt;sha&gt; # &lt;version&gt;
   CLAUDE.md              # @import of the shared fragment + repo-specific rules
 </code></pre></div>
+<p>The split is drawn on <strong>ownership</strong>, not on tidiness. <code>.claude/</code> is a vendor namespace the way
+<code>.github/</code> and <code>.vscode/</code> are, and a GitHub Actions job parsing <code>capabilities</code> and <code>owners</code> is not
+an AI coding assistant's business; <code>.claude/skills/</code> is the exception because that path is Claude
+Code's own requirement. Consumers adopted before 0.4.18 kept all of it under <code>.claude/</code>, and
+<code>adopt apply</code> moves them.</p>
 <p>A caller workflow is roughly fifteen lines: the trigger, and a <code>uses:</code> with inputs. Triggers that
 cannot be centralised — <code>schedule</code>, <code>pull_request</code>, <code>issue_comment</code> — are declared in the consumer;
 all logic lives in the reusable workflow.</p>
