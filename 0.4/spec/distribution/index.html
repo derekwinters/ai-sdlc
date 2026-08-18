@@ -11,10 +11,10 @@
       
       
       
-        <link rel="prev" href="../distribution/">
+        <link rel="prev" href="../configuration/">
       
       
-        <link rel="next" href="../house-rules/">
+        <link rel="next" href="../profiles/">
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
@@ -22,7 +22,7 @@
     
     
       
-        <title>Profiles - ai-sdlc</title>
+        <title>Distribution - ai-sdlc</title>
       
     
     
@@ -74,7 +74,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#specification-profiles-prof" class="md-skip">
+        <a href="#specification-distribution-dist" class="md-skip">
           Skip to content
         </a>
       
@@ -114,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Profiles
+              Distribution
             
           </span>
         </div>
@@ -418,27 +418,6 @@
                 
   
   
-  
-  
-    <li class="md-nav__item">
-      <a href="../distribution/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Distribution
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
     
   
   
@@ -455,7 +434,7 @@
           
   
   <span class="md-ellipsis">
-    Profiles
+    Distribution
   </span>
   
 
@@ -466,7 +445,7 @@
         
   
   <span class="md-ellipsis">
-    Profiles
+    Distribution
   </span>
   
 
@@ -497,36 +476,36 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#1-selection" class="md-nav__link">
+  <a href="#1-what-is-installed" class="md-nav__link">
     <span class="md-ellipsis">
-      1. Selection
+      1. What is installed
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-the-mkdocs-profile" class="md-nav__link">
+  <a href="#2-classification" class="md-nav__link">
     <span class="md-ellipsis">
-      2. The mkdocs profile
+      2. Classification
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-this-repositorys-own-documentation-site" class="md-nav__link">
+  <a href="#3-provenance" class="md-nav__link">
     <span class="md-ellipsis">
-      3. This repository's own documentation site
+      3. Provenance
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#4-the-documentation-gate" class="md-nav__link">
+  <a href="#4-the-run" class="md-nav__link">
     <span class="md-ellipsis">
-      4. The documentation gate
+      4. The run
     </span>
   </a>
   
@@ -545,6 +524,27 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../profiles/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Profiles
+  </span>
+  
+
+      </a>
     </li>
   
 
@@ -934,36 +934,36 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#1-selection" class="md-nav__link">
+  <a href="#1-what-is-installed" class="md-nav__link">
     <span class="md-ellipsis">
-      1. Selection
+      1. What is installed
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-the-mkdocs-profile" class="md-nav__link">
+  <a href="#2-classification" class="md-nav__link">
     <span class="md-ellipsis">
-      2. The mkdocs profile
+      2. Classification
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-this-repositorys-own-documentation-site" class="md-nav__link">
+  <a href="#3-provenance" class="md-nav__link">
     <span class="md-ellipsis">
-      3. This repository's own documentation site
+      3. Provenance
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#4-the-documentation-gate" class="md-nav__link">
+  <a href="#4-the-run" class="md-nav__link">
     <span class="md-ellipsis">
-      4. The documentation gate
+      4. The run
     </span>
   </a>
   
@@ -996,109 +996,93 @@
   
 
 
-<h1 id="specification-profiles-prof">Specification — Profiles (<code>PROF</code>)<a class="headerlink" href="#specification-profiles-prof" title="Permanent link">&para;</a></h1>
-<p>Opt-in behaviour shared by a family of repositories, layered on whichever capabilities are
-installed.</p>
-<p>A profile adds; it never alters a capability's behaviour. That distinction is what keeps profiles
-from becoming a second configuration system: if a profile needed to change how a capability
-behaves, the right answer is a capability, not a flag.</p>
-<p><code>PROF</code> belongs to the <strong>substrate</strong> capability, which owns profile selection; each profile's own
-content belongs to itself.</p>
+<h1 id="specification-distribution-dist">Specification — Distribution (<code>DIST</code>)<a class="headerlink" href="#specification-distribution-dist" title="Permanent link">&para;</a></h1>
+<p>How ai-sdlc's skills reach a consuming repository, and what keeps them there once they have
+arrived.</p>
+<p><code>docs/design.md</code> §7 already settled the <em>mechanism</em>: <code>gh skill install</code>, pinned, with provenance
+recorded in each installed skill's frontmatter. This page specifies the thing that <strong>runs</strong> it — a
+scheduled job in the consumer that installs what its configuration names, updates what it
+installed, and opens a pull request when the tree changed.</p>
+<p><code>DIST</code> belongs to the <strong>substrate</strong> capability and depends only on <code>CFG</code>.</p>
 <p>Every requirement below is <code>auto</code> (covered by a named test) unless marked otherwise.</p>
 <hr />
 <h2 id="invariants">Invariants<a class="headerlink" href="#invariants" title="Permanent link">&para;</a></h2>
 <blockquote>
-<p><strong>Invariant — a profile adds behaviour; it never alters a capability's.</strong> A profile that changes
-what a capability does is a capability wearing a disguise.</p>
-<p><strong>Invariant — a profile is inert when not selected.</strong> Installing ai-sdlc must not make a
-repository run a docs gate it never asked for.</p>
+<p><strong>Invariant — the repository owns the list.</strong> What a repository installs is <code>skills:</code> in its own
+<code>.claude/repo-config.yml</code>. Nothing central decides on its behalf. A scheduled skill sync has been
+built twice in this fleet and disabled twice, and both read a registry that decided what a
+repository <em>should</em> have — so both reverted work the repository had done. A list the repository
+owns inverts that.</p>
+<p><strong>Invariant — a locally-modified skill is never overwritten.</strong> Reinstalling an already-installed
+skill overwrites local modifications with the original content; that is what <code>gh skill install</code>
+does, and moving a pinned skill to a new version <em>is</em> a reinstall. <code>gh skill update</code> without
+<code>--force</code> skips a modified skill, but the update path is not the one this uses. The check is
+therefore ours to make before the command runs, not the tool's to make for us.</p>
+<p><strong>Invariant — a pull request, never a direct commit.</strong> Installed skills are instructions an agent
+reads. A scheduled job that committed them straight to the default branch would pull unreviewed
+third-party instructions into the agent's context on a timer. Review is the point, not tidiness.</p>
 </blockquote>
 <hr />
-<h2 id="1-selection">1. Selection<a class="headerlink" href="#1-selection" title="Permanent link">&para;</a></h2>
+<h2 id="1-what-is-installed">1. What is installed<a class="headerlink" href="#1-what-is-installed" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>PROF-001</strong> A profile is enabled only by being listed in configuration.</li>
-<li><strong>PROF-002</strong> Detection proposes profiles; it never enables one.</li>
-<li><strong>PROF-003</strong> An unknown profile name is a configuration error.</li>
-<li><strong>PROF-004</strong> A profile whose files are absent is inert rather than an error.</li>
-<li><strong>PROF-005</strong> Selecting a profile <strong>installs</strong> that profile's files. PROF-004 makes an absent
-  profile harmless, which is right — but it also made a profile that installs nothing look
-  identical to one that works, and <code>mkdocs</code> shipped fully specified and entirely inert.</li>
+<li><strong>DIST-001</strong> The skills a repository installs are the names in <code>skills:</code> (<code>CFG-060</code>). Nothing
+  else is installed, and nothing installed is removed for being absent from the list — an
+  uninstall strips files, and a list edited by mistake should not.</li>
+<li><strong>DIST-002</strong> A skill is installed at the ref the repository pins, which is the same ref its
+  callers already name (<code>ADOPT-060</code>). There is no second version to keep in step.</li>
+<li><strong>DIST-003</strong> Installing is <code>gh skill install &lt;source&gt; &lt;name&gt;@&lt;ref&gt; --agent claude-code
+  --scope project</code>, and the installed files land under <code>.claude/skills/&lt;name&gt;/</code>.</li>
+<li><strong>DIST-004</strong> The installer is injected, so no test performs network I/O and the one-module
+  network seam holds.</li>
 </ul>
-<blockquote>
-<p><strong>How the spec is changing (#81).</strong> §1 described how a profile is <em>selected</em> and said nothing
-about a selection having any effect. <code>adopt</code> accordingly installed capability files and never
-looked at profiles, so enabling <code>mkdocs</code> produced no documentation gate and no error — the
-failure PROF-004 was written to tolerate, wearing the same face as success. This is the fourth
-defect of the shape "something ships incomplete", after #71, #75 and #78.</p>
-</blockquote>
-<h2 id="2-the-mkdocs-profile">2. The mkdocs profile<a class="headerlink" href="#2-the-mkdocs-profile" title="Permanent link">&para;</a></h2>
-<p>What a repository selecting <code>mkdocs</code> gets: a strict build and a reconciliation gate. Nothing else.</p>
+<h2 id="2-classification">2. Classification<a class="headerlink" href="#2-classification" title="Permanent link">&para;</a></h2>
+<p>Every named skill is classified before anything runs. The classes mirror <code>ADOPT-020</code>–<code>ADOPT-025</code>,
+because the question is the same one: may we write here?</p>
 <ul>
-<li><strong>PROF-010</strong> It provides a strict documentation build as a pull request check, and installs it.</li>
-<li><strong>PROF-011</strong> A build warning fails the check. Strict mode exists because a broken link is a
-  broken page, and a warning nobody sees is a broken page shipped.</li>
+<li><strong>DIST-010</strong> <strong>Absent</strong> — nothing installed under that name; it is installed.</li>
+<li><strong>DIST-011</strong> <strong>Current</strong> — installed, unmodified, and its recorded ref is the pinned ref; left
+  alone.</li>
+<li><strong>DIST-012</strong> <strong>Stale</strong> — installed, unmodified, and its recorded ref is some earlier ref;
+  reinstalled at the pin.</li>
+<li><strong>DIST-013</strong> <strong>Unmanaged</strong> — installed with no recorded provenance; reported and left alone. A
+  directory somebody wrote by hand is not ours to replace, whatever it contains.</li>
+<li><strong>DIST-014</strong> <strong>Modified</strong> — installed, with provenance, and its files differ from ai-sdlc's own
+  copy of them; reported and left alone.</li>
+<li><strong>DIST-015</strong> Modification is decided against ai-sdlc's copy <strong>at the ref the installation
+  records</strong>, never at the pinned ref. Comparing against the pin would classify every merely
+  outdated skill as modified, which would make the whole job a no-op the first time ai-sdlc moved.</li>
+<li><strong>DIST-016</strong> A name that ai-sdlc's tree does not carry at that ref is reported as unknown, not
+  silently skipped. <code>CFG-063</code> defers the check to here precisely because here is where the source
+  is present.</li>
+<li><strong>DIST-017</strong> A recorded ref whose content cannot be read is reported, and the skill is left
+  alone. A claim that cannot be checked is not a licence to overwrite.</li>
 </ul>
-<blockquote>
-<p><strong>Invariant — the profile installs no publisher.</strong> Publishing is the most repository-specific
-thing there is: Pages or a branch, versioned or not, which alias scheme, which requirements file.
-A shared build is the same everywhere; a shared publisher is a guess about someone else's site.</p>
-</blockquote>
+<h2 id="3-provenance">3. Provenance<a class="headerlink" href="#3-provenance" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>PROF-012</strong> The profile installs no publisher, and the workflow it does install has no means to
-  become one — no <code>gh-pages</code> push, no <code>mike</code>, no Pages action, and <code>contents: read</code> and nothing
-  more. A consumer already publishing keeps its own arrangement; one that is not decides for
-  itself.</li>
+<li><strong>DIST-020</strong> Provenance is the frontmatter <code>gh skill</code> writes into the installed <code>SKILL.md</code>:
+  <code>github-repo</code>, <code>github-ref</code>, <code>github-path</code> and <code>github-tree-sha</code>.</li>
+<li><strong>DIST-021</strong> Those four keys are excluded from the content comparison. They are written by the
+  installer and are absent from the source, so including them would make every installed skill
+  look modified — and the whole mechanism would refuse to do anything, for ever.</li>
+<li><strong>DIST-022</strong> Every other file in the skill directory is compared, not only <code>SKILL.md</code>. A skill is
+  its scripts as much as its instructions, and an edit to one of them is an edit.</li>
+<li><strong>DIST-023</strong> Bytecode caches are excluded from the comparison. Running a skill writes
+  <code>__pycache__</code> inside its own directory, so comparing it would make every skill that has ever run
+  look modified — and running them is the point.</li>
 </ul>
-<blockquote>
-<p><strong>How the spec is changing (#100).</strong> §2 used to specify a build <em>and</em> a publisher, delivered as
-one workflow — <code>PROF-012</code> said the profile publishes on merge, <code>PROF-013</code> that publication is
-skipped when the build fails, <code>PROF-014</code> that it pushes <code>gh-pages</code>, <code>PROF-015</code> that the site is
-versioned. Bundling them meant the build could not be installed without the publisher, so
-<code>adopt</code> installed neither, and <code>reusable-docs.yml</code> sat unreachable behind an explicit ADOPT-069
-exemption — specified, tested, and impossible to reach, the same shape as #81. The build is now
-its own workflow and is installed; the publisher is deleted. <code>PROF-013</code>–<code>015</code> are not gone: they
-were never really about the profile, and now say so in §3.</p>
-</blockquote>
-<h2 id="3-this-repositorys-own-documentation-site">3. This repository's own documentation site<a class="headerlink" href="#3-this-repositorys-own-documentation-site" title="Permanent link">&para;</a></h2>
-<p>Not part of the profile, and not installed anywhere. ai-sdlc publishes its own specification, and
-these requirements describe that — kept because the behaviour is real and tested, moved because
-filing it under the profile is what let a consumer-facing publisher be specified by accident.</p>
+<h2 id="4-the-run">4. The run<a class="headerlink" href="#4-the-run" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>PROF-013</strong> Publication happens only from the default branch, never from a pull request, and
-  only after the strict build has passed. Publishing a site that failed to build replaces a working
-  one with a broken one.</li>
-<li><strong>PROF-014</strong> Publication is a push to a <strong><code>gh-pages</code> branch</strong>, not an upload to GitHub's Pages
-  artifact pipeline. It therefore needs <code>contents: write</code> and no other grant — no <code>pages: write</code>,
-  no OIDC token exchange — and depends on no third-party action.</li>
-<li><strong>PROF-015</strong> The published site is <strong>versioned</strong>. Each release series gets its own tree and
-  <code>latest</code> follows the newest, so a repository pinned three releases back reads the specification
-  for the code it is actually running. The version is read from the release manifest rather than
-  written anywhere a second time.</li>
-</ul>
-<blockquote>
-<p><strong>How the spec is changing (#96).</strong> <code>PROF-010</code>–<code>014</code> described one site, published from <code>main</code>.
-That is wrong for a project whose consumers <strong>pin a version</strong>: they read the specification to know
-what their pinned version does, and an unversioned site can only ever answer for <code>main</code>. Versions
-are per release series — <code>0.4.7</code> and <code>0.4.8</code> do not describe different systems, so they share a
-tree — and <code>latest</code> is the alias a bare URL resolves to.</p>
-<p><strong>How the spec is changing (#93).</strong> <code>PROF-012</code> said the profile publishes on merge and left the
-mechanism open, and the implementation used <code>upload-pages-artifact</code>, <code>configure-pages</code> and
-<code>deploy-pages</code>. It now names the mechanism, because the mechanism turned out to matter: this
-repository requires actions to be SHA-pinned and the policy reaches <em>inside</em> composite actions, so
-<code>upload-pages-artifact@v3</code> — which calls <code>actions/upload-artifact@v4</code> unpinned in its own
-<code>action.yml</code> — was refused before it ran (#64). Moving to v5 fixed it by relying on someone else's
-pinning discipline, rechecked at every bump. A branch push has no such surface.</p>
-</blockquote>
-<h2 id="4-the-documentation-gate">4. The documentation gate<a class="headerlink" href="#4-the-documentation-gate" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>PROF-020</strong> A pull request that changes code and no documentation fails the gate.</li>
-<li><strong>PROF-021</strong> The <code>skip-docs</code> label makes the gate <strong>pass</strong>, never skip. A skipped required check
-  stays pending and blocks the merge it was meant to permit.</li>
-<li><strong>PROF-022</strong> A pull request changing only documentation passes.</li>
-<li><strong>PROF-023</strong> A pull request changing neither passes; there is nothing to reconcile.</li>
-<li><strong>PROF-024</strong> What counts as documentation is configurable, defaulting to <code>docs/</code> and <code>*.md</code>.</li>
-<li><strong>PROF-025</strong> The gate reports which files it judged code and which documentation, so a
-  surprising verdict is explainable.</li>
+<li><strong>DIST-030</strong> A run reports, for every named skill, which class it fell into and what was done.</li>
+<li><strong>DIST-031</strong> A run that installs and updates nothing opens no pull request, and says that it
+  changed nothing.</li>
+<li><strong>DIST-032</strong> A run that changed the tree opens a pull request. It never commits to the default
+  branch.</li>
+<li><strong>DIST-033</strong> A run uses one stable branch, so a second run proposes changes on the open pull
+  request rather than opening another beside it.</li>
+<li><strong>DIST-034</strong> Skipped skills are named in the run's report and in the pull request body, with the
+  reason for each. A skip nobody is told about is indistinguishable from an install.</li>
+<li><strong>DIST-035</strong> A skipped skill does not fail the run. The other skills are still installed, and the
+  report says what was left out — the same bargain <code>adopt</code> makes with a conflict.</li>
 </ul>
 <hr />
 <h2 id="traceability">Traceability<a class="headerlink" href="#traceability" title="Permanent link">&para;</a></h2>
@@ -1112,28 +1096,28 @@ pinning discipline, rechecked at every bump. A branch push has no such surface.<
 </thead>
 <tbody>
 <tr>
-<td>Selection</td>
-<td>PROF-001–005</td>
-<td><code>test_profiles.py</code></td>
+<td>What is installed</td>
+<td>DIST-001–004</td>
+<td><code>test_skills_update_run.py</code></td>
 </tr>
 <tr>
-<td>The mkdocs profile</td>
-<td>PROF-010–012</td>
-<td><code>test_profiles.py</code></td>
+<td>Classification</td>
+<td>DIST-010–017</td>
+<td><code>test_skills_update_plan.py</code></td>
 </tr>
 <tr>
-<td>This repository's own site</td>
-<td>PROF-013–015</td>
-<td><code>test_profiles.py</code></td>
+<td>Provenance</td>
+<td>DIST-020–023</td>
+<td><code>test_skills_update_plan.py</code></td>
 </tr>
 <tr>
-<td>The documentation gate</td>
-<td>PROF-020–025</td>
-<td><code>test_docs_gate.py</code></td>
+<td>The run</td>
+<td>DIST-030–035</td>
+<td><code>test_skills_update_run.py</code></td>
 </tr>
 </tbody>
 </table>
-<p><strong>17 requirements, all <code>auto</code>.</strong></p>
+<p><strong>23 requirements, all <code>auto</code>.</strong></p>
 
 
 

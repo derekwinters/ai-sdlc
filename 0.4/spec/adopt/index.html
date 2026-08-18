@@ -542,6 +542,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../distribution/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Distribution
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../profiles/" class="md-nav__link">
         
   
@@ -1123,9 +1144,17 @@ v0.4.7, one command after the pipeline landed.</p>
 workflow reads land together, or neither lands.</p>
 </blockquote>
 <ul>
-<li><strong>ADOPT-047</strong> Enabling a capability installs every file its workflows require, not only the
+<li>
+<p><strong>ADOPT-047</strong> Enabling a capability installs every file its workflows require, not only the
   workflows. <code>labels</code> installs <code>labels.core.yml</code> as well as <code>labels-sync.yml</code>; <code>hygiene</code> installs
-  <code>house-rules.md</code> alongside the import line that points at it.</li>
+  <code>house-rules.md</code> alongside the import line that points at it.</p>
+</li>
+<li>
+<p><strong>ADOPT-048</strong> A repository whose <code>skills:</code> list names anything gets the <code>skills-update</code> caller,
+  and one naming nothing gets none. The list is what makes the workflow useful, so the caller
+  follows it rather than a capability — a scheduled job with nothing to install is a job that runs
+  every night to say so.</p>
+</li>
 </ul>
 <blockquote>
 <p><strong>How the spec is changing (#75).</strong> §5 described what <code>apply</code> writes without saying that the set
@@ -1268,7 +1297,7 @@ was right to. <code>VAL-056</code> moved with it, in the same direction.</p>
 </tr>
 <tr>
 <td>Applying</td>
-<td>ADOPT-040–047</td>
+<td>ADOPT-040–048</td>
 <td><code>test_adopt_apply.py</code></td>
 </tr>
 <tr>
@@ -1298,7 +1327,7 @@ was right to. <code>VAL-056</code> moved with it, in the same direction.</p>
 </tr>
 </tbody>
 </table>
-<p><strong>48 requirements, all <code>auto</code>.</strong></p>
+<p><strong>49 requirements, all <code>auto</code>.</strong></p>
 
 
 

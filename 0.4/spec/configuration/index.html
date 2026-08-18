@@ -14,7 +14,7 @@
         <link rel="prev" href="../adopt/">
       
       
-        <link rel="next" href="../profiles/">
+        <link rel="next" href="../distribution/">
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
@@ -509,6 +509,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#7-installed-skills" class="md-nav__link">
+    <span class="md-ellipsis">
+      7. Installed skills
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#traceability" class="md-nav__link">
     <span class="md-ellipsis">
       Traceability
@@ -521,6 +530,27 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../distribution/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Distribution
+  </span>
+  
+
+      </a>
     </li>
   
 
@@ -985,6 +1015,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#7-installed-skills" class="md-nav__link">
+    <span class="md-ellipsis">
+      7. Installed skills
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#traceability" class="md-nav__link">
     <span class="md-ellipsis">
       Traceability
@@ -1105,6 +1144,19 @@ dependencies is a configuration error, refused at load, not a runtime surprise.<
 <li><strong>CFG-054</strong> Anchors, aliases, multi-document files and flow style are not supported, and using
   one is an error that says so rather than misreading the file.</li>
 </ul>
+<h2 id="7-installed-skills">7. Installed skills<a class="headerlink" href="#7-installed-skills" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>CFG-060</strong> <code>skills</code> names the skills the repository installs from ai-sdlc. It defaults to the
+  empty list, and a repository listing none installs none.</li>
+<li><strong>CFG-061</strong> Every entry is a non-empty string. Anything else is an error naming the key path and
+  what was found.</li>
+<li><strong>CFG-062</strong> A repeated name is collapsed, as <code>capabilities</code> collapses one. The list is a set of
+  names, and naming a skill twice says nothing a name once does not.</li>
+<li><strong>CFG-063</strong> The list is not validated against <code>capabilities</code>, and no name is checked against
+  ai-sdlc's own tree. The loader is pure (<code>CFG-005</code>): resolving a name needs the source, and a
+  loader that reached for it would be doing I/O. An unknown name is caught where the source is
+  present — <code>DIST-016</code>.</li>
+</ul>
 <hr />
 <h2 id="traceability">Traceability<a class="headerlink" href="#traceability" title="Permanent link">&para;</a></h2>
 <table>
@@ -1147,13 +1199,18 @@ dependencies is a configuration error, refused at load, not a runtime surprise.<
 <td><code>test_yaml_subset.py</code></td>
 </tr>
 <tr>
+<td>Installed skills</td>
+<td>CFG-060–063</td>
+<td><code>test_config_skills.py</code></td>
+</tr>
+<tr>
 <td>Schema agreement</td>
 <td>CFG-010</td>
 <td><code>test_config_schema.py</code></td>
 </tr>
 </tbody>
 </table>
-<p><strong>39 requirements, 38 <code>auto</code> and 1 <code>manual</code>.</strong></p>
+<p><strong>43 requirements, 42 <code>auto</code> and 1 <code>manual</code>.</strong></p>
 
 
 

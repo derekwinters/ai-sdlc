@@ -379,6 +379,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#5-name-the-skills-you-install" class="md-nav__link">
+    <span class="md-ellipsis">
+      5. Name the skills you install
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#the-shared-rules" class="md-nav__link">
     <span class="md-ellipsis">
       The shared rules
@@ -497,6 +506,27 @@
   
   <span class="md-ellipsis">
     Configuration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../spec/distribution/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Distribution
   </span>
   
 
@@ -938,6 +968,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#5-name-the-skills-you-install" class="md-nav__link">
+    <span class="md-ellipsis">
+      5. Name the skills you install
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#the-shared-rules" class="md-nav__link">
     <span class="md-ellipsis">
       The shared rules
@@ -1063,6 +1102,25 @@ default branch and require the checks you added.</p>
 <p><strong>Do not add an <code>if:</code> that skips a required check.</strong> A skipped required check stays pending forever
 and blocks the merge it was meant to permit. Escape hatches — the <code>no-closing-keyword</code> label, the
 <code>skip-docs</code> label — make a check <em>pass</em>, never absent.</p>
+<h2 id="5-name-the-skills-you-install">5. Name the skills you install<a class="headerlink" href="#5-name-the-skills-you-install" title="Permanent link">&para;</a></h2>
+<p>The workflows are only half of ai-sdlc; the rest is skills an agent reads. Which ones a repository
+installs is its own decision, written in its own configuration:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">skills</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">triage-issue</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pipeline-dev</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ci-watch</span>
+</code></pre></div>
+<p><code>adopt</code> then writes a <code>skills-update.yml</code> caller, which installs what is missing and reinstalls
+what has fallen behind the pin — and <strong>opens a pull request</strong>, because installed skills are
+instructions an agent reads and a timer that put unreviewed ones in front of it would be a consent
+problem.</p>
+<p>A skill you have edited locally is reported and left alone, never overwritten. If you need a skill
+to behave differently, change it in ai-sdlc and move the pin; a local edit is preserved, but it
+stops that skill being updated, and <code>skills-update</code> will say so on every run.</p>
+<p>That pull request needs one setting only you can switch on: <strong>Settings → Actions → General →
+Workflow permissions → Allow GitHub Actions to create and approve pull requests</strong>. Without it the
+job pushes its branch and then cannot open the pull request.</p>
+<p>See <a href="../spec/distribution/">Distribution</a> for the whole mechanism.</p>
 <h2 id="the-shared-rules">The shared rules<a class="headerlink" href="#the-shared-rules" title="Permanent link">&para;</a></h2>
 <p>Adoption installs <a href="../house-rules/"><code>house-rules.md</code></a> into <code>.claude/ai-sdlc/</code> and appends one import
 line to your <code>CLAUDE.md</code>. Your own file is never rewritten — it is usually the most carefully

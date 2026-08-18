@@ -642,6 +642,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../spec/distribution/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Distribution
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../spec/profiles/" class="md-nav__link">
         
   
@@ -1411,8 +1432,8 @@ document a reader consults to learn what the system does.</p>
 <ul>
 <li>Every behaviour carries a requirement ID of the form <code>AREA-NNN</code>.</li>
 <li>Areas, grouped by the capability that owns them:</li>
-<li><em>substrate</em>: <code>CFG</code> (configuration), <code>API</code> (GitHub access), <code>DIST</code> (distribution and
-    versioning), <code>ADOPT</code> (adoption and upgrade)</li>
+<li><em>substrate</em>: <code>CFG</code> (configuration), <code>API</code> (GitHub access), <code>DIST</code> (distribution — how
+    skills reach a consumer and stay current), <code>ADOPT</code> (adoption and upgrade)</li>
 <li><em>hygiene</em>: <code>SYS</code> (commit and pull-request rules)</li>
 <li><em>consistency</em>: <code>VAL</code> (validators and gates)</li>
 <li><em>labels</em>: <code>LBL</code></li>
@@ -1519,6 +1540,23 @@ skills, and the published documentation describe the same system.</p>
 <p><code>gh skill</code> records provenance in each installed skill's frontmatter — source repository, ref, and
 content tree SHA. A consumer's drift from its pinned version is therefore detectable by comparing
 recorded SHAs, with no additional bookkeeping.</p>
+<p><strong>What runs it.</strong> The mechanism above was specified here long before anything invoked it, and
+<code>connor-multiplying-frogs</code> ran the pipeline for weeks with none of the pipeline skills installed
+(#144). The automation is <code>reusable-skills-update.yml</code>, called on a schedule by a caller <code>adopt</code>
+writes:</p>
+<ul>
+<li>the consumer names what it installs in <code>skills:</code> in its own <code>repo-config.yml</code> — the repository's
+  list, not a central registry's;</li>
+<li>the job installs what is missing and reinstalls what has fallen behind the pin, so one mechanism
+  bootstraps a fresh repository and maintains an established one;</li>
+<li>it opens a <strong>pull request</strong> when the tree changed, and nothing at all when it did not.</li>
+</ul>
+<p>A pull request rather than a commit because installed skills are instructions an agent reads, and a
+timer that put unreviewed ones into its context would be a consent problem rather than an
+untidiness. A locally-modified skill is reported and left alone: <code>gh skill install</code> overwrites one,
+and moving a pinned skill to a new version <em>is</em> a reinstall, so the check happens before the
+command runs. That defect is why the two previous scheduled syncs in this fleet were disabled.</p>
+<p>See <code>docs/spec/distribution.md</code> (<code>DIST</code>).</p>
 <p><strong>Versioning.</strong> <code>ai-sdlc</code> is versioned by release-please from Conventional Commits.
 <code>gh skill publish</code> cuts the release consumers pin to. A change to the label vocabulary, a
 requirement's meaning, or a workflow's inputs is breaking and is marked as such.</p>
