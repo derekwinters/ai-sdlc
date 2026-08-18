@@ -31,13 +31,15 @@ jobs:
         with:
           repository: derekwinters/ai-sdlc
           ref: ${{ inputs.ref }}
-          path: .ai-sdlc
+          # Not `.ai-sdlc`: that is where the *consumer* keeps its committed
+          # configuration, and checkout empties the directory it writes into.
+          path: .ai-sdlc-checkout
 
       - name: Require a closing keyword
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
           PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
-          SKILL_ROOT: ${{ inputs.ref != '' && '.ai-sdlc' || '.' }}
+          SKILL_ROOT: ${{ inputs.ref != '' && '.ai-sdlc-checkout' || '.' }}
         run: |
           printf '%s' "$PR_BODY" | python3 \
             "$SKILL_ROOT/skills/hygiene/closing-keyword/check_closing_keyword.py"

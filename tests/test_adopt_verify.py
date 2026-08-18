@@ -11,7 +11,7 @@ CONFIG = "capabilities:\n  - hygiene\n"
 
 def adopted(files=None, pin=PIN):
     files = dict(files or {})
-    files.setdefault(".claude/repo-config.yml", CONFIG)
+    files.setdefault(".ai-sdlc/repo-config.yml", CONFIG)
     root = repository(files)
     apply(root, pin=pin)
     return root
@@ -52,12 +52,12 @@ class TestDrift(unittest.TestCase):
 
 class TestCapabilityDependencies(unittest.TestCase):
     def test_a_capability_without_its_dependencies_is_reported(self):  # ADOPT-051
-        root = repository({".claude/repo-config.yml": "capabilities:\n  - pipeline\n"})
+        root = repository({".ai-sdlc/repo-config.yml": "capabilities:\n  - pipeline\n"})
         result = verify(root, pin=PIN)
         self.assertFalse(result.ok)
 
     def test_the_report_says_what_is_missing(self):  # ADOPT-051
-        root = repository({".claude/repo-config.yml": "capabilities:\n  - pipeline\n"})
+        root = repository({".ai-sdlc/repo-config.yml": "capabilities:\n  - pipeline\n"})
         self.assertIn("hygiene", " ".join(verify(root, pin=PIN).problems))
 
 

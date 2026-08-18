@@ -26,7 +26,7 @@ jobs:
 
 def planned(files=None, **kwargs):
     files = dict(files or {})
-    files.setdefault(".claude/repo-config.yml", CONFIG)
+    files.setdefault(".ai-sdlc/repo-config.yml", CONFIG)
     return plan(repository(files), pin=PIN, **kwargs)
 
 
@@ -46,16 +46,16 @@ class TestItReportsEverything(unittest.TestCase):
 
 class TestItWritesNothing(unittest.TestCase):
     def test_no_file_is_created(self):  # ADOPT-011
-        root = repository({".claude/repo-config.yml": CONFIG})
+        root = repository({".ai-sdlc/repo-config.yml": CONFIG})
         before = sorted(str(p) for p in root.rglob("*"))
         plan(root, pin=PIN)
         self.assertEqual(sorted(str(p) for p in root.rglob("*")), before)
 
     def test_no_file_is_modified(self):  # ADOPT-011
-        root = repository({".claude/repo-config.yml": CONFIG})
-        before = (root / ".claude/repo-config.yml").read_text()
+        root = repository({".ai-sdlc/repo-config.yml": CONFIG})
+        before = (root / ".ai-sdlc/repo-config.yml").read_text()
         plan(root, pin=PIN)
-        self.assertEqual((root / ".claude/repo-config.yml").read_text(), before)
+        self.assertEqual((root / ".ai-sdlc/repo-config.yml").read_text(), before)
 
 
 class TestConflictsAreSeparate(unittest.TestCase):
@@ -72,12 +72,12 @@ class TestConflictsAreSeparate(unittest.TestCase):
 class TestCollisionsAreSeparateAgain(unittest.TestCase):
     def test_a_trigger_collision_is_reported(self):  # ADOPT-014
         result = planned({".github/workflows/theirs.yml": COLLIDING,
-                 ".claude/repo-config.yml": PIPELINE_CONFIG})
+                 ".ai-sdlc/repo-config.yml": PIPELINE_CONFIG})
         self.assertEqual([c.workflow for c in result.collisions], ["theirs.yml"])
 
     def test_it_is_not_merely_a_conflict(self):  # ADOPT-014
         result = planned({".github/workflows/theirs.yml": COLLIDING,
-                 ".claude/repo-config.yml": PIPELINE_CONFIG})
+                 ".ai-sdlc/repo-config.yml": PIPELINE_CONFIG})
         self.assertNotIn("theirs.yml", result.conflicts)
 
     def test_none_when_there_are_none(self):  # ADOPT-014
@@ -92,7 +92,7 @@ class TestNothingToDo(unittest.TestCase):
     def test_an_up_to_date_repository_reports_no_changes(self):  # ADOPT-015
         from adopt import apply
 
-        root = repository({".claude/repo-config.yml": CONFIG})
+        root = repository({".ai-sdlc/repo-config.yml": CONFIG})
         apply(root, pin=PIN)
         result = plan(root, pin=PIN)
         self.assertEqual((result.creates, result.updates), ([], []))
@@ -100,7 +100,7 @@ class TestNothingToDo(unittest.TestCase):
     def test_and_says_it_is_current(self):  # ADOPT-015
         from adopt import apply
 
-        root = repository({".claude/repo-config.yml": CONFIG})
+        root = repository({".ai-sdlc/repo-config.yml": CONFIG})
         apply(root, pin=PIN)
         self.assertTrue(plan(root, pin=PIN).current)
 

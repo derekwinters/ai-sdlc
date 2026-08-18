@@ -119,6 +119,23 @@ def provenance_header(ref, digest):
     )
 
 
+def with_provenance(body, pin):
+    """`body` carrying its provenance header, placed where the format allows.
+
+    In front, except where the file opens with a `---` frontmatter block: a
+    comment before that block stops it being frontmatter at all, and a skill
+    whose frontmatter does not parse is a skill no agent ever loads. YAML
+    comments *inside* the block are legal and ignored, and `_strip_provenance`
+    removes the header from wherever it sits, so classification is unaffected.
+    """
+    header = provenance_header(pin[0] if isinstance(pin, (tuple, list)) else pin,
+                               content_hash(body))
+    if body.startswith("---\n"):
+        opening, rest = body.split("\n", 1)
+        return f"{opening}\n{header}{rest}"
+    return header + body
+
+
 def _read_provenance(text):
     match = _PROVENANCE.search(text or "")
     return (match.group("ref"), match.group("hash")) if match else (None, None)
@@ -146,7 +163,7 @@ def as_pin(pin, resolver=None):
 
 
 def _pin_line(pin):
-    """What `.claude/ai-sdlc.pin` records: the version and the commit.
+    """What the pin file records: the version and the commit.
 
     Both, so `verify` at the same version needs no network — and so a human
     reading the file can tell what is installed without resolving a SHA.
@@ -209,12 +226,15 @@ def detect(root):
     get second-guessed by a marker file.
     """
     root = Path(root)
-    config = root / ".claude" / "repo-config.yml"
-    if config.is_file():
-        from lib.config import load
+    for candidate in (root / CONFIG_FILE, root / LEGACY_PATHS[0][0]):
+        # The old path is read here for the same reason `plan` reads it: a
+        # repository that has not migrated yet still has a stack, and telling
+        # it to migrate is more use than telling it that it looks like nothing.
+        if candidate.is_file():
+            from lib.config import load
 
-        return Detection(list(load(path=config).profiles), {"repo-config.yml": True},
-                         proposed=False)
+            return Detection(list(load(path=candidate).profiles),
+                             {"repo-config.yml": True}, proposed=False)
 
     profiles, evidence = [], {}
     for profile, marker in MARKERS:
@@ -308,16 +328,18 @@ class AdoptRefused(RuntimeError):
 
 class Plan:
     __slots__ = ("creates", "updates", "conflicts", "collisions", "manual_tasks",
-                 "detection", "current")
+                 "detection", "migrations", "current")
 
-    def __init__(self, creates, updates, conflicts, collisions, manual_tasks, detection):
+    def __init__(self, creates, updates, conflicts, collisions, manual_tasks, detection,
+                 migrations=()):
         self.creates = creates
         self.updates = updates
         self.conflicts = conflicts
         self.collisions = collisions
         self.manual_tasks = manual_tasks
         self.detection = detection
-        self.current = not creates and not updates
+        self.migrations = list(migrations)
+        self.current = not creates and not updates and not self.migrations
 
     def __repr__(self):
         return (
@@ -327,16 +349,54 @@ class Plan:
 
 
 class Applied:
-    __slots__ = ("written", "skipped", "manual_tasks")
+    __slots__ = ("written", "skipped", "manual_tasks", "migrated")
 
-    def __init__(self, written, skipped, manual_tasks):
+    def __init__(self, written, skipped, manual_tasks, migrated=()):
         self.written = written
         self.skipped = skipped
         self.manual_tasks = manual_tasks
+        self.migrated = list(migrated)
 
 
-PIN_FILE = ".claude/ai-sdlc.pin"
-IMPORT_LINE = "@.claude/ai-sdlc/house-rules.md"
+#: ai-sdlc's own directory in a consuming repository.
+#:
+#: `.claude/` is a vendor namespace the way `.github/` and `.vscode/` are, and
+#: none of what lives here is Claude Code's: a GitHub Actions job parsing
+#: `capabilities`, `owners` and `fire.endpoint_secret` has nothing to do with
+#: an AI coding assistant. Squatting there also took a dependency on somebody
+#: else's namespace semantics for no gain at all.
+#:
+#: The one exception is `.claude/skills/`, which genuinely is Claude Code's
+#: required path. Nothing under it moves.
+CONFIG_DIR = ".ai-sdlc"
+
+CONFIG_FILE = f"{CONFIG_DIR}/repo-config.yml"
+PIN_FILE = f"{CONFIG_DIR}/ai-sdlc.pin"
+HOUSE_RULES = f"{CONFIG_DIR}/house-rules.md"
+
+#: The resolved state of this adoption, derived from `repo-config.yml` so it
+#: cannot drift from it.
+ADOPTION_PAGE = f"{CONFIG_DIR}/adoption.md"
+
+#: The discovery surface, at the path Claude Code requires. A directory nothing
+#: points at is a directory nobody reads.
+SKILL_FILE = ".claude/skills/ai-sdlc/SKILL.md"
+
+IMPORT_LINE = f"@{HOUSE_RULES}"
+
+#: Where each managed file lived until 0.4.18, and where it goes.
+#:
+#: A half-migrated repository is worse than either location — CI would read one
+#: path while `verify` checked the other — so these are moves, never fallbacks,
+#: and the old location is removed rather than left as a trap for whoever edits
+#: it next.
+LEGACY_PATHS = (
+    (".claude/repo-config.yml", CONFIG_FILE),
+    (".claude/ai-sdlc.pin", PIN_FILE),
+    (".claude/ai-sdlc/house-rules.md", HOUSE_RULES),
+)
+
+LEGACY_IMPORT_LINE = "@.claude/ai-sdlc/house-rules.md"
 
 MANUAL_TASKS = (
     "Make the checks required: Settings → Branches → protect the default "
@@ -364,11 +424,27 @@ def _manual_tasks(config):
 
 
 def _files_for(config, pin):
-    """The files adoption owns, given a repository's configuration."""
+    """Every file adoption owns, given a repository's configuration."""
+    files = _installed(config, pin)
+
+    # Installed whatever the capabilities are, because every adoption has a
+    # resolved state and every adoption needs to be findable. A directory
+    # nothing points at is a directory nobody reads.
+    files[ADOPTION_PAGE] = _adoption_page(config, pin)
+    files[SKILL_FILE] = _skill(pin)
+    return files
+
+
+def _installed(config, pin):
+    """What the capabilities and profiles install.
+
+    Separate from `_files_for` because the generated page lists these, and a
+    page that listed itself would have to be generated from itself.
+    """
     files = {}
 
     if "hygiene" in config.capabilities:
-        files[".claude/ai-sdlc/house-rules.md"] = _house_rules()
+        files[HOUSE_RULES] = _house_rules()
         files[".github/workflows/closing-keyword.yml"] = _caller(
             "closing-keyword", "reusable-closing-keyword.yml", pin,
             trigger=(
@@ -506,6 +582,160 @@ def _house_rules():
     return source.read_text()
 
 
+def _spec_pages():
+    """Every specification page, as `(area, title, capability, path)`.
+
+    Read from the pages themselves rather than from a table here. A table would
+    be a second description of which capability owns what, and the whole reason
+    the generated page exists is that a second copy of something rots.
+    """
+    directory = Path(__file__).resolve().parents[3] / "docs" / "spec"
+    pages = []
+    for path in sorted(directory.glob("*.md")):
+        text = path.read_text()
+        title = re.search(r"^#\s+Specification\s+—\s+(.+?)\s*\(`([A-Z]+)`\)", text, re.M)
+        owner = re.search(r"belongs to the \*\*(\w+)\*\* capability", text)
+        if title and owner:
+            pages.append((title.group(2), title.group(1), owner.group(1),
+                          f"docs/spec/{path.name}"))
+    return pages
+
+
+def _bullets(values, empty):
+    return "\n".join(f"- `{value}`" for value in values) if values else empty
+
+
+def _adoption_page(config, pin):
+    """This repository's resolved adoption, derived from its configuration.
+
+    **Nothing here explains how anything behaves.** That is what the links are
+    for, and a restatement is the thing that rots: one consumer carried four
+    label colours that disagreed with the manifest and 27 references to a
+    pipeline state that no longer existed, both copies of things ai-sdlc
+    already generates.
+    """
+    version, sha = pin
+    tree = f"https://github.com/{SOURCE}/blob/{sha}"
+
+    callers = sorted(
+        path for path in _installed(config, pin)
+        if path.startswith(".github/workflows/")
+    )
+    specs = [
+        f"- [{title}]({tree}/{path}) — `{area}`"
+        for area, title, capability, path in _spec_pages()
+        if capability in config.capabilities
+    ]
+    # Only where the pipeline runs. A state-to-label table in a repository
+    # with no pipeline is a table of vocabulary nothing here uses.
+    mapped = getattr(config, "labels", {}) or {}
+    labels = "\n".join(
+        f"| `{state}` | `{mapped[state]}` |" for state in sorted(mapped)
+    ) if "pipeline" in config.capabilities else ""
+
+    if labels:
+        labels = f"## Pipeline-state labels\n\n| State | Label |\n| --- | --- |\n{labels}\n\n"
+
+    return f"""# ai-sdlc in this repository
+
+Generated by `adopt` from `{CONFIG_FILE}`. It is this repository's *resolved*
+state — what is installed, and at which version — and nothing else. How any of
+it behaves is in the specification, linked below at the pinned commit.
+
+Do not edit this file. Change `{CONFIG_FILE}` and run `adopt apply`.
+
+## Pinned at
+
+**{version}** — [`{sha[:12]}`](https://github.com/{SOURCE}/tree/{sha})
+
+## Capabilities
+
+{_bullets(config.capabilities, "- none")}
+
+## Profiles
+
+{_bullets(getattr(config, "profiles", ()), "- none")}
+
+{labels}## Callers installed here
+
+{_bullets(callers, "- none")}
+
+## Skills installed here
+
+{_bullets(getattr(config, "skills", ()), "- none, and `skills-update` is not installed")}
+
+## The specification, at this pin
+
+{chr(10).join(specs)}
+- [House rules]({tree}/house-rules/house-rules.md) — imported by `CLAUDE.md`
+"""
+
+
+def _skill(pin):
+    """The discovery surface, at the path Claude Code requires.
+
+    The `description` is the load-bearing half: it is the only text a model
+    sees when deciding whether to load anything, so it names the things an
+    agent is about to touch — issues, labels, milestones, triage, releases —
+    rather than offering context in the abstract.
+
+    It is deliberately not the whole manual. The import in `CLAUDE.md` is
+    always-on and cannot be missed; this is loaded on demand and can afford
+    detail. The two are halves of one mechanism, not alternatives.
+    """
+    version, _ = pin
+    return f"""---
+name: ai-sdlc
+description: >-
+  How this repository's issues, labels, milestones, triage, pull-request gates
+  and releases actually work. They are run by ai-sdlc, a shared pipeline this
+  repository adopted, so the rules live outside this repository and the
+  workflows here are thin callers. Use before changing a label or milestone,
+  moving an issue between pipeline states, editing anything under
+  `.github/workflows/`, cutting a release, or updating a document that
+  describes any of those.
+allowed-tools: Read, Grep, Glob, Bash
+---
+
+# ai-sdlc, in this repository
+
+This repository has adopted [ai-sdlc](https://github.com/{SOURCE}), which owns its
+pipeline, its label taxonomy, its release flow and its pull-request gates. It is
+installed at **{version}**.
+
+## Read these, in this order
+
+| File | What it settles |
+| --- | --- |
+| [`{ADOPTION_PAGE}`](../../../{ADOPTION_PAGE}) | What is installed here, and at which version |
+| [`{CONFIG_FILE}`](../../../{CONFIG_FILE}) | Everything this repository decides for itself |
+| [`{HOUSE_RULES}`](../../../{HOUSE_RULES}) | The rules an agent works under, imported by `CLAUDE.md` |
+
+`{ADOPTION_PAGE}` links every specification page that applies here, pinned to
+the exact commit this repository runs. The specification is the answer to *how
+does this behave*; nothing in this repository restates it, on purpose.
+
+## What you may not hand-edit
+
+Files carrying a `# ai-sdlc: …@… hash=…` header are written by `adopt`. Editing
+one makes it a **conflict**: it is never overwritten, and it is never updated
+again either, so a hand-edit silently freezes that file at the version it was
+edited at. `adopt verify` reports them.
+
+That covers the callers under `.github/workflows/`, `.github/labels.core.yml`,
+the house rules, and this file.
+
+## Changing something
+
+- **A setting** — edit `{CONFIG_FILE}`. It is the only file here ai-sdlc reads
+  and never writes.
+- **A version** — run `adopt apply <version>` from an ai-sdlc checkout. Install
+  and upgrade are one operation.
+- **A rule, a gate, a workflow** — it is not in this repository. Open an issue
+  in ai-sdlc.
+"""
+
+
 def _core_labels():
     """The shared taxonomy, as installed.
 
@@ -619,9 +849,105 @@ def _fire_secrets(config):
     return {given: name for given, name in named.items() if name}
 
 
+# ---------------------------------------------------------------- migration
+
+
+def migration(root):
+    """The moves this repository still needs, as `(old, new)`. Writes nothing.
+
+    Refuses outright when a path exists in both places. That is not a state to
+    guess at: one of the two is what CI reads and the other is what somebody
+    will edit next, and nothing here can tell which is which.
+    """
+    root = Path(root)
+    moves, both = [], []
+
+    for old, new in LEGACY_PATHS:
+        if not (root / old).is_file():
+            continue
+        if (root / new).is_file():
+            both.append(f"{old} and {new}")
+        else:
+            moves.append((old, new))
+
+    if both:
+        raise AdoptRefused(
+            "these files exist in both the old and the new location: "
+            + "; ".join(both)
+            + ". One of them is what CI reads and the other is what somebody "
+            "will edit next, and nothing here can tell which is which. Delete "
+            "whichever is stale, then run this again."
+        )
+
+    return moves
+
+
+def migrate(root):
+    """Move a repository out of `.claude/`. Returns what it moved.
+
+    `repo-config.yml` is authored by the repository, not written by this tool —
+    a consumer's copy carries hand-written comments explaining every choice — so
+    it moves **byte-for-byte** and is never rewritten. The old location is
+    removed rather than left behind: a stale copy alongside a live one is a
+    trap that gets edited eventually.
+
+    Idempotent, because it is driven by what is actually there: a repository
+    with nothing left in the old location has nothing to move.
+    """
+    root = Path(root)
+    moved = []
+
+    for old, new in migration(root):
+        source, target = root / old, root / new
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(source.read_bytes())
+        source.unlink()
+        moved.append((old, new))
+
+    # The directory that held the house rules, and nothing else. Removed only
+    # when empty — anything a consumer put in there is theirs.
+    stale = root / ".claude" / "ai-sdlc"
+    if stale.is_dir() and not any(stale.iterdir()):
+        stale.rmdir()
+
+    if _rewrite_import(root):
+        moved.append((LEGACY_IMPORT_LINE, IMPORT_LINE))
+
+    return moved
+
+
+def _rewrite_import(root):
+    """Point the `CLAUDE.md` import at the moved file.
+
+    The one edit adoption makes to a file it did not write, and it is to the
+    single line adoption itself put there. Leaving it would dangle: the import
+    would name a file that no longer exists, and the rules would silently stop
+    reaching the agent.
+    """
+    path = Path(root) / "CLAUDE.md"
+    if not path.is_file():
+        return False
+
+    text = path.read_text()
+    if LEGACY_IMPORT_LINE not in text:
+        return False
+
+    path.write_text(text.replace(LEGACY_IMPORT_LINE, IMPORT_LINE))
+    return True
+
+
 def _load_config(root):
+    """The configuration, from wherever this repository currently keeps it.
+
+    `plan` is read-only and has to work on a repository that has not migrated
+    yet — telling it to migrate is most of what the plan is for. Everywhere
+    else `migrate` has already run, so this finds the new path.
+    """
     from lib.config import load
 
+    legacy = Path(root) / LEGACY_PATHS[0][0]
+    if not (Path(root) / CONFIG_FILE).is_file() and legacy.is_file():
+        return load(path=legacy)
     return load(root=root)
 
 
@@ -629,12 +955,19 @@ def plan(root, pin, acknowledged=(), resolver=None):
     """What adoption would do. Writes nothing."""
     root = Path(root)
     pin = as_pin(pin, resolver=resolver)
+    pending = migration(root)
     config = _load_config(root)
     wanted = _files_for(config, pin)
 
+    # A file about to be moved is classified where it currently *is*. Reading
+    # the destination would report an upgrade of an existing house-rules file
+    # as a fresh create, which reads as "this repository had none" — and it is
+    # the only line in the plan a reviewer would use to check that.
+    moving = {new: old for old, new in pending}
+
     creates, updates, conflicts = [], [], []
     for path, body in sorted(wanted.items()):
-        state = classify(root, path, body, pin)
+        state = classify(root, moving.get(path, path), body, pin)
         if state == ABSENT:
             creates.append(path)
         elif state == STALE:
@@ -642,8 +975,9 @@ def plan(root, pin, acknowledged=(), resolver=None):
         elif state == CONFLICT:
             conflicts.append(path)
 
-    if (root / PIN_FILE).is_file():
-        if (root / PIN_FILE).read_text().strip() != _pin_line(pin).strip():
+    recorded = root / moving.get(PIN_FILE, PIN_FILE)
+    if recorded.is_file():
+        if recorded.read_text().strip() != _pin_line(pin).strip():
             updates.append(PIN_FILE)
     else:
         creates.append(PIN_FILE)
@@ -658,6 +992,7 @@ def plan(root, pin, acknowledged=(), resolver=None):
         collisions=found,
         manual_tasks=_manual_tasks(config),
         detection=detect(root),
+        migrations=pending,
     )
 
 
@@ -673,6 +1008,10 @@ def apply(root, pin, acknowledged=(), resolver=None):
     root = Path(root)
     pin = as_pin(pin, resolver=resolver)
     proposed = plan(root, pin, acknowledged=acknowledged)
+
+    # Before anything is written, so the rest of this run reads and writes one
+    # location. A half-migrated repository is worse than either.
+    migrated = migrate(root)
 
     if proposed.collisions:
         named = ", ".join(f"{c.workflow} (on {c.event})" for c in proposed.collisions)
@@ -691,7 +1030,7 @@ def apply(root, pin, acknowledged=(), resolver=None):
         if state in (ABSENT, STALE):
             full = root / path
             full.parent.mkdir(parents=True, exist_ok=True)
-            full.write_text(provenance_header(pin[0], content_hash(body)) + body)
+            full.write_text(with_provenance(body, pin))
             written.append(path)
         elif state == CONFLICT:
             skipped.append(path)
@@ -709,7 +1048,8 @@ def apply(root, pin, acknowledged=(), resolver=None):
     if "pipeline" in config.capabilities and not config.dashboard_issue:
         tasks.append("Create a dashboard issue and set `dashboard_issue` in the config.")
 
-    return Applied(written=sorted(written), skipped=sorted(skipped), manual_tasks=tasks)
+    return Applied(written=sorted(written), skipped=sorted(skipped), manual_tasks=tasks,
+                   migrated=migrated)
 
 
 def _add_import(root):
@@ -756,6 +1096,11 @@ def verify(root, pin, resolver=None):
         config = _load_config(root)
     except Exception as error:  # noqa: BLE001 - a bad config is the problem
         return Verified([f"the configuration could not be read: {error}"])
+
+    for old, new in migration(root):
+        problems.append(
+            f"{old} has not been migrated to {new}; run `adopt apply` to move it"
+        )
 
     recorded = (root / PIN_FILE).read_text().strip() if (root / PIN_FILE).is_file() else None
     if recorded != _pin_line(pin).strip():

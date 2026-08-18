@@ -194,7 +194,7 @@ class TestTheWorkflow(unittest.TestCase):
     def test_it_runs_the_skill_from_the_ai_sdlc_checkout(self):  # DIST-004
         self.assertIn("skills/substrate/skills-update/main.py", self.text)
         # API-060: the checkout path is a variable, so ai-sdlc calling its own
-        # workflow — where there is no `.ai-sdlc` directory — still works.
+        # workflow — where there is no `.ai-sdlc-checkout` directory — still works.
         self.assertIn("SKILL_ROOT", self.text)
 
 

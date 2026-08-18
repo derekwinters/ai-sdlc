@@ -26,6 +26,14 @@ Every requirement below is `auto` (covered by a named test) unless marked otherw
 > **Invariant — `apply` works on a branch, never the default branch.** Every adoption and every
 > upgrade is a reviewable pull request.
 
+> **Invariant — ai-sdlc's files live in `.ai-sdlc/`, and nothing of ai-sdlc's lives in `.claude/`
+> except a skill.** `.claude/` is a vendor namespace the way `.github/` and `.vscode/` are. A
+> GitHub Actions job parsing `capabilities` and `owners` is not an AI coding assistant's business,
+> and squatting there takes a dependency on somebody else's namespace semantics for nothing.
+
+> **Invariant — a repository is migrated or it is not.** Half-migrated is worse than either
+> location, because CI would read one path while `verify` checked the other.
+
 ---
 
 ## 1. Detecting
@@ -115,6 +123,76 @@ Every path adoption owns falls into exactly one class.
 > when something runs — long after the review that should have caught them — and both were found by
 > the first real consumer rather than by this repository. ADOPT-047 states the completeness rule
 > that was assumed and unwritten.
+
+## 8. Migrating out of `.claude/`
+
+Until 0.4.18, `repo-config.yml`, `ai-sdlc.pin` and `house-rules.md` lived under `.claude/`. They
+live under `.ai-sdlc/` now. `adopt` moves an existing adopter as part of the same run that upgrades
+it, because an upgrade that left the files where they were would produce exactly the half-migrated
+repository the invariant forbids.
+
+- **ADOPT-080** `apply` migrates a repository out of `.claude/` before it writes anything else, so
+  the rest of the run reads and writes one location.
+- **ADOPT-081** `repo-config.yml` moves **byte-for-byte**. It is authored by the repository and
+  never written by this tool: a consumer's copy carries hand-written comments explaining every
+  choice, and it gains no provenance header on the way.
+- **ADOPT-082** The old location is removed, never left alongside the new one. A stale copy beside
+  a live one is a file somebody edits eventually. `.claude/ai-sdlc/` is removed too, unless it
+  holds something adoption did not put there.
+- **ADOPT-083** The `CLAUDE.md` import is repointed at the moved file, in place. It is the one
+  line adoption itself wrote, and leaving it would dangle — the rules would silently stop reaching
+  the agent.
+- **ADOPT-084** Migration is idempotent: it is driven by what is on disk, so a repository with
+  nothing left in the old location has nothing to move.
+- **ADOPT-085** A file present in **both** locations is refused, naming both. One of them is what
+  CI reads and the other is what somebody will edit next, and nothing here can tell which.
+- **ADOPT-086** `plan` reports the pending moves and writes nothing; `verify` reports an
+  unmigrated repository as a problem rather than reading the old path and passing.
+- **ADOPT-087** Nothing under `.claude/skills/` moves. That path is Claude Code's own, and the
+  seam is drawn on ownership rather than on tidiness.
+
+> **How the spec is changing (#150).** `ADOPT` said where files went without saying whose namespace
+> that was, and every reusable workflow read `capabilities`, `owners` and `fire.endpoint_secret` out
+> of a directory named after an AI coding assistant. The paths are now split on ownership:
+> `.ai-sdlc/` for ai-sdlc's, `.claude/skills/` for the one file that is genuinely Claude Code's.
+> The migration is stated here rather than left to a release note because it relocates a file
+> `adopt` does not own, which is the only operation in this specification that can lose a
+> consumer's work.
+
+## 9. Being findable
+
+A directory nothing points at is a directory nobody reads. Two surfaces, and they are not
+alternatives: the `CLAUDE.md` import is always-on and cannot be missed, and a skill is loaded on
+demand and can therefore afford detail.
+
+> **Invariant — the generated page holds resolved state, never an explanation.** How something
+> behaves is in the specification, linked. A restatement is the thing that rots.
+
+- **ADOPT-090** Every adoption installs a generated page carrying this repository's resolved
+  state — the pin, the capabilities and profiles in force, the pipeline-state labels it actually
+  uses, the callers installed, the skills installed — derived from `repo-config.yml` so it cannot
+  disagree with it.
+- **ADOPT-091** The page carries the managed provenance header, so `verify` catches drift in it
+  exactly as it does in a caller, and an upgrade rewrites it.
+- **ADOPT-092** The page explains nothing. It links the specification pages that apply to this
+  repository, pinned to the commit it runs.
+- **ADOPT-093** Every adoption installs `.claude/skills/ai-sdlc/SKILL.md`. Its `description` is
+  written for triggering rather than for reading: it is the only text a model sees when deciding
+  whether to load anything, so it names the things an agent is about to touch — issues, labels,
+  milestones, triage, workflows, releases — rather than offering context in the abstract.
+- **ADOPT-094** The skill's provenance header sits **inside** its frontmatter block. A comment
+  before a `---` block stops it being frontmatter at all, and a skill whose frontmatter does not
+  parse is a skill no agent ever loads.
+
+> **How the spec is changing (#150).** The `CLAUDE.md` import was the whole discovery mechanism,
+> and an import has a context budget, which is what stops it becoming a manual. Skill discovery is
+> the other half — but it is probabilistic, and useless for the failure this is meant to prevent:
+> an agent editing a stale pipeline document does not know ai-sdlc governs that file, so it never
+> goes looking for a skill about it. You cannot search for what you do not know exists. So both,
+> with one sentence in the always-on half pointing at the on-demand half. The evidence for the
+> generated page: a consumer hand-maintained a label table that disagreed with `labels.core.yml`
+> in four colours, and 27 references to a pipeline state that no longer existed — both copies of
+> things ai-sdlc already generates.
 
 ## 6. Verifying
 
@@ -227,5 +305,7 @@ than a formatting one: a reusable workflow runs with the **caller's** token, on 
 | What a callee may do | ADOPT-067 | `test_reusable_workflows.py` |
 | Caller permissions | ADOPT-068–069 | `test_adopt_permissions.py` |
 | Caller secrets | ADOPT-070 | `test_adopt_permissions.py` |
+| Migrating out of `.claude/` | ADOPT-080–087 | `test_adopt_migrate.py` |
+| Being findable | ADOPT-090–094 | `test_adopt_surface.py` |
 
-**49 requirements, all `auto`.**
+**62 requirements, all `auto`.**

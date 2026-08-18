@@ -144,7 +144,7 @@ class TestTheFireSecretsReachTheCaller(unittest.TestCase):
 
     def _apply(self, fire):
         root = repository({
-            ".claude/repo-config.yml": (
+            ".ai-sdlc/repo-config.yml": (
                 "capabilities:\n  - hygiene\n  - consistency\n  - labels\n"
                 "  - release\n  - pipeline\n"
                 "owners:\n  - derekwinters\n"

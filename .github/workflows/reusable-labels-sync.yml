@@ -37,7 +37,9 @@ jobs:
         with:
           repository: derekwinters/ai-sdlc
           ref: ${{ inputs.ref }}
-          path: .ai-sdlc
+          # Not `.ai-sdlc`: that is where the *consumer* keeps its committed
+          # configuration, and checkout empties the directory it writes into.
+          path: .ai-sdlc-checkout
 
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
@@ -47,7 +49,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          SKILL_ROOT: ${{ inputs.ref != '' && '.ai-sdlc' || '.' }}
+          SKILL_ROOT: ${{ inputs.ref != '' && '.ai-sdlc-checkout' || '.' }}
         run: |
           PYTHONPATH="$SKILL_ROOT:$SKILL_ROOT/skills/labels/label-sync" \
             python3 "$SKILL_ROOT/skills/labels/label-sync/label_sync.py" \

@@ -78,7 +78,7 @@ profile adds behaviour; it never alters a capability's behaviour.
 
 ### 3.1b Per-repository configuration
 
-Small values only, in `.claude/repo-config.yml`, validated against a published JSON schema:
+Small values only, in `.ai-sdlc/repo-config.yml`, validated against a published JSON schema:
 enabled capabilities and profiles, test and verify commands, spec validator, owner logins, bot
 identity, label vocabulary, milestone ordering strategy, dashboard issue number, domain terms.
 
@@ -128,10 +128,15 @@ installs a capability by installing its scope.
 
 ```
 <consumer>/
+  .ai-sdlc/
+    repo-config.yml      # hand-written — the only file here ai-sdlc never writes
+    ai-sdlc.pin          # installed — the version, and the commit it resolves to
+    house-rules.md       # installed, pinned
+    adoption.md          # generated from repo-config.yml — what is installed here
   .claude/
     skills/…             # installed by gh skill, pinned, not hand-edited
+    skills/ai-sdlc/      # installed by adopt — the discovery surface
     agents/dev.md        # installed
-    repo-config.yml      # hand-written
   .github/
     labels.core.yml      # installed, pinned — the pipeline state vocabulary
     labels.repo.yml      # hand-written — this repository's domain labels
@@ -139,6 +144,12 @@ installs a capability by installing its scope.
     workflows/           # thin callers: uses: …/reusable-<x>.yml@<sha> # <version>
   CLAUDE.md              # @import of the shared fragment + repo-specific rules
 ```
+
+The split is drawn on **ownership**, not on tidiness. `.claude/` is a vendor namespace the way
+`.github/` and `.vscode/` are, and a GitHub Actions job parsing `capabilities` and `owners` is not
+an AI coding assistant's business; `.claude/skills/` is the exception because that path is Claude
+Code's own requirement. Consumers adopted before 0.4.18 kept all of it under `.claude/`, and
+`adopt apply` moves them.
 
 A caller workflow is roughly fifteen lines: the trigger, and a `uses:` with inputs. Triggers that
 cannot be centralised — `schedule`, `pull_request`, `issue_comment` — are declared in the consumer;

@@ -26,7 +26,7 @@ jobs:
 
 def applied(files=None, **kwargs):
     files = dict(files or {})
-    files.setdefault(".claude/repo-config.yml", CONFIG)
+    files.setdefault(".ai-sdlc/repo-config.yml", CONFIG)
     root = repository(files)
     return apply(root, pin=PIN, **kwargs), root
 
@@ -43,7 +43,7 @@ class TestWriting(unittest.TestCase):
 
     def test_it_records_the_version(self):  # ADOPT-045
         _, root = applied()
-        recorded = (root / ".claude/ai-sdlc.pin").read_text()
+        recorded = (root / ".ai-sdlc/ai-sdlc.pin").read_text()
         self.assertIn(PIN[0], recorded)
         self.assertIn(PIN[1], recorded)
 
@@ -74,7 +74,7 @@ class TestUpgrading(unittest.TestCase):
     def test_the_new_pin_is_recorded(self):  # ADOPT-046
         _, root = applied()
         apply(root, pin=NEWER_PIN)
-        self.assertIn("v0.5.0", (root / ".claude/ai-sdlc.pin").read_text())
+        self.assertIn("v0.5.0", (root / ".ai-sdlc/ai-sdlc.pin").read_text())
 
     def test_a_conflict_is_left_alone_on_upgrade(self):  # ADOPT-046
         _, root = applied()
@@ -107,17 +107,17 @@ class TestCollisionsRefuse(unittest.TestCase):
     def test_an_unacknowledged_collision_refuses(self):  # ADOPT-032
         with self.assertRaises(AdoptRefused):
             applied({".github/workflows/theirs.yml": COLLIDING,
-                 ".claude/repo-config.yml": PIPELINE_CONFIG})
+                 ".ai-sdlc/repo-config.yml": PIPELINE_CONFIG})
 
     def test_the_refusal_names_the_workflow(self):  # ADOPT-032
         try:
             applied({".github/workflows/theirs.yml": COLLIDING,
-                 ".claude/repo-config.yml": PIPELINE_CONFIG})
+                 ".ai-sdlc/repo-config.yml": PIPELINE_CONFIG})
         except AdoptRefused as error:
             self.assertIn("theirs.yml", str(error))
 
     def test_a_refusal_writes_nothing(self):  # ADOPT-032
-        files = {".claude/repo-config.yml": PIPELINE_CONFIG,
+        files = {".ai-sdlc/repo-config.yml": PIPELINE_CONFIG,
                  ".github/workflows/theirs.yml": COLLIDING}
         root = repository(files)
         try:
@@ -128,7 +128,7 @@ class TestCollisionsRefuse(unittest.TestCase):
 
     def test_an_acknowledged_collision_proceeds(self):  # ADOPT-033
         result, root = applied({".github/workflows/theirs.yml": COLLIDING,
-                                ".claude/repo-config.yml": PIPELINE_CONFIG},
+                                ".ai-sdlc/repo-config.yml": PIPELINE_CONFIG},
                                acknowledged=["theirs.yml"])
         self.assertTrue(result.written)
 
@@ -146,7 +146,7 @@ class TestLabelsAndDashboard(unittest.TestCase):
 
     def test_an_existing_dashboard_issue_is_reused(self):  # ADOPT-044
         config = CONFIG + "dashboard_issue: 193\n"
-        result, _ = applied({".claude/repo-config.yml": config})
+        result, _ = applied({".ai-sdlc/repo-config.yml": config})
         self.assertNotIn("dashboard", str(result.manual_tasks).lower())
 
 
@@ -164,12 +164,12 @@ class TestACapabilityInstallsWhatItNeeds(unittest.TestCase):
     """
 
     def test_enabling_labels_installs_the_core_manifest(self):  # ADOPT-047
-        root = repository({".claude/repo-config.yml": "capabilities:\n  - labels\n"})
+        root = repository({".ai-sdlc/repo-config.yml": "capabilities:\n  - labels\n"})
         apply(root, pin=PIN)
         self.assertTrue((root / ".github/labels.core.yml").is_file())
 
     def test_the_core_manifest_is_managed_not_hand_written(self):  # ADOPT-047
-        root = repository({".claude/repo-config.yml": "capabilities:\n  - labels\n"})
+        root = repository({".ai-sdlc/repo-config.yml": "capabilities:\n  - labels\n"})
         apply(root, pin=PIN)
         text = (root / ".github/labels.core.yml").read_text()
         self.assertIn("ai-sdlc:", text)
@@ -179,14 +179,14 @@ class TestACapabilityInstallsWhatItNeeds(unittest.TestCase):
         from _support import ROOT
 
         source = (ROOT / "skills" / "labels" / "label-sync" / "labels.core.yml").read_text()
-        root = repository({".claude/repo-config.yml": "capabilities:\n  - labels\n"})
+        root = repository({".ai-sdlc/repo-config.yml": "capabilities:\n  - labels\n"})
         apply(root, pin=PIN)
         installed = (root / ".github/labels.core.yml").read_text()
         self.assertIn("ready-for-work", installed)
         self.assertTrue(installed.endswith(source))
 
     def test_labels_off_installs_no_manifest(self):  # ADOPT-047
-        root = repository({".claude/repo-config.yml": "capabilities:\n  - hygiene\n"})
+        root = repository({".ai-sdlc/repo-config.yml": "capabilities:\n  - hygiene\n"})
         apply(root, pin=PIN)
         self.assertFalse((root / ".github/labels.core.yml").exists())
 
@@ -203,7 +203,7 @@ class TestTheSkillsCaller(unittest.TestCase):
     CALLER = ".github/workflows/skills-update.yml"
 
     def _apply(self, skills):
-        _, root = applied({".claude/repo-config.yml": CONFIG + skills})
+        _, root = applied({".ai-sdlc/repo-config.yml": CONFIG + skills})
         return root
 
     def test_a_repository_naming_skills_gets_the_caller(self):  # ADOPT-048
@@ -242,7 +242,7 @@ class TestTheManualTaskForPullRequests(unittest.TestCase):
     """
 
     def _tasks(self, skills):
-        result, _ = applied({".claude/repo-config.yml": CONFIG + skills})
+        result, _ = applied({".ai-sdlc/repo-config.yml": CONFIG + skills})
         return " ".join(result.manual_tasks).lower()
 
     def test_naming_skills_adds_the_task(self):  # ADOPT-012

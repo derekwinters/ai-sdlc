@@ -1,6 +1,6 @@
 # Specification — Configuration (`CFG`)
 
-A consuming repository describes itself in `.claude/repo-config.yml`. Nothing else varies between
+A consuming repository describes itself in `.ai-sdlc/repo-config.yml`. Nothing else varies between
 repositories: the skills, workflows and specs are identical everywhere, and this file is how one
 repository differs from another.
 
@@ -27,7 +27,9 @@ Every requirement below is `auto` (covered by a named test) unless marked otherw
 
 ## 1. Loading
 
-- **CFG-001** Configuration is read from `.claude/repo-config.yml` relative to the repository root.
+- **CFG-001** Configuration is read from `.ai-sdlc/repo-config.yml` relative to the repository
+  root. The directory is ai-sdlc's own: `.claude/` is a vendor namespace, and a workflow parsing
+  `capabilities` and `owners` has nothing to do with an AI coding assistant.
 - **CFG-002** The path is injectable, so tests and `adopt` can load a candidate file.
 - **CFG-003** A missing file is an error naming the expected path, not an empty configuration.
 - **CFG-004** Unparseable YAML is an error naming the file and the parse problem.
@@ -35,6 +37,16 @@ Every requirement below is `auto` (covered by a named test) unless marked otherw
   I/O and never mutates the file.
 - **CFG-006** Parsing uses no third-party library. The subset of YAML accepted is documented in
   §6 and is a deliberate restriction, not an accident.
+- **CFG-007** Finding **only** the pre-0.4.18 path — `.claude/repo-config.yml` — is an error
+  naming both locations and the command that migrates. The old path is never a fallback: a
+  repository reading one path from CI while `adopt verify` checks the other is worse off than one
+  that has not migrated at all. "No configuration file at `.ai-sdlc/repo-config.yml`" would send
+  the reader looking for a file sitting right there under a different name.
+
+> **How the spec is changing (#150).** `CFG-001` named `.claude/` and `CFG-003` said a missing file
+> is an error naming the expected path. After the move, those two together would have told every
+> unmigrated repository that it had no configuration — which is both true and useless. `CFG-007`
+> makes the one case that is really a migration say so.
 
 ## 2. Validation
 
@@ -129,4 +141,4 @@ Parsing is stdlib-only, so the accepted subset is stated rather than inherited.
 | Installed skills | CFG-060–063 | `test_config_skills.py` |
 | Schema agreement | CFG-010 | `test_config_schema.py` |
 
-**43 requirements, 42 `auto` and 1 `manual`.**
+**44 requirements, 43 `auto` and 1 `manual`.**

@@ -30,29 +30,29 @@ class TestTheFragment(unittest.TestCase):
         self.assertGreater(len(TEXT.splitlines()), 30)
 
     def test_it_is_installed_with_provenance(self):  # RULES-002
-        root = repository({".claude/repo-config.yml": CONFIG})
+        root = repository({".ai-sdlc/repo-config.yml": CONFIG})
         apply(root, pin=PIN)
-        installed = root / ".claude" / "ai-sdlc" / "house-rules.md"
+        installed = root / ".ai-sdlc" / "house-rules.md"
         self.assertIn("ai-sdlc:", installed.read_text())
 
     def test_the_installed_copy_matches_the_source(self):  # RULES-002
-        root = repository({".claude/repo-config.yml": CONFIG})
+        root = repository({".ai-sdlc/repo-config.yml": CONFIG})
         apply(root, pin=PIN)
-        installed = (root / ".claude" / "ai-sdlc" / "house-rules.md").read_text()
+        installed = (root / ".ai-sdlc" / "house-rules.md").read_text()
         self.assertIn("House rules", installed)
 
     def test_verify_notices_when_it_is_edited(self):  # RULES-002
         from adopt import verify
 
-        root = repository({".claude/repo-config.yml": CONFIG})
+        root = repository({".ai-sdlc/repo-config.yml": CONFIG})
         apply(root, pin=PIN)
-        (root / ".claude" / "ai-sdlc" / "house-rules.md").write_text("edited")
+        (root / ".ai-sdlc" / "house-rules.md").write_text("edited")
         self.assertFalse(verify(root, pin=PIN).ok)
 
 
 class TestTheImport(unittest.TestCase):
     def adopted(self, files):
-        root = repository(dict(files, **{".claude/repo-config.yml": CONFIG}))
+        root = repository(dict(files, **{".ai-sdlc/repo-config.yml": CONFIG}))
         apply(root, pin=PIN)
         return root
 
@@ -115,6 +115,16 @@ class TestWhatItContains(unittest.TestCase):
 
     def test_it_warns_against_the_omnibus_issue(self):  # RULES-017
         self.assertIn("various setup needed", BODY)
+
+    def test_it_says_where_the_installed_files_are(self):  # RULES-018
+        """Discovery cannot depend on a skill firing: an agent editing a stale
+        pipeline document does not know ai-sdlc governs it, so it never goes
+        looking for a skill about it."""
+        for path in (".ai-sdlc/adoption.md", ".ai-sdlc/repo-config.yml"):
+            self.assertIn(path, TEXT, path)
+
+    def test_it_names_the_skill(self):  # RULES-018
+        self.assertIn("`ai-sdlc` skill", TEXT)
 
 
 class TestWhatItDoesNotContain(unittest.TestCase):

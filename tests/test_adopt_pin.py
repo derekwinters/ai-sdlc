@@ -86,7 +86,7 @@ class TestTheResolverSeam(unittest.TestCase):
         # Not merely that resolution works, but that it goes through the seam:
         # a default that quietly opened a socket would make the whole suite
         # network-dependent, and only this asserts it does not.
-        root = repository({".claude/repo-config.yml": "capabilities:\n  - hygiene\n"})
+        root = repository({".ai-sdlc/repo-config.yml": "capabilities:\n  - hygiene\n"})
         seen = []
 
         def resolver(version):
@@ -99,7 +99,7 @@ class TestTheResolverSeam(unittest.TestCase):
         self.assertEqual(seen, ["v0.4.1"])
 
     def test_apply_resolves_through_the_injected_resolver(self):  # ADOPT-063
-        root = repository({".claude/repo-config.yml": "capabilities:\n  - hygiene\n"})
+        root = repository({".ai-sdlc/repo-config.yml": "capabilities:\n  - hygiene\n"})
 
         def resolver(version):
             return f"{SHA}\trefs/tags/{version}\n"
@@ -107,21 +107,21 @@ class TestTheResolverSeam(unittest.TestCase):
         from adopt import apply
 
         apply(root, "v0.4.1", resolver=resolver)
-        self.assertIn(SHA, (root / ".claude" / "ai-sdlc.pin").read_text())
+        self.assertIn(SHA, (root / ".ai-sdlc" / "ai-sdlc.pin").read_text())
 
 
 class TestTheRecordedPin(unittest.TestCase):
     def test_the_pin_records_the_version_and_the_sha(self):  # ADOPT-066
-        root = repository({".claude/repo-config.yml": "capabilities:\n  - hygiene\n"})
+        root = repository({".ai-sdlc/repo-config.yml": "capabilities:\n  - hygiene\n"})
         from adopt import apply
 
         apply(root, ("v0.4.1", SHA))
-        recorded = (root / ".claude" / "ai-sdlc.pin").read_text()
+        recorded = (root / ".ai-sdlc" / "ai-sdlc.pin").read_text()
         self.assertIn("v0.4.1", recorded)
         self.assertIn(SHA, recorded)
 
     def test_verify_at_the_same_version_needs_no_network(self):  # ADOPT-066
-        root = repository({".claude/repo-config.yml": "capabilities:\n  - hygiene\n"})
+        root = repository({".ai-sdlc/repo-config.yml": "capabilities:\n  - hygiene\n"})
         from adopt import apply, verify
 
         apply(root, ("v0.4.1", SHA))

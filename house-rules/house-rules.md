@@ -6,6 +6,12 @@ repository's own `CLAUDE.md` holds everything specific to it.
 Where CI enforces a rule, this says so and names the check. The rules here that CI *cannot* check
 are the ones that need you to have read them.
 
+**ai-sdlc owns this repository's issues, labels, milestones, triage, pull-request gates and
+releases.** What is installed here and at which version is in `.ai-sdlc/adoption.md`, what this
+repository decides for itself is in `.ai-sdlc/repo-config.yml`, and the `ai-sdlc` skill has the
+detail. Read them before changing any of those things or any document describing them — the rules
+are not in this repository, so what you find here is a caller, not the mechanism.
+
 ## Commits and pull requests
 
 **Every commit on the default branch is a Conventional Commit.** Pull requests merge by squash, so

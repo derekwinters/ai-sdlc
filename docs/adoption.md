@@ -20,7 +20,7 @@ Until the `adopt` command exists (#17), adoption is done by hand, and this page 
 A capability may depend only on capabilities below it. Enabling one without its dependencies is a
 configuration error refused at load — not a runtime surprise.
 
-## 2. Write `.claude/repo-config.yml`
+## 2. Write `.ai-sdlc/repo-config.yml`
 
 ```yaml
 capabilities:
@@ -101,9 +101,39 @@ job pushes its branch and then cannot open the pull request.
 
 See [Distribution](spec/distribution.md) for the whole mechanism.
 
+## Where it all lives
+
+Everything ai-sdlc owns in your repository sits in one directory:
+
+| Path | Holds | Written by |
+| --- | --- | --- |
+| `.ai-sdlc/repo-config.yml` | Everything your repository decides for itself | You |
+| `.ai-sdlc/ai-sdlc.pin` | The version installed, and the commit it resolves to | `adopt` |
+| `.ai-sdlc/house-rules.md` | The shared rules, imported by your `CLAUDE.md` | `adopt` |
+| `.ai-sdlc/adoption.md` | What is installed here, generated from your configuration | `adopt` |
+| `.claude/skills/ai-sdlc/SKILL.md` | A pointer at the three above, for an agent | `adopt` |
+
+`.claude/skills/` is the one exception, and it is Claude Code's required path rather than a choice.
+Everything else is ai-sdlc's, so it is under ai-sdlc's own name: a workflow parsing `capabilities`
+and `owners` is not an AI coding assistant's business.
+
+`adoption.md` restates nothing. It says what is installed and at what version, and links the
+specification at the exact commit your repository runs — because a copy of an explanation drifts
+from the explanation, and then somebody believes the copy.
+
+## Upgrading from before 0.4.18
+
+Those files used to live under `.claude/`. `adopt apply` moves them as part of the upgrade, in one
+commit with the rest of it: your `repo-config.yml` moves byte-for-byte with its comments intact,
+the old copies are removed, and the import line in your `CLAUDE.md` is repointed.
+
+You do not migrate by hand, and you should not half-migrate. A repository with a file in both
+places is refused rather than guessed at — one of the two is what CI reads and the other is what
+somebody will edit next, and nothing can tell which.
+
 ## The shared rules
 
-Adoption installs [`house-rules.md`](house-rules.md) into `.claude/ai-sdlc/` and appends one import
+Adoption installs [`house-rules.md`](house-rules.md) into `.ai-sdlc/` and appends one import
 line to your `CLAUDE.md`. Your own file is never rewritten — it is usually the most carefully
 considered file a repository has, and everything specific to your repository stays in it.
 
@@ -112,7 +142,7 @@ is your decision.
 
 ## ai-sdlc's own adoption
 
-ai-sdlc is its first consumer. `.claude/repo-config.yml` in this repository enables `hygiene` and
+ai-sdlc is its first consumer. `.ai-sdlc/repo-config.yml` in this repository enables `hygiene` and
 `consistency`, and the closing-keyword check runs on its own pull requests — so a change that
 breaks the check breaks this repository before it reaches anyone else's.
 

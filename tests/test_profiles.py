@@ -27,7 +27,7 @@ class TestSelection(unittest.TestCase):
     def test_a_detected_profile_is_not_thereby_enabled(self):  # PROF-002
         root = repository({
             "mkdocs.yml": MKDOCS_MARKER,
-            ".claude/repo-config.yml": "capabilities:\n  - hygiene\n",
+            ".ai-sdlc/repo-config.yml": "capabilities:\n  - hygiene\n",
         })
         from lib.config import load
 
@@ -47,7 +47,7 @@ class TestInertness(unittest.TestCase):
     def test_an_unselected_profile_adds_no_files(self):
         from adopt import plan
 
-        root = repository({".claude/repo-config.yml": "capabilities:\n  - hygiene\n"})
+        root = repository({".ai-sdlc/repo-config.yml": "capabilities:\n  - hygiene\n"})
         planned = plan(root, pin=PIN)
         self.assertFalse([p for p in planned.creates if "docs" in p])
 
@@ -55,7 +55,7 @@ class TestInertness(unittest.TestCase):
         from adopt import plan
 
         root = repository({
-            ".claude/repo-config.yml": "capabilities:\n  - hygiene\n",
+            ".ai-sdlc/repo-config.yml": "capabilities:\n  - hygiene\n",
             "docs/index.md": "# x\n",
         })
         planned = plan(root, pin=PIN)
@@ -126,7 +126,7 @@ class TestASelectedProfileInstallsItsFiles(unittest.TestCase):
 
     def _apply(self, profiles):
         root = repository({
-            ".claude/repo-config.yml":
+            ".ai-sdlc/repo-config.yml":
                 "capabilities:\n  - hygiene\nprofiles:\n"
                 + "".join(f"  - {p}\n" for p in profiles),
         })

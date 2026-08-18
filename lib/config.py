@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Load and validate a consuming repository's `.claude/repo-config.yml`.
+"""Load and validate a consuming repository's `.ai-sdlc/repo-config.yml`.
 
 This file is the only thing that differs between repositories. The skills,
 workflows and specifications are identical everywhere; a repository says here
@@ -25,7 +25,25 @@ from pathlib import Path
 
 from lib.yaml_lite import YamlError, parse
 
-CONFIG_PATH = Path(".claude") / "repo-config.yml"
+#: ai-sdlc's own directory in a consuming repository. `.claude/` is a vendor
+#: namespace the way `.github/` and `.vscode/` are, and none of what lives here
+#: is Claude Code's: a GitHub Actions job parsing `capabilities`, `owners` and
+#: `fire.endpoint_secret` has nothing to do with an AI coding assistant.
+CONFIG_DIR = Path(".ai-sdlc")
+
+CONFIG_PATH = CONFIG_DIR / "repo-config.yml"
+
+#: Where it lived until 0.4.18. Read for one purpose only: to tell a repository
+#: that has not migrated *that* it has not migrated. A half-migrated repository
+#: is worse than either location, because CI would read one path while `adopt
+#: verify` checked the other, so the old path is never a fallback.
+LEGACY_CONFIG_PATH = Path(".claude") / "repo-config.yml"
+
+MOVED = (
+    f"{LEGACY_CONFIG_PATH} moved to {CONFIG_PATH} in ai-sdlc 0.4.18. The old "
+    f"file is still there and nothing reads it. Run `adopt apply <version>` to "
+    f"migrate, which moves it byte-for-byte and removes the old location."
+)
 
 #: Ordered by how much each assumes about how a repository works. A capability
 #: may depend only on capabilities earlier in this tuple.
@@ -140,11 +158,18 @@ class Config:
 
 def load(root=None, path=None):
     """Load from a repository root, or from an explicit path."""
+    named = path is not None
     if path is None:
         path = Path(root or ".") / CONFIG_PATH
     path = Path(path)
 
     if not path.is_file():
+        # Reported only when looking in the conventional place. An explicit
+        # `path=` is a candidate file somebody named, and the move says nothing
+        # about where that one should be.
+        legacy = Path(root or ".") / LEGACY_CONFIG_PATH
+        if not named and legacy.is_file():
+            raise ConfigError([MOVED], source=str(legacy))
         raise ConfigError([f"no configuration file at {path}"], source=str(path))
 
     try:
