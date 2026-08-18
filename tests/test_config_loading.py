@@ -14,7 +14,7 @@ capabilities:
 
 
 class Written(unittest.TestCase):
-    def write(self, text, name=".claude/repo-config.yml"):
+    def write(self, text, name=".ai-sdlc/repo-config.yml"):
         root = Path(tempfile.mkdtemp())
         path = root / name
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -90,6 +90,44 @@ class TestPurity(Written):
             for a in node.names
         }
         self.assertNotIn("yaml", names)
+
+
+class TestTheMoveOutOfClaude(unittest.TestCase):
+    """CFG-007 — the old location is a migration, not an absence.
+
+    A half-migrated repository is worse than either location: CI would read one
+    path while `adopt verify` checked another. Finding only the old path has to
+    say so, because "no configuration file at .ai-sdlc/repo-config.yml" sends
+    the reader looking for a file that is sitting right there under a different
+    name.
+    """
+
+    def legacy(self, text=MINIMAL):
+        root = Path(tempfile.mkdtemp())
+        path = root / ".claude" / "repo-config.yml"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text)
+        return root
+
+    def test_finding_only_the_old_path_names_the_new_one(self):  # CFG-007
+        with self.assertRaises(ConfigError) as caught:
+            load(root=self.legacy())
+        self.assertIn(".ai-sdlc/repo-config.yml", str(caught.exception))
+
+    def test_it_names_the_old_path_too(self):  # CFG-007
+        with self.assertRaises(ConfigError) as caught:
+            load(root=self.legacy())
+        self.assertIn(".ai-sdlc/repo-config.yml", str(caught.exception))
+
+    def test_it_does_not_report_the_file_as_missing(self):  # CFG-007
+        with self.assertRaises(ConfigError) as caught:
+            load(root=self.legacy())
+        self.assertNotIn("no configuration file", str(caught.exception))
+
+    def test_it_names_the_command_that_migrates(self):  # CFG-007
+        with self.assertRaises(ConfigError) as caught:
+            load(root=self.legacy())
+        self.assertIn("adopt apply", str(caught.exception))
 
 
 if __name__ == "__main__":

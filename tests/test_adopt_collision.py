@@ -114,7 +114,7 @@ class TestOurOwnCallersAreNotCollisions(unittest.TestCase):
 
     def _adopted(self):
         root = repository({
-            ".claude/repo-config.yml":
+            ".ai-sdlc/repo-config.yml":
                 "capabilities:\n  - hygiene\n  - consistency\n  - labels\n"
                 "  - release\n  - pipeline\nowners:\n  - x\ndashboard_issue: 1\n",
         })

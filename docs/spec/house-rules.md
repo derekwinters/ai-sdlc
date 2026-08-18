@@ -47,6 +47,13 @@ Every requirement below is `auto` (covered by a named test) unless marked otherw
 - **RULES-015** Specification before code, and a failing test before an implementation.
 - **RULES-016** Ask rather than invent a design decision.
 - **RULES-017** Tasks needing a human are filed one per issue, never collected into one.
+- **RULES-018** Where the installed files are: the fragment names `.ai-sdlc/adoption.md`,
+  `.ai-sdlc/repo-config.yml` and the `ai-sdlc` skill, so discovery does not depend on the skill
+  firing. Skill discovery is probabilistic — a skill loads when the model judges its description
+  matches the task — and that is useless for the failure this prevents: an agent editing a stale
+  pipeline document does not know ai-sdlc governs that file, so it never goes looking. You cannot
+  search for what you do not know exists. The import is always-on, so one sentence in it closes
+  the gap at the cost of a line.
 
 ## 3. What it does not contain
 
@@ -62,7 +69,7 @@ Every requirement below is `auto` (covered by a named test) unless marked otherw
 | Section | IDs | Tests |
 |---|---|---|
 | The fragment | RULES-001–005 | `test_house_rules.py` |
-| What it contains | RULES-010–017 | `test_house_rules.py` |
+| What it contains | RULES-010–018 | `test_house_rules.py` |
 | What it does not contain | RULES-020–022 | `test_house_rules.py` |
 
-**16 requirements, all `auto`.**
+**17 requirements, all `auto`.**

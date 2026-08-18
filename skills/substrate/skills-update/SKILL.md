@@ -20,7 +20,7 @@ version to keep in step.
 
 ## The list belongs to the repository
 
-What gets installed is `skills:` in `.claude/repo-config.yml`:
+What gets installed is `skills:` in `.ai-sdlc/repo-config.yml`:
 
 ```yaml
 skills:

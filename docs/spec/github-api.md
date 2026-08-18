@@ -106,8 +106,20 @@ skill without putting the repository root on `PYTHONPATH` fails on the import, b
 anything at all.
 
 - **API-060** A reusable workflow running a skill that imports `lib` sets `PYTHONPATH` to the root
-  it checked out, and refers to that root by variable rather than hard-coding `.ai-sdlc` — which is
-  where a *consumer* checks ai-sdlc out and is not where ai-sdlc itself is.
+  it checked out, and refers to that root by variable rather than hard-coding the checkout path —
+  which is where a *consumer* checks ai-sdlc out and is not where ai-sdlc itself is.
+- **API-061** A reusable workflow checks ai-sdlc out into `.ai-sdlc-checkout/`, never into the
+  consumer's `.ai-sdlc/` configuration directory, and the `path:` it fetches to is the same
+  directory `SKILL_ROOT` reads from. `actions/checkout` empties the directory it writes into, so
+  fetching over `.ai-sdlc/` would replace the consumer's `repo-config.yml` with ai-sdlc's own —
+  same name, same place, wrong repository — and every skill in that run would read the wrong
+  configuration without saying so.
+
+> **How the spec is changing (#150).** `.ai-sdlc/` was the checkout path and nothing else, so
+> naming it as the consumer's configuration directory made two different things share one name in
+> one working directory. The checkout path is an implementation detail of these workflows and
+> nothing outside them names it; the configuration directory is committed, documented and pointed
+> at. So the checkout moved. Found while drawing the seam in #150, before any consumer ran it.
 
 > **How the spec is changing (#87).** `API` described the module and said nothing about reaching
 > it. The gatekeeper workflow ran `python3 .ai-sdlc/…/main.py` with no `PYTHONPATH` and died on
@@ -139,7 +151,7 @@ anything at all.
 | Pagination | API-020–026 | `test_github_pagination.py` |
 | Operations | API-030–041 | `test_github_operations.py` |
 | The fake | API-050–055 | `test_fake_github.py` |
-| Reaching it from a workflow | API-060 | `test_reusable_workflows.py` |
+| Reaching it from a workflow | API-060–061 | `test_reusable_workflows.py` |
 | Invariants | — | `test_architecture.py` |
 
-**51 requirements, 50 `auto` and 1 `manual`.**
+**52 requirements, 51 `auto` and 1 `manual`.**

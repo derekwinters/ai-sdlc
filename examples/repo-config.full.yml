@@ -1,3 +1,4 @@
+# Save this as `.ai-sdlc/repo-config.yml` in the consuming repository.
 # A repository running the whole pipeline, with the unity profile.
 capabilities:
   - hygiene

@@ -43,6 +43,25 @@ consuming repository. A tag can move; publishing it ourselves says who could mov
 cannot. You still type a version — `adopt` resolves it and rewrites both the SHA and the comment on
 upgrade, so nobody resolves a SHA by hand.
 
+## Everything it owns is under `.ai-sdlc/`
+
+| Path | Holds |
+| --- | --- |
+| `.ai-sdlc/repo-config.yml` | The repository's own settings. Read, never written. |
+| `.ai-sdlc/ai-sdlc.pin` | The installed version, and the commit it resolves to. |
+| `.ai-sdlc/house-rules.md` | The shared rules, imported by `CLAUDE.md`. |
+| `.ai-sdlc/adoption.md` | Generated: what is installed here, and links to the spec at this pin. |
+| `.claude/skills/ai-sdlc/SKILL.md` | A pointer at the four above, for an agent. |
+
+`.claude/skills/` is Claude Code's required path, and is the only thing of ours that lives there.
+The rest is ai-sdlc's, so it is under ai-sdlc's own name.
+
+**Before 0.4.18 those files were under `.claude/`.** `apply` moves them, in the same run that
+upgrades everything else: `repo-config.yml` moves byte-for-byte because the repository wrote it,
+the old copies are removed, and the `CLAUDE.md` import is repointed. A file present in **both**
+places refuses the run — one of the two is what CI reads and the other is what somebody edits
+next, and nothing here can tell which.
+
 ## It never overwrites what it did not write
 
 Files `adopt` writes carry a provenance header — source, ref, content hash. That is how it tells
@@ -76,4 +95,4 @@ workflows is the one a file comparison misses.
 - **`CLAUDE.md` is never rewritten.** One import line is appended, once. Your rules are yours.
 - **An existing dashboard issue is reused**, never duplicated.
 
-Specification: `docs/spec/adopt.md` (`ADOPT`), 42 requirements.
+Specification: `docs/spec/adopt.md` (`ADOPT`), 62 requirements.

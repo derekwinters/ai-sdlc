@@ -79,6 +79,40 @@ class TestASkillCanImportItsLibrary(unittest.TestCase):
                     f"{path.name} hard-codes .ai-sdlc/ instead of using SKILL_ROOT",
                 )
 
+    def test_no_workflow_checks_out_over_the_configuration_directory(self):  # API-061
+        """A consumer's `.ai-sdlc/` holds files the consumer has committed.
+
+        `actions/checkout` empties the directory it checks out into. Fetching
+        ai-sdlc into the path where the consumer keeps `repo-config.yml` would
+        replace that file with **ai-sdlc's own** — same name, same place, wrong
+        repository — and every skill in the run would then read the wrong
+        configuration and say nothing about it.
+
+        The checkout path is an implementation detail of these workflows and
+        nothing outside them names it. The configuration directory is a path
+        consumers commit to and documents point at. So the checkout moves.
+        """
+        from lib.config import CONFIG_DIR
+
+        for path, text in _reusable():
+            with self.subTest(workflow=path.name):
+                self.assertNotRegex(
+                    text, rf"(?m)^\s*path:\s*{re.escape(str(CONFIG_DIR))}\s*$",
+                    f"{path.name} checks ai-sdlc out over the consumer's "
+                    f"{CONFIG_DIR}/ configuration",
+                )
+
+    def test_the_checkout_path_is_the_one_skill_root_names(self):  # API-061
+        """Two places name it — the `path:` and the `SKILL_ROOT` — and a run
+        where they disagree fetches to one directory and reads from another."""
+        for path, text in _reusable():
+            paths = set(re.findall(r"^\s*path:\s*(\S+)\s*$", text, re.M))
+            roots = set(re.findall(r"SKILL_ROOT:.*?'(\.[\w.-]+)'", text))
+            if not paths and not roots:
+                continue
+            with self.subTest(workflow=path.name):
+                self.assertEqual(paths, roots, path.name)
+
     def test_no_consumer_checkout_uses_the_ai_sdlc_ref(self):  # ADOPT-067
         """`inputs.ref` names a commit in **ai-sdlc**, not in the caller.
 

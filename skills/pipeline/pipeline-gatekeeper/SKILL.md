@@ -112,7 +112,7 @@ A genuine stall has no triggering event, so waiting for the schedule loses nothi
 
 ## Configuration
 
-From `.claude/repo-config.yml`: `owners`, `bot.login`, `dashboard_issue`, `milestone_ordering`,
+From `.ai-sdlc/repo-config.yml`: `owners`, `bot.login`, `dashboard_issue`, `milestone_ordering`,
 the `labels` vocabulary, and `sweep`. See `docs/spec/configuration.md`.
 
 Specification: `docs/spec/gatekeeper.md` (`GK`), 101 requirements.

@@ -17,6 +17,8 @@ def _report_plan(result):
     if result.detection.undetectable:
         print("  the stack could not be detected; set `profiles` in repo-config.yml")
 
+    for old, new in result.migrations:
+        print(f"  move     {old} -> {new}")
     for path in result.creates:
         print(f"  create   {path}")
     for path in result.updates:
@@ -62,6 +64,8 @@ def main(argv):
         except AdoptRefused as error:
             print(f"refused: {error}", file=sys.stderr)
             return 1
+        for old, new in result.migrated:
+            print(f"  moved    {old} -> {new}")
         for path in result.written:
             print(f"  wrote    {path}")
         for path in result.skipped:

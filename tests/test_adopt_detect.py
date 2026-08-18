@@ -63,14 +63,14 @@ class TestExistingConfiguration(unittest.TestCase):
     def test_an_existing_config_wins(self):  # ADOPT-005
         root = repository({
             "pyproject.toml": PYTHON_MARKER,
-            ".claude/repo-config.yml": "capabilities:\n  - hygiene\nprofiles:\n  - unity\n",
+            ".ai-sdlc/repo-config.yml": "capabilities:\n  - hygiene\nprofiles:\n  - unity\n",
         })
         self.assertEqual(detect(root).profiles, ["unity"])
 
     def test_it_is_reported_as_configured_not_detected(self):  # ADOPT-005
         root = repository({
             "pyproject.toml": PYTHON_MARKER,
-            ".claude/repo-config.yml": "capabilities:\n  - hygiene\nprofiles:\n  - unity\n",
+            ".ai-sdlc/repo-config.yml": "capabilities:\n  - hygiene\nprofiles:\n  - unity\n",
         })
         self.assertFalse(detect(root).proposed)
 

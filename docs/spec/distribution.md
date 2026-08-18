@@ -17,7 +17,7 @@ Every requirement below is `auto` (covered by a named test) unless marked otherw
 ## Invariants
 
 > **Invariant — the repository owns the list.** What a repository installs is `skills:` in its own
-> `.claude/repo-config.yml`. Nothing central decides on its behalf. A scheduled skill sync has been
+> `.ai-sdlc/repo-config.yml`. Nothing central decides on its behalf. A scheduled skill sync has been
 > built twice in this fleet and disabled twice, and both read a registry that decided what a
 > repository *should* have — so both reverted work the repository had done. A list the repository
 > owns inverts that.

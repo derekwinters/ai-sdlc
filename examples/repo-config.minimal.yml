@@ -1,3 +1,4 @@
+# Save this as `.ai-sdlc/repo-config.yml` in the consuming repository.
 # A repository taking only the pull-request hygiene checks: Conventional
 # Commits and the closing-keyword gate. No pipeline, no labels, no dashboard.
 capabilities:
