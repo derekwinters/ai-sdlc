@@ -44,6 +44,10 @@ def _callers():
         # or it under-describes what `_files_for` is handed in production.
         labels = dict(STATES)
         fire = None
+        # The skills-update caller follows the list, not a capability, so a
+        # stub with an empty list would make ADOPT-069 fail for a workflow that
+        # is in fact reachable.
+        skills = ["ci-watch"]
 
     for path, body in _files_for(Config(), PIN).items():
         called = CALLS.search(body)

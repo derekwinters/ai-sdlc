@@ -153,8 +153,8 @@ document a reader consults to learn what the system does.
 
 - Every behaviour carries a requirement ID of the form `AREA-NNN`.
 - Areas, grouped by the capability that owns them:
-  - *substrate*: `CFG` (configuration), `API` (GitHub access), `DIST` (distribution and
-    versioning), `ADOPT` (adoption and upgrade)
+  - *substrate*: `CFG` (configuration), `API` (GitHub access), `DIST` (distribution — how
+    skills reach a consumer and stay current), `ADOPT` (adoption and upgrade)
   - *hygiene*: `SYS` (commit and pull-request rules)
   - *consistency*: `VAL` (validators and gates)
   - *labels*: `LBL`
@@ -231,6 +231,25 @@ Three channels, each maintaining its logic in one place.
 `gh skill` records provenance in each installed skill's frontmatter — source repository, ref, and
 content tree SHA. A consumer's drift from its pinned version is therefore detectable by comparing
 recorded SHAs, with no additional bookkeeping.
+
+**What runs it.** The mechanism above was specified here long before anything invoked it, and
+`connor-multiplying-frogs` ran the pipeline for weeks with none of the pipeline skills installed
+(#144). The automation is `reusable-skills-update.yml`, called on a schedule by a caller `adopt`
+writes:
+
+- the consumer names what it installs in `skills:` in its own `repo-config.yml` — the repository's
+  list, not a central registry's;
+- the job installs what is missing and reinstalls what has fallen behind the pin, so one mechanism
+  bootstraps a fresh repository and maintains an established one;
+- it opens a **pull request** when the tree changed, and nothing at all when it did not.
+
+A pull request rather than a commit because installed skills are instructions an agent reads, and a
+timer that put unreviewed ones into its context would be a consent problem rather than an
+untidiness. A locally-modified skill is reported and left alone: `gh skill install` overwrites one,
+and moving a pinned skill to a new version *is* a reinstall, so the check happens before the
+command runs. That defect is why the two previous scheduled syncs in this fleet were disabled.
+
+See `docs/spec/distribution.md` (`DIST`).
 
 **Versioning.** `ai-sdlc` is versioned by release-please from Conventional Commits.
 `gh skill publish` cuts the release consumers pin to. A change to the label vocabulary, a
