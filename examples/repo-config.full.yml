@@ -30,3 +30,4 @@ commands:
 fire:
   endpoint_secret: ROUTINE_FIRE_URL
   token_secret: ROUTINE_FIRE_TOKEN
+

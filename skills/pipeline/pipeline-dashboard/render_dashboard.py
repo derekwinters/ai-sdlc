@@ -26,7 +26,7 @@ BUCKETS = ("Unplanned", "In planning", "Ready", "Done")
 
 #: Sections, in render order: (heading, role names whose issues belong here).
 #: `None` means "every state no other section claims", which is how
-#: waiting-for-triage catches both `ai-triage` and an issue carrying no state.
+#: waiting-for-triage catches all three triage states and an issue carrying none.
 SECTIONS = (
     ("Ready for work", ("approved", "building")),
     ("Pending approval", ("pending_approval",)),
@@ -90,6 +90,13 @@ FAULTS = {
             f"{', '.join('#%s' % n for n in e.get('numbers', []))} in its body. The "
             f"queue cannot see that, so it will be built anyway. Convert it to a "
             f"native relationship."
+        ),
+    ),
+    "stalled_triage": (
+        "Triage that never answered",
+        lambda e: (
+            f"- **#{e['issue']}** — poked twice and the analysis routine never "
+            f"answered. It will not be poked again; this one needs a human."
         ),
     ),
     "stale_state": (
@@ -268,15 +275,20 @@ def _bucket(issue, state):
         return "Done"
     labels = state.get("labels") or {}
     label = issue.get("state_label")
+    if label is None:
+        # Untracked. Guarded before any comparison because `labels.get` answers
+        # `None` for a role a repository has not mapped, and `None == None`
+        # would then file every untracked issue under whichever state was
+        # missing.
+        return "Unplanned"
     if label == labels.get("parked"):
         return None
     if label in (labels.get("approved"), labels.get("building")):
         return "Ready"
-    if label in (labels.get("triage"), labels.get("pending_approval"),
+    if label in (labels.get("triage_queued"), labels.get("triage_running"),
+                 labels.get("triage_stalled"), labels.get("pending_approval"),
                  labels.get("clarification")):
         return "In planning"
-    # Untracked lands here: nobody has decided about it, which is exactly
-    # what Unplanned means.
     return "Unplanned"
 
 

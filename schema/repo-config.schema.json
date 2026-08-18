@@ -74,8 +74,17 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "triage": {
-          "type": "string"
+        "triage_queued": {
+          "type": "string",
+          "default": "ai-triage-queued"
+        },
+        "triage_running": {
+          "type": "string",
+          "default": "ai-triage-running"
+        },
+        "triage_stalled": {
+          "type": "string",
+          "default": "ai-triage-stalled"
         },
         "pending_approval": {
           "type": "string"

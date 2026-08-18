@@ -43,8 +43,14 @@ DEPENDENCIES = {
 PROFILES = ("unity", "mkdocs", "python", "node", "kotlin")
 
 #: Pipeline states and the labels they carry unless a repository says otherwise.
+#:
+#: Triage is three states because one could not answer "has it happened?" — an
+#: issue on a single `ai-triage` might never have been poked, might have a
+#: session running, or might have had one die.
 STATES = {
-    "triage": "ai-triage",
+    "triage_queued": "ai-triage-queued",
+    "triage_running": "ai-triage-running",
+    "triage_stalled": "ai-triage-stalled",
     "pending_approval": "pending-approval",
     "clarification": "needs-clarification",
     "approved": "ready-for-work",

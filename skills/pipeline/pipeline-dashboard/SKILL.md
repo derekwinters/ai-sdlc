@@ -21,6 +21,10 @@ Each one exists because the pipeline deliberately does *not* repair something. T
 was removed because auto-repair hid problems and occasionally caused them; the bargain was that
 faults get reported instead. These sections are that bargain.
 
+The `gatekeeper-sweep` workflow is not a return of that: it repairs nothing and moves no state. It
+re-pokes a routine whose poke was lost, at most twice per issue, and everything it gives up on
+lands in *Triage that never answered* rather than being quietly fixed.
+
 | Section | What happened | What to do |
 | --- | --- | --- |
 | Commands that did not finish | a comment has 👀 but never 👍 or 👎 — the run died | comment `/retry` |
@@ -28,6 +32,7 @@ faults get reported instead. These sections are that bargain.
 | Approved but blocked | waiting on an unresolved blocker | nothing — it becomes eligible on its own |
 | Dependencies that could not be checked | a blocker's milestone cannot be ordered | confirm the order yourself |
 | Dependencies written as prose | `Blocked by #N` in a body | convert to a native relationship |
+| Triage that never answered | poked twice, the routine never replied; it will not be poked again | read the issue and decide — the sweep has stopped |
 | Closed issues still carrying state | a close event was missed | close it again, or strip the label |
 | Open issues outside the pipeline | never admitted, or lost its state | `/admit`, or leave it |
 

@@ -40,12 +40,19 @@ configurable; the defaults are given here.
 | State | Default label | Meaning | Written by |
 |---|---|---|---|
 | untracked | *(no pipeline label)* | not in the pipeline | — |
-| triage | `ai-triage` | admitted; awaiting or undergoing analysis | gatekeeper |
+| triage queued | `ai-triage-queued` | admitted; no analysis session started yet | gatekeeper |
+| triage running | `ai-triage-running` | an analysis session was started and has not answered | fire handler |
+| triage stalled | `ai-triage-stalled` | the session never answered; needs a person | sweep |
 | pending approval | `pending-approval` | analysis produced a plan; awaiting the owner's decision | analysis |
 | clarification | `needs-clarification` | analysis needs a human answer | analysis |
 | approved | `ready-for-work` | plan accepted; eligible for the builder | gatekeeper |
 | building | `in-progress` | a builder has taken it | builder |
 | parked | `parked` | deliberately set aside | gatekeeper |
+
+Triage is three states rather than one because a single `ai-triage` could not answer the question
+that matters when something goes wrong: *has it happened?* An issue sitting in it might never have
+been poked, might have a session running, or might have had one die — and telling those apart was
+impossible from the board. Each state now says which.
 
 - **GK-001** An issue carries at most one pipeline-state label at any time.
 - **GK-002** Applying a state removes whatever state label was present, and only state labels.
@@ -54,9 +61,12 @@ configurable; the defaults are given here.
   decision.
 - **GK-004** `type:epic` and `type:wireframe` are classification labels, not states, and are never
   altered.
-- **GK-005** The gatekeeper never writes `pending-approval`, `needs-clarification`, or
-  `in-progress`. Those states are entered by analysis and by the builder; the gatekeeper only
-  reads them and moves issues out of them.
+- **GK-005** The gatekeeper never writes `ai-triage-running`, `ai-triage-stalled`,
+  `pending-approval`, `needs-clarification`, or `in-progress`. Those states are entered by the fire
+  handler, the sweep, analysis, and the builder; the gatekeeper only reads them and moves issues
+  out of them. **Invariant — a state is written by the one component that can know it is true.**
+  Only the thing that fired can say a session started, and only something watching over time can
+  say one never answered.
 
 ---
 
@@ -283,8 +293,11 @@ Replaces the removed comment-replay sweep.
   move never reaches the label handler. The gatekeeper covers its own moves; the label event covers
   every label applied by a human or an app. **Invariant — the gatekeeper writes labels with
   `GITHUB_TOKEN` and nothing else.** Giving it a personal access token or an app token would make
-  both paths fire for one `/admit`. Neither handler writes anything in response to a fire: firing
-  is a poke, and what happens next is the routine's decision.
+  both paths fire for one `/admit`. In response to a fire the handler moves the issue from queued
+  to running, and writes nothing else — a component that could write any state would be a second
+  gatekeeper. Writing it from the label handler cannot loop: it is written with `GITHUB_TOKEN`, so
+  it starts no workflow run, and the caller's `if:` names the queued label, which this write
+  removes rather than adds.
 - **GK-123** The fire request carries `anthropic-version` and the `/fire` endpoint's dated
   `anthropic-beta` research-preview header, alongside its bearer token. These are conditions of
   the endpoint, not of one deployment: without the first it answers `400` and the routine is never
@@ -377,6 +390,57 @@ Replaces the removed comment-replay sweep.
 
 ---
 
+## The sweep
+
+Firing is a poke, and a poke can be lost. A routine that never starts, starts and dies, or is
+refused leaves the issue exactly as it was, and nothing looks at it again. The sweep is the
+backstop — but it is a **detector**, not a retrier. It watches for sessions that never answered and
+says so; deciding to spend another session is a person's job.
+
+That division is deliberate. An earlier design had the sweep re-poke automatically, which meant a
+scheduled job could start sessions unattended, which meant it needed a per-run ceiling, a per-issue
+budget, and a gate stopping the event path from looping. A sweep that cannot start a session needs
+none of them: whatever it gets wrong, it writes a label.
+
+- **GK-138** A fire that starts a session moves the issue from queued to running. A fire that fails
+  leaves it queued, so the next sweep still sees work waiting rather than a session that does not
+  exist.
+- **GK-139** The sweep moves an issue from running to stalled when it has been running longer than
+  the staleness threshold and no analysis has appeared. An issue something is still working on is
+  not stalled.
+- **GK-140** **Invariant — the sweep starts no sessions.** It observes and relabels, nothing more.
+  A scheduled job that can start sessions can spend an account's usage limits while nobody is
+  watching; one that only writes labels cannot, however wrong it is.
+- **GK-141** The staleness threshold is a **required input** to the sweep workflow, written by
+  `adopt` at thirty minutes. Required rather than defaulted in the reusable workflow: a caller that
+  omits it fails loudly instead of inheriting a number nobody chose, and the value it does carry is
+  visible and editable in the repository it governs.
+- **GK-142** Nothing leaves the stalled state on its own. Returning a stalled issue to the queue is
+  `/admit` — a person deciding another session is worth spending. **Invariant — no automatic
+  transition out of stalled exists**, which is what makes the state terminal rather than a slow
+  loop.
+- **GK-143** A run reports what it moved and that it ran at all, including a run that changed
+  nothing. A backstop nobody can see working is one nobody trusts.
+
+> **How the spec is changing (#136).** Three changes, and the third replaced the first two.
+>
+> Triage was one state, `ai-triage`. It could not say whether a session had never started, was
+> running, or had died, which is exactly the question that mattered when eight issues in
+> `connor-multiplying-frogs` stranded overnight. It is now three states that each answer it.
+>
+> The sweep is restored behaviour rather than new: `lucas-doggiehood` runs one, and the commit that
+> moved firing to the label event (`c6396ba`) recorded the loss in passing — *"The board-wide
+> catch-up that used to cover this went away with the sweep at adoption."*
+>
+> The first draft of that sweep re-poked automatically, and everything expensive about this design
+> came from that one choice: a `sweep.ceiling` to bound a run, a `give_up_after` horizon to bound an
+> issue, attempt markers when the horizon turned out to be resettable by any passing comment, and a
+> re-pick gate to stop the event path looping. Making stalls a human decision deleted all four. The
+> lesson is worth keeping: the original problem was that a lost poke was *invisible*, and automatic
+> retry was never what it asked for.
+
+---
+
 ## Traceability
 
 | Section | IDs | Tests |
@@ -392,5 +456,6 @@ Replaces the removed comment-replay sweep.
 | Lifecycle | GK-100–106 | `test_lifecycle.py` |
 | Downstream | GK-110–119 | `test_downstream.py` |
 | Architecture | GK-130–137 | `test_architecture.py`, `test_github_api.py` |
+| The sweep | GK-138–143 | `test_sweep.py`, `test_sweep_run.py` |
 
-**92 requirements, 90 `auto` and 2 `manual`.**
+**98 requirements, 96 `auto` and 2 `manual`.**

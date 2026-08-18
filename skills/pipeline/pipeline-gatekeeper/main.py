@@ -42,11 +42,36 @@ def _client(config):
 
 
 def main(argv):
-    if len(argv) != 2 or argv[1] not in ("comment", "closed", "labeled"):
-        raise SystemExit(f"usage: {argv[0]} comment|closed|labeled")
+    if len(argv) != 2 or argv[1] not in ("comment", "closed", "labeled", "sweep"):
+        raise SystemExit(f"usage: {argv[0]} comment|closed|labeled|sweep")
 
     config = load()
     api = _client(config)
+
+    if argv[1] == "sweep":
+        # No event payload: the sweep reads the board rather than reacting to
+        # one thing, and the scheduled path has no event to read.
+        #
+        # No `Fire` either, deliberately (`GK-140`). The sweep observes and
+        # relabels; deciding to spend another session is a person's job.
+        from datetime import datetime, timezone  # noqa: PLC0415
+
+        from run_sweep import run, summarise  # noqa: PLC0415
+
+        stale_after = os.environ.get("STALE_AFTER")
+        if not stale_after:
+            # Required rather than defaulted (`GK-141`): inheriting a number
+            # nobody chose is how a threshold ends up wrong and unnoticed.
+            raise SystemExit("STALE_AFTER is required")
+        result = run(
+            api, config,
+            now=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            stale_after=float(stale_after),
+        )
+        for line in summarise(result):
+            print(line)
+        return 0
+
     event = _event()
 
     if argv[1] == "closed":

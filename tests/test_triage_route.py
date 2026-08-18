@@ -10,7 +10,7 @@ from triage_route import Outcome, route
 LABELS = dict(STATES)
 
 
-def api(labels=("ai-triage",)):
+def api(labels=("ai-triage-queued",)):
     return FakeGitHub(
         issues=[{"number": 7, "labels": [{"name": n} for n in labels]}],
         actor="sdlc-bot[bot]",
@@ -41,7 +41,7 @@ class TestRouting(unittest.TestCase):
     def test_an_unactionable_issue_stays_in_triage(self):  # TRI-012
         github = api()
         route(github, 7, Outcome.failed("could not read the specification"), labels=LABELS)
-        self.assertIn("ai-triage", labels_of(github))
+        self.assertIn("ai-triage-queued", labels_of(github))
 
     def test_exactly_one_state_label_results(self):  # TRI-013
         github = api()
@@ -52,10 +52,10 @@ class TestRouting(unittest.TestCase):
     def test_the_previous_state_is_replaced(self):  # TRI-013
         github = api()
         route(github, 7, Outcome.plan("s", milestone="v0.2", checks=["c"]), labels=LABELS)
-        self.assertNotIn("ai-triage", labels_of(github))
+        self.assertNotIn("ai-triage-queued", labels_of(github))
 
     def test_classification_labels_survive(self):  # TRI-013
-        github = api(labels=("ai-triage", "type:bug"))
+        github = api(labels=("ai-triage-queued", "type:bug"))
         route(github, 7, Outcome.plan("s", milestone="v0.2", checks=["c"]), labels=LABELS)
         self.assertIn("type:bug", labels_of(github))
 

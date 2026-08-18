@@ -65,17 +65,17 @@ class TestLabelVocabulary(unittest.TestCase):
     def test_a_partial_mapping_overrides_only_what_it_names(self):  # CFG-043
         config = parse_config(BASE + "labels:\n  approved: queued\n")
         self.assertEqual(config.labels["approved"], "queued")
-        self.assertEqual(config.labels["triage"], "ai-triage")
+        self.assertEqual(config.labels["triage_queued"], "ai-triage-queued")
 
     def test_an_unknown_state_name_is_refused(self):  # CFG-042
         self.assertIn("wobble", bad(BASE + "labels:\n  wobble: x\n"))
 
     def test_two_states_may_not_share_a_label(self):  # CFG-044
-        message = bad(BASE + "labels:\n  approved: ai-triage\n")
-        self.assertIn("ai-triage", message)
+        message = bad(BASE + "labels:\n  approved: ai-triage-queued\n")
+        self.assertIn("ai-triage-queued", message)
 
     def test_the_collision_message_names_both_states(self):  # CFG-044
-        message = bad(BASE + "labels:\n  approved: ai-triage\n")
+        message = bad(BASE + "labels:\n  approved: ai-triage-queued\n")
         self.assertIn("approved", message)
         self.assertIn("triage", message)
 

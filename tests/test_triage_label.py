@@ -37,10 +37,21 @@ def settings(**kwargs):
 
 
 def api():
-    return FakeGitHub(issues=[{"number": 7, "labels": []}], actor=BOT)
+    return FakeGitHub(
+        issues=[{"number": 7, "labels": [{"name": STATES["triage_queued"]}]}],
+        actor=BOT)
 
 
-def event(label="ai-triage", issue=7):
+class FailingFire:
+    """A routine that could not be reached. Nothing started."""
+
+    def send(self, issue, repository):
+        from downstream import FireResult
+
+        return FireResult(True, failed=True, detail="502")
+
+
+def event(label="ai-triage-queued", issue=7):
     return {"issue": {"number": issue}, "label": {"name": label}}
 
 
@@ -71,19 +82,43 @@ class TestFiringOnTheLabel(unittest.TestCase):
         configured name into the caller — and this is the check that the two
         agree.
         """
-        labels = dict(STATES, triage="needs-triage")
+        labels = dict(STATES, triage_queued="needs-triage")
         fire = RecordingFire()
         on_label_added(api(), event(label="needs-triage"),
                        settings(labels=labels, fire=fire))
         self.assertEqual(fire.sent, [(7, "owner/repo")])
 
-    def test_it_writes_nothing(self):  # GK-122
-        """Firing is a poke, not a state change. The routine decides."""
+    def test_it_records_that_a_session_started(self):  # GK-138
+        """The widening in `GK-005`: the handler writes a pipeline state.
+
+        It writes exactly the one it is the only component able to know is
+        true — only the thing that fired can say a session began. Before this,
+        a started session and a lost poke left the issue looking identical.
+        """
         github = api()
-        on_label_added(github, event(), settings())
-        writes = [n for n, _ in github.calls
-                  if n in ("set_labels", "comment", "set_milestone", "set_body")]
-        self.assertEqual(writes, [])
+        on_label_added(github, event(), settings(fire=RecordingFire()))
+        after = {l["name"] for l in github.issue(7).get("labels") or []}
+        self.assertIn(STATES["triage_running"], after)
+        self.assertNotIn(STATES["triage_queued"], after)
+
+    def test_a_fire_that_started_nothing_records_nothing(self):  # GK-138
+        """It stays queued, so the next sweep still sees work waiting rather
+        than a session that does not exist — which the sweep would otherwise
+        stall, blaming the routine for a failure that was ours."""
+        github = api()
+        on_label_added(github, event(), settings(fire=FailingFire()))
+        after = {l["name"] for l in github.issue(7).get("labels") or []}
+        self.assertIn(STATES["triage_queued"], after)
+        self.assertNotIn(STATES["triage_running"], after)
+
+    def test_it_writes_no_state_but_that_one(self):  # GK-122
+        """A component that could write any state would be a second
+        gatekeeper. This one writes queued -> running and nothing else."""
+        github = api()
+        on_label_added(github, event(), settings(fire=RecordingFire()))
+        forbidden = [n for n, _ in github.calls
+                     if n in ("comment", "set_milestone", "set_body")]
+        self.assertEqual(forbidden, [])
 
 
 if __name__ == "__main__":

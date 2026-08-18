@@ -63,6 +63,12 @@ def fetch(api, labels, bot_login, dashboard_issue=None, overrides=None):
         closed = issue.get("state") == "closed"
         milestone = issue.get("milestone") or {}
 
+        if not closed and labels.get("triage_stalled") == state_label:
+            # The sweep deliberately does not retry, so the board is the only
+            # thing that turns a dead session into something somebody knows
+            # about (`DASH-029`).
+            faults["stalled_triage"].append({"issue": issue["number"]})
+
         if closed:
             if state_label:
                 faults["stale_state"].append({"issue": issue["number"], "labels": [state_label]})
@@ -114,6 +120,7 @@ def _empty_faults():
         "unverifiable_dependency": [],
         "prose_dependency": [],
         "stale_state": [],
+        "stalled_triage": [],
     }
 
 

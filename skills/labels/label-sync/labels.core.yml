@@ -8,9 +8,23 @@
 labels:
   # ------------------------------------------------------- pipeline states
   # Exactly one of these is on an open issue at a time.
-  - name: ai-triage
+  # Triage is three states, not one. A single `ai-triage` could not say whether
+  # a session had never started, was running, or had died — which is the only
+  # question worth asking when triage goes wrong.
+  #
+  # `ai-triage` itself is deliberately NOT listed for deletion. Deleting a label
+  # strips it from every issue carrying it, and any issue still on the old label
+  # would silently fall out of the pipeline with no state at all. Issues are
+  # relabelled first; the deletion is a later release.
+  - name: ai-triage-queued
     color: "1D76DB"
-    description: In the pipeline, awaiting or undergoing analysis
+    description: Admitted; no analysis session has been started yet
+  - name: ai-triage-running
+    color: "006B75"
+    description: An analysis session was started and has not answered yet
+  - name: ai-triage-stalled
+    color: "B60205"
+    description: The analysis session never answered — needs a person, not another poke
   - name: pending-approval
     color: "FBCA04"
     description: Analysis produced a plan; awaiting the owner's decision

@@ -21,10 +21,10 @@ from __future__ import annotations
 #: Where each command leaves the issue, by state name. Commands absent from
 #: this map change no labels at all — `/milestone`, `/focus`, `/cap`, `/retry`.
 MOVES = {
-    "admit": "triage",
-    "propose": "triage",
-    "revise": "triage",
-    "unpark": "triage",
+    "admit": "triage_queued",
+    "propose": "triage_queued",
+    "revise": "triage_queued",
+    "unpark": "triage_queued",
     "approve": "approved",
     "redo": "approved",
     "park": "parked",
@@ -38,15 +38,19 @@ def plan_labels(current, actions, labels):
     """The label set after applying `actions` in order.
 
     `labels` maps a state name to the label this repository uses for it.
+
+    Moving to any state drops whatever state label was there, including the
+    other two triage states — so `/admit` on a stalled issue returns it to the
+    queue, which is the only way out of stalled (`GK-142`).
     """
-    state_labels = set(labels.values())
+    dropped = set(labels.values())
     result = list(current)
 
     for action in actions:
         state = MOVES.get(action.command)
         if state is None:
             continue
-        result = [name for name in result if name not in state_labels]
+        result = [name for name in result if name not in dropped]
         result.append(labels[state])
 
     return result

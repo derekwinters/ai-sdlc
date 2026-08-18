@@ -22,7 +22,8 @@ from apply_actions import final_state, plan_labels
 from arguments import check_arguments
 from authority import Authority
 from catchup import unfinished_comments
-from downstream import NOT_TRIAGE, FireResult, fires_triage, should_rerender
+from downstream import (NOT_TRIAGE, FireResult, fires_triage,
+                        record_started, should_rerender)
 from refresh import refresh_quietly
 from gates import run_gates
 from lib.github import GitHubError
@@ -197,11 +198,15 @@ def _fire(api, issue_number, before, after, settings):
     (#126). That suppression is also what keeps the two paths from both firing
     for one `/admit` — see `GK-122`.
     """
-    if not fires_triage(before, after, (settings.labels or {}).get("triage")):
+    if not fires_triage(before, after, (settings.labels or {}).get("triage_queued")):
         return NOT_TRIAGE
     if not settings.fire:
         return FireResult(attempted=False, detail="no analysis routine configured")
-    return settings.fire.send(issue_number, api.repository)
+    result = settings.fire.send(issue_number, api.repository)
+    # Whoever fires records that a session started, by moving queued -> running
+    # (`GK-138`). Exactly one state, the one only this component can know.
+    record_started(api, issue_number, result, settings.labels)
+    return result
 
 
 def _overrides(actions):

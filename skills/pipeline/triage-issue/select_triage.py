@@ -52,4 +52,14 @@ def _is_eligible(issue, labels):
         # replace an answer somebody is in the middle of considering.
         return False
 
-    return labels["triage"] in names
+    if labels["triage_stalled"] in names:
+        # The sweep gave up on it deliberately (`TRI-009`). Only `/admit` puts
+        # it back in the queue, because another session is a person's call.
+        return False
+
+    # Queued or running, both (`TRI-001`): firing a session and recording that
+    # it started are two operations, so a session can reach this check before
+    # its own `running` label lands. Accepting only one of them would make the
+    # routine refuse the very issue it was woken for.
+    return (labels["triage_queued"] in names
+            or labels["triage_running"] in names)

@@ -422,13 +422,27 @@ def _files_for(config, pin):
             trigger="  issues:\n    types: [labeled]\n",
             condition=(
                 "github.event.label.name == "
-                f"'{config.labels['triage']}'"
+                f"'{config.labels['triage_queued']}'"
             ),
             secrets=_fire_secrets(config),
         )
         files[".github/workflows/gatekeeper-close.yml"] = _caller(
             "gatekeeper-close", "reusable-gatekeeper-close.yml", pin,
             trigger="  issues:\n    types: [closed]\n",
+        )
+        # The backstop for a lost poke (#136). Hourly rather than on the
+        # dashboard's daily schedule: an issue whose session never answered is
+        # dead until something notices, and a day of that is a day of nothing
+        # happening.
+        files[".github/workflows/gatekeeper-sweep.yml"] = _caller(
+            "gatekeeper-sweep", "reusable-gatekeeper-sweep.yml", pin,
+            trigger="  schedule:\n    - cron: \"17 * * * *\"\n  workflow_dispatch:\n",
+            # Thirty minutes, written here rather than defaulted in the reusable
+            # workflow: the value belongs where somebody can see and change it,
+            # and a caller that omits it fails loudly (`GK-141`).
+            inputs="      stale_after: 1800\n",
+            # No fire secrets. The sweep starts no sessions, so it has nothing
+            # to authenticate to.
         )
         # The other half of report-rather-than-repair: nothing silently fixes
         # drift, so the board has to show it. A pipeline with no dashboard is
@@ -483,13 +497,16 @@ GRANTS = {
     "reusable-docs-gate.yml": {"contents": "read"},
     "reusable-labels-sync.yml": {"contents": "read", "issues": "write"},
     "reusable-gatekeeper-comment.yml": {"contents": "read", "issues": "write"},
-    "reusable-triage.yml": {"contents": "read"},
+    "reusable-triage.yml": {"contents": "read", "issues": "write"},
     "reusable-gatekeeper-close.yml": {"contents": "read", "issues": "write"},
     "reusable-dashboard.yml": {"contents": "read", "issues": "write"},
+    # Reads the board and pokes the routine; it moves no labels, so it needs
+    # no write. The one workflow that spends money has the narrowest grant.
+    "reusable-gatekeeper-sweep.yml": {"contents": "read", "issues": "write"},
 }
 
 
-def _caller(name, reusable, pin, trigger, secrets=None, condition=None):
+def _caller(name, reusable, pin, trigger, secrets=None, condition=None, inputs=""):
     """A thin caller. All logic lives in the reusable workflow.
 
     ``pin`` is ``(version, sha)``. The reference is the **SHA**, with the
@@ -500,6 +517,10 @@ def _caller(name, reusable, pin, trigger, secrets=None, condition=None):
 
     `ref:` is that same SHA rather than the version, so the workflow and the
     code it checks out cannot come from two different commits.
+
+    ``inputs`` is extra lines for the `with:` block, already indented. Used by
+    the sweep, where the caller's trigger is what decides whether that run may
+    requeue — the reusable workflow cannot tell a schedule from an event.
 
     ``secrets`` maps a called workflow's secret input to the name of a secret
     in the consumer's repository. Named rather than inherited: `secrets:
@@ -532,6 +553,7 @@ def _caller(name, reusable, pin, trigger, secrets=None, condition=None):
         + f"    uses: {SOURCE}/.github/workflows/{reusable}@{sha} # {version}\n"
         + f"    with:\n"
         + f"      ref: {sha}\n"
+        + inputs
         + _secrets(secrets)
     )
 
