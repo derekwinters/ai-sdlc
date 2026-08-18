@@ -1,0 +1,14 @@
+# Generated, and committed by accident until #147.
+#
+# Neither of these is read from the checkout: the published site is built
+# fresh by `docs.yml` and pushed to `gh-pages` by `mike`, and the bytecode is
+# whatever Python last happened to compile. Tracking them meant every test run
+# and every docs build reported ~140 modified files that were not changes —
+# so "the working tree is dirty" stopped carrying information, and a real
+# uncommitted change had somewhere to hide.
+
+__pycache__/
+*.py[cod]
+
+# `mkdocs build` output.
+/site/
