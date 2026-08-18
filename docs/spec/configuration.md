@@ -101,6 +101,19 @@ Parsing is stdlib-only, so the accepted subset is stated rather than inherited.
 - **CFG-054** Anchors, aliases, multi-document files and flow style are not supported, and using
   one is an error that says so rather than misreading the file.
 
+## 7. Installed skills
+
+- **CFG-060** `skills` names the skills the repository installs from ai-sdlc. It defaults to the
+  empty list, and a repository listing none installs none.
+- **CFG-061** Every entry is a non-empty string. Anything else is an error naming the key path and
+  what was found.
+- **CFG-062** A repeated name is collapsed, as `capabilities` collapses one. The list is a set of
+  names, and naming a skill twice says nothing a name once does not.
+- **CFG-063** The list is not validated against `capabilities`, and no name is checked against
+  ai-sdlc's own tree. The loader is pure (`CFG-005`): resolving a name needs the source, and a
+  loader that reached for it would be doing I/O. An unknown name is caught where the source is
+  present — `DIST-016`.
+
 ---
 
 ## Traceability
@@ -113,6 +126,7 @@ Parsing is stdlib-only, so the accepted subset is stated rather than inherited.
 | Identity | CFG-030–034 | `test_config_identity.py` |
 | Pipeline settings | CFG-040–046 | `test_config_pipeline.py` |
 | The YAML subset | CFG-050–054 | `test_yaml_subset.py` |
+| Installed skills | CFG-060–063 | `test_config_skills.py` |
 | Schema agreement | CFG-010 | `test_config_schema.py` |
 
-**39 requirements, 38 `auto` and 1 `manual`.**
+**43 requirements, 42 `auto` and 1 `manual`.**

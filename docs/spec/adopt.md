@@ -104,6 +104,11 @@ Every path adoption owns falls into exactly one class.
   workflows. `labels` installs `labels.core.yml` as well as `labels-sync.yml`; `hygiene` installs
   `house-rules.md` alongside the import line that points at it.
 
+- **ADOPT-048** A repository whose `skills:` list names anything gets the `skills-update` caller,
+  and one naming nothing gets none. The list is what makes the workflow useful, so the caller
+  follows it rather than a capability — a scheduled job with nothing to install is a job that runs
+  every night to say so.
+
 > **How the spec is changing (#75).** §5 described what `apply` writes without saying that the set
 > has to be *complete*. Twice a capability then shipped half of itself: the `CLAUDE.md` import with
 > no `house-rules.md` (#71), and `labels-sync.yml` with no `labels.core.yml` (#75). Both fail only
@@ -216,11 +221,11 @@ than a formatting one: a reusable workflow runs with the **caller's** token, on 
 | Planning | ADOPT-010–015 | `test_adopt_plan.py` |
 | Classification | ADOPT-020–025 | `test_adopt_classify.py` |
 | Trigger collisions | ADOPT-030–036 | `test_adopt_collision.py` |
-| Applying | ADOPT-040–047 | `test_adopt_apply.py` |
+| Applying | ADOPT-040–048 | `test_adopt_apply.py` |
 | Verifying | ADOPT-050–054 | `test_adopt_verify.py` |
 | Pinning a caller | ADOPT-060–066 | `test_adopt_pin.py` |
 | What a callee may do | ADOPT-067 | `test_reusable_workflows.py` |
 | Caller permissions | ADOPT-068–069 | `test_adopt_permissions.py` |
 | Caller secrets | ADOPT-070 | `test_adopt_permissions.py` |
 
-**48 requirements, all `auto`.**
+**49 requirements, all `auto`.**

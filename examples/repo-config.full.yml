@@ -31,3 +31,15 @@ fire:
   endpoint_secret: ROUTINE_FIRE_URL
   token_secret: ROUTINE_FIRE_TOKEN
 
+# The ai-sdlc skills installed here, kept at the pinned version by
+# `skills-update.yml`. This repository's list, not a central registry's — a
+# registry deciding what a repository should have is what reverted local work
+# the last two times a skill sync was built.
+skills:
+  - triage-issue
+  - pipeline-dev
+  - ci-watch
+  - milestone-ops
+  - issue-blockers
+  - release-flow
+

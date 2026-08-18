@@ -345,6 +345,23 @@ MANUAL_TASKS = (
     "check stays pending forever and blocks the merge it was meant to permit.",
 )
 
+#: A permission `apply` cannot grant itself. Without it `skills-update` pushes
+#: its branch and then fails at `gh pr create`, which leaves a branch and no
+#: pull request — the confusing half of a failure rather than the loud one.
+PULL_REQUEST_TASK = (
+    "Settings → Actions → General → Workflow permissions: switch on 'Allow "
+    "GitHub Actions to create and approve pull requests'. Without it "
+    "`skills-update` pushes its branch and then cannot open the pull request."
+)
+
+
+def _manual_tasks(config):
+    """The work no agent can do, for this repository's configuration."""
+    tasks = list(MANUAL_TASKS)
+    if getattr(config, "skills", ()):
+        tasks.append(PULL_REQUEST_TASK)
+    return tasks
+
 
 def _files_for(config, pin):
     """The files adoption owns, given a repository's configuration."""
@@ -459,6 +476,22 @@ def _files_for(config, pin):
             ),
         )
 
+    # Driven by the list rather than by a capability: the list is what makes
+    # the job useful, and a scheduled workflow with nothing to install is one
+    # that runs every night to say so (#144).
+    if getattr(config, "skills", ()):
+        files[".github/workflows/skills-update.yml"] = _caller(
+            "skills-update", "reusable-skills-update.yml", pin,
+            # Daily. A run at an unchanged pin classifies everything as current
+            # and opens nothing, so the cost of a quiet day is one green job —
+            # and the day that matters is the one right after an upgrade merges.
+            trigger="  schedule:\n    - cron: \"41 5 * * *\"\n  workflow_dispatch:\n",
+            # No `skills:` input. The list lives in `repo-config.yml`, where the
+            # schema keeps it honest; put in the caller it would be a hand-edit
+            # to an `adopt`-managed file, which becomes a CONFLICT and stops the
+            # file being upgraded ever again.
+        )
+
     return files
 
 
@@ -503,6 +536,9 @@ GRANTS = {
     # Reads the board and pokes the routine; it moves no labels, so it needs
     # no write. The one workflow that spends money has the narrowest grant.
     "reusable-gatekeeper-sweep.yml": {"contents": "read", "issues": "write"},
+    # The only workflow that commits. It writes to its own branch and opens a
+    # pull request; it never pushes to the default branch.
+    "reusable-skills-update.yml": {"contents": "write", "pull-requests": "write"},
 }
 
 
@@ -620,7 +656,7 @@ def plan(root, pin, acknowledged=(), resolver=None):
         updates=sorted(updates),
         conflicts=sorted(conflicts),
         collisions=found,
-        manual_tasks=list(MANUAL_TASKS),
+        manual_tasks=_manual_tasks(config),
         detection=detect(root),
     )
 
@@ -669,7 +705,7 @@ def apply(root, pin, acknowledged=(), resolver=None):
     if _add_import(root):
         written.append("CLAUDE.md")
 
-    tasks = list(MANUAL_TASKS)
+    tasks = _manual_tasks(config)
     if "pipeline" in config.capabilities and not config.dashboard_issue:
         tasks.append("Create a dashboard issue and set `dashboard_issue` in the config.")
 

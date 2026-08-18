@@ -37,6 +37,7 @@ nav:
   - Specification:
       - Adoption: spec/adopt.md
       - Configuration: spec/configuration.md
+      - Distribution: spec/distribution.md
       - Profiles: spec/profiles.md
       - House rules: spec/house-rules.md
       - Pull request hygiene: spec/hygiene.md

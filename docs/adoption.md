@@ -74,6 +74,33 @@ default branch and require the checks you added.
 and blocks the merge it was meant to permit. Escape hatches — the `no-closing-keyword` label, the
 `skip-docs` label — make a check *pass*, never absent.
 
+## 5. Name the skills you install
+
+The workflows are only half of ai-sdlc; the rest is skills an agent reads. Which ones a repository
+installs is its own decision, written in its own configuration:
+
+```yaml
+skills:
+  - triage-issue
+  - pipeline-dev
+  - ci-watch
+```
+
+`adopt` then writes a `skills-update.yml` caller, which installs what is missing and reinstalls
+what has fallen behind the pin — and **opens a pull request**, because installed skills are
+instructions an agent reads and a timer that put unreviewed ones in front of it would be a consent
+problem.
+
+A skill you have edited locally is reported and left alone, never overwritten. If you need a skill
+to behave differently, change it in ai-sdlc and move the pin; a local edit is preserved, but it
+stops that skill being updated, and `skills-update` will say so on every run.
+
+That pull request needs one setting only you can switch on: **Settings → Actions → General →
+Workflow permissions → Allow GitHub Actions to create and approve pull requests**. Without it the
+job pushes its branch and then cannot open the pull request.
+
+See [Distribution](spec/distribution.md) for the whole mechanism.
+
 ## The shared rules
 
 Adoption installs [`house-rules.md`](house-rules.md) into `.claude/ai-sdlc/` and appends one import

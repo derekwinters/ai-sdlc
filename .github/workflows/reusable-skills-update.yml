@@ -1,0 +1,115 @@
+name: skills-update
+
+# `docs/design.md` §7 said how skills reach a consumer — `gh skill install`,
+# pinned, provenance in the frontmatter — and nothing ran it. This runs it.
+#
+# It installs what `skills:` in the repository's own `repo-config.yml` names and
+# is missing, and reinstalls what has fallen behind the pin. A skill somebody
+# edited locally is reported and left alone: `gh skill install` overwrites a
+# modified skill with the original content, and reverting local work is exactly
+# why the two previous attempts at a scheduled sync in this fleet were disabled.
+#
+# A pull request, never a direct commit. Installed skills are instructions an
+# agent reads, and a job that committed them to the default branch on a timer
+# would put unreviewed ones in front of it.
+#
+# See docs/spec/distribution.md (DIST-001 to DIST-035).
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: >-
+          The ai-sdlc ref this repository pins. Skills are installed at it, and
+          it is the same ref the callers name.
+        type: string
+        required: true
+      branch:
+        description: >-
+          The branch the pull request is opened from. One stable name, so a
+          second run proposes onto the open pull request rather than beside it.
+        type: string
+        default: ai-sdlc/skills-update
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  # One at a time, never cancelled. Two runs would push the same branch.
+  group: skills-update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Fetch ai-sdlc
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: derekwinters/ai-sdlc
+          ref: ${{ inputs.ref }}
+          path: .ai-sdlc
+          # Whole history. Classification asks ai-sdlc for its copy of a skill
+          # at the ref each installed skill *records*, which is by definition an
+          # older commit than the one checked out. A shallow clone does not have
+          # it, and DIST-017 would then skip every skill as unverifiable.
+          fetch-depth: 0
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+
+      - name: Install and update the configured skills
+        id: update
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SKILL_ROOT: ${{ inputs.ref != '' && '.ai-sdlc' || '.' }}
+        run: |
+          PYTHONPATH="$SKILL_ROOT" python3 \
+            "$SKILL_ROOT/skills/substrate/skills-update/main.py" \
+            apply "${{ inputs.ref }}" \
+            --source "$SKILL_ROOT" \
+            --report "${RUNNER_TEMP}/skills-update.md"
+
+      - name: Say that nothing changed
+        if: steps.update.outputs.changed != 'true'
+        run: |
+          echo "Nothing changed — no pull request opened." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Propose the change
+        if: steps.update.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: ${{ inputs.branch }}
+          REF: ${{ inputs.ref }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B "$BRANCH"
+          git add -A .claude/skills
+          git commit -m "chore(skills): install ai-sdlc skills at ${REF}"
+          git push --force-with-lease -u origin "$BRANCH"
+
+          # One pull request, reused. `gh pr create` on an existing head fails,
+          # and a nightly job that opened a second one every night would be a
+          # worse problem than the one it solves.
+          if [ -z "$(gh pr list --head "$BRANCH" --state open --json number --jq '.[].number')" ]; then
+            gh pr create \
+              --head "$BRANCH" \
+              --title "chore(skills): install ai-sdlc skills at ${REF}" \
+              --body-file "${RUNNER_TEMP}/skills-update.md"
+          else
+            gh pr comment --body-file "${RUNNER_TEMP}/skills-update.md" \
+              "$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number')"
+          fi
+
+      - name: Fail on an install that did not run
+        if: steps.update.outputs.failed == 'true'
+        run: |
+          echo "One or more installs failed; see the report above." >&2
+          exit 1

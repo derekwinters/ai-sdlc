@@ -118,6 +118,7 @@ class Config:
         "dashboard_issue",
         "commands",
         "fire",
+        "skills",
     )
 
     def __init__(self, **values):
@@ -182,6 +183,7 @@ def parse_config(text, source=None):
         dashboard_issue=_dashboard_issue(raw, pipeline, problems),
         commands=_commands(raw, problems),
         fire=_fire(raw, problems),
+        skills=_skills(raw, problems),
     )
 
     if problems:
@@ -202,6 +204,7 @@ _SCHEMA_KEYS = {
     "dashboard_issue": int,
     "commands": dict,
     "fire": dict,
+    "skills": list,
 }
 
 _NESTED_KEYS = {
@@ -372,6 +375,32 @@ def _commands(raw, problems):
         verify=section.get("verify"),
         spec_validator=section.get("spec_validator"),
     )
+
+
+def _skills(raw, problems):
+    """The skills this repository installs from ai-sdlc.
+
+    Names only. Nothing here checks a name against ai-sdlc's tree, and nothing
+    checks it against `capabilities`: the loader is pure (CFG-005), and
+    resolving a name needs the source. `DIST-016` makes that check where the
+    source is actually present.
+    """
+    listed = raw.get("skills") or []
+    if not isinstance(listed, list):
+        # The type error is reported by _reject_unknown; do not report it twice.
+        return []
+
+    selected = []
+    for index, name in enumerate(listed):
+        if not isinstance(name, str) or not name.strip():
+            problems.append(
+                f"'skills[{index}]' must be a non-empty skill name, found "
+                f"{type(name).__name__} {name!r}"
+            )
+            continue
+        if name not in selected:
+            selected.append(name)
+    return selected
 
 
 def _fire(raw, problems):

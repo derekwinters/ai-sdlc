@@ -1,4 +1,4 @@
-"""ADOPT-040 to ADOPT-046 — writing, and refusing to."""
+"""ADOPT-040 to ADOPT-048 — writing, and refusing to."""
 
 import unittest
 
@@ -189,3 +189,65 @@ class TestACapabilityInstallsWhatItNeeds(unittest.TestCase):
         root = repository({".claude/repo-config.yml": "capabilities:\n  - hygiene\n"})
         apply(root, pin=PIN)
         self.assertFalse((root / ".github/labels.core.yml").exists())
+
+
+class TestTheSkillsCaller(unittest.TestCase):
+    """ADOPT-048 — the list in configuration is what installs the caller.
+
+    `docs/design.md` §7 specified how skills reach a consumer and nothing ran
+    it: `connor-multiplying-frogs` ran the pipeline for weeks with none of the
+    pipeline skills present, and its own documentation said they were installed
+    (#144).
+    """
+
+    CALLER = ".github/workflows/skills-update.yml"
+
+    def _apply(self, skills):
+        _, root = applied({".claude/repo-config.yml": CONFIG + skills})
+        return root
+
+    def test_a_repository_naming_skills_gets_the_caller(self):  # ADOPT-048
+        root = self._apply("skills:\n  - ci-watch\n")
+        self.assertTrue((root / self.CALLER).is_file())
+
+    def test_a_repository_naming_none_gets_no_caller(self):  # ADOPT-048
+        self.assertFalse((self._apply("") / self.CALLER).exists())
+
+    def test_the_caller_runs_on_a_schedule(self):  # ADOPT-048
+        text = (self._apply("skills:\n  - ci-watch\n") / self.CALLER).read_text()
+        self.assertIn("schedule:", text)
+        self.assertIn("workflow_dispatch:", text)
+
+    def test_the_caller_passes_the_pinned_ref(self):  # ADOPT-060
+        text = (self._apply("skills:\n  - ci-watch\n") / self.CALLER).read_text()
+        self.assertIn(f"ref: {PIN[1]}", text)
+        self.assertIn(f"reusable-skills-update.yml@{PIN[1]} # {PIN[0]}", text)
+
+    def test_the_caller_names_no_skills_itself(self):  # ADOPT-048
+        """The list stays in configuration.
+
+        A caller is an `adopt`-managed file, so editing the list in it would
+        make the file a CONFLICT and stop it being upgraded ever again.
+        """
+        text = (self._apply("skills:\n  - ci-watch\n") / self.CALLER).read_text()
+        self.assertNotIn("ci-watch", text)
+
+
+class TestTheManualTaskForPullRequests(unittest.TestCase):
+    """ADOPT-012 — a permission only a human can grant is a manual task.
+
+    A workflow opening a pull request with GITHUB_TOKEN needs the repository
+    setting switched on, and without it the run fails at `gh pr create` — after
+    the push, so the branch exists and no pull request does.
+    """
+
+    def _tasks(self, skills):
+        result, _ = applied({".claude/repo-config.yml": CONFIG + skills})
+        return " ".join(result.manual_tasks).lower()
+
+    def test_naming_skills_adds_the_task(self):  # ADOPT-012
+        self.assertIn("pull request", self._tasks("skills:\n  - ci-watch\n"))
+
+    def test_naming_none_does_not(self):  # ADOPT-012
+        self.assertNotIn("create and approve pull requests", self._tasks(""))
+
