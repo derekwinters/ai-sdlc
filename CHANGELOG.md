@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.4.18](https://github.com/derekwinters/ai-sdlc/compare/v0.4.17...v0.4.18) (2026-08-18)
+
+
+### ⚠ BREAKING CHANGES
+
+* **substrate:** `repo-config.yml`, `ai-sdlc.pin` and `house-rules.md` move from `.claude/` to `.ai-sdlc/`. `adopt apply` performs the move; a repository that has not run it reports the move rather than reading the old path.
+
+### Features
+
+* **substrate:** ai-sdlc's files move to .ai-sdlc/, and a skill points at them ([#151](https://github.com/derekwinters/ai-sdlc/issues/151)) ([7ca29b1](https://github.com/derekwinters/ai-sdlc/commit/7ca29b12b797fa446ab85650db3c2b71252027aa)), closes [#150](https://github.com/derekwinters/ai-sdlc/issues/150)
+
 ## [0.4.17](https://github.com/derekwinters/ai-sdlc/compare/v0.4.16...v0.4.17) (2026-08-18)
 
 
