@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.4.20](https://github.com/derekwinters/ai-sdlc/compare/v0.4.19...v0.4.20) (2026-08-19)
+
+
+### ⚠ BREAKING CHANGES
+
+* **pipeline:** the gatekeeper becomes one action, and every issue writer serialises ([#163](https://github.com/derekwinters/ai-sdlc/issues/163))
+
+### Features
+
+* **pipeline:** the gatekeeper becomes one action, and every issue writer serialises ([#163](https://github.com/derekwinters/ai-sdlc/issues/163)) ([f54dca8](https://github.com/derekwinters/ai-sdlc/commit/f54dca8b483b7d456818439032b64752e60fdd53)), closes [#157](https://github.com/derekwinters/ai-sdlc/issues/157)
+
 ## [0.4.19](https://github.com/derekwinters/ai-sdlc/compare/v0.4.18...v0.4.19) (2026-08-19)
 
 
