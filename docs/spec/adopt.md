@@ -220,8 +220,33 @@ into its own directory before any step executes, outside the workspace entirely.
   workflow reports as `<workflow> / <job>`, a job running an action as `<job>` — so `apply` reports
   updating branch protection as a manual task. Only a human can change a protection rule, and one
   naming the old check waits forever on a check that will never report again.
-- **ADOPT-105** A reusable workflow replaced by an action is removed. Two delivery mechanisms for
+- **ADOPT-105** A reusable workflow replaced by an action is removed.
+- **ADOPT-107** Where several callers ran one script with different arguments, they call one
+  action with a mode input. The gatekeeper was four workflows differing in their trigger, their
+  subcommand, and nothing else that was deliberate.
+- **ADOPT-108** A caller declares the concurrency group its mode requires, because an action
+  cannot — `concurrency` is a workflow-level key. Every issue-scoped mode shares **one** group per
+  issue, and no caller cancels a run in progress.
+
+> **Invariant — every writer on one issue serialises.** `set_labels` is
+> `PUT /issues/{n}/labels` with the whole list: a replacement, not a patch. Two runs on one issue
+> read-modify-write the same set and one silently loses, whichever label each *meant* to touch. A
+> cancelled run leaves the set half applied, which is why none may be cancelled. Two delivery mechanisms for
   one script is a second copy that nothing installs and nothing keeps in step.
+
+> **How the spec is changing (#157, the concurrency half).** Triage used to have a concurrency
+> group of its own — `triage-<issue>` — while the comment and close handlers shared
+> `gatekeeper-<issue>`. So a label applied by hand could fire triage while a gatekeeper comment was
+> mid-write on the same issue, and because `set_labels` replaces the whole label set rather than
+> patching it, one of the two writes would have been lost with nothing to show for it. The groups
+> are now one. The cost is that a triage fire waits behind a comment on the same issue, which is
+> seconds; the alternative was a race that only appears under a human doing two things at once.
+>
+> Moving the gatekeeper to an action is what forced the question: an action cannot declare
+> `concurrency`, so the group had to become something `adopt` writes into every caller, and writing
+> four different groups from one table made it obvious they had never been reasoned about together.
+> `ADOPT-108` and a test now hold it, which is the trade — race prevention became generated code,
+> so it needed a gate that central code did not.
 
 > **How the spec is changing (#157).** §7 pinned a caller to a reusable workflow and paired its
 > `uses:` with a `ref:` input so the workflow and the code it ran could not come from different
@@ -311,7 +336,7 @@ than a formatting one: a reusable workflow runs with the **caller's** token, on 
 
 > **How the spec is changing (#118).** §7 covered the caller's `uses:`, its `ref:` and its
 > `permissions:`, and said nothing about secrets. Every caller `adopt` had ever written therefore
-> omitted the `secrets:` block that `reusable-gatekeeper-comment.yml` declares, so `Fire` received
+> omitted the `secrets:` block the gatekeeper's reusable workflow declared, so `Fire` received
 > empty strings and reported the routine as unconfigured — silently, because `GK-119` makes that a
 > notice rather than an error. Triage had never run in `connor-multiplying-frogs` since adoption.
 > `CFG-046` had specified how a repository names those secrets since before the pipeline shipped,
@@ -349,6 +374,6 @@ than a formatting one: a reusable workflow runs with the **caller's** token, on 
 | Caller secrets | ADOPT-070 | `test_adopt_permissions.py` |
 | Migrating out of `.claude/` | ADOPT-080–087 | `test_adopt_migrate.py` |
 | Being findable | ADOPT-090–094 | `test_adopt_surface.py` |
-| Callers that use an action | ADOPT-100–106 | `test_adopt_actions.py` |
+| Callers that use an action | ADOPT-100–108 | `test_adopt_actions.py` |
 
-**69 requirements, all `auto`.**
+**71 requirements, all `auto`.**
