@@ -29,6 +29,23 @@ class FakeFailure:
         self.status = status
 
 
+#: A database id for an issue number, deliberately nothing like it.
+#:
+#: The real API's `issue_id` is a repository-wide database key with no relation
+#: to the number in the repository. A fake where the two were equal — or where
+#: `id` did not exist, as here until #155 — cannot express a client sending one
+#: where the other is meant, which is why 29 `auto` requirements passed over
+#: exactly that bug.
+def _issue_id(number):
+    return 5_000_000 + number * 7
+
+
+def _with_id(issue):
+    stored = dict(issue)
+    stored.setdefault("id", _issue_id(stored["number"]))
+    return stored
+
+
 class FakeGitHub:
     """The same surface as :class:`lib.github.GitHub`, backed by a dictionary.
 
@@ -56,10 +73,12 @@ class FakeGitHub:
         self.actor = actor
         self.truncated = False
 
-        self._issues = {issue["number"]: dict(issue) for issue in (issues or [])}
+        self._issues = {issue["number"]: _with_id(issue) for issue in (issues or [])}
         self._comments = {n: [dict(c) for c in cs] for n, cs in (comments or {}).items()}
         self._milestones = [dict(m) for m in (milestones or [])]
-        self._blocked_by = {n: list(bs) for n, bs in (blocked_by or {}).items()}
+        self._blocked_by = {
+            n: [self._edge(b) for b in bs] for n, bs in (blocked_by or {}).items()
+        }
         self._reactions = {c: list(rs) for c, rs in (reactions or {}).items()}
         self._labels = [dict(label) for label in (labels or [])]
         self._fail = dict(fail or {})
@@ -91,6 +110,10 @@ class FakeGitHub:
         if number not in self._issues:
             raise GitHubError("Not found.", status=404, method="GET", path=f"/issues/{number}")
         return dict(self._issues[number])
+
+    def issue_id(self, number):
+        self._record("issue_id", number)
+        return self.issue(number)["id"]
 
     def issues(self, **filters):
         """Mirrors GitHub, including the parts that surprise people.
@@ -174,19 +197,63 @@ class FakeGitHub:
         self._record("blocked_by", issue)
         return self._page([dict(b) for b in self._blocked_by.get(issue, [])])
 
-    def add_blocked_by(self, issue, blocker):
-        self._record("add_blocked_by", issue, blocker)
-        edges = self._blocked_by.setdefault(issue, [])
-        if not any(e["number"] == blocker for e in edges):
-            edges.append({"number": blocker})
-        return {"number": blocker}
+    def add_blocked_by(self, issue, blocker_id):
+        """``blocker_id`` is a database **id**, as the real API requires.
 
-    def remove_blocked_by(self, issue, blocker):
-        self._record("remove_blocked_by", issue, blocker)
+        Modelled faithfully because this is the one place the two identities
+        differ and the difference is invisible: both are integers, so a client
+        sending the wrong one is accepted and stores an edge to whichever issue
+        that value happens to identify (#155).
+        """
+        self._record("add_blocked_by", issue, blocker_id)
+        edge = self._edge_by_id(blocker_id)
+        edges = self._blocked_by.setdefault(issue, [])
+        if not any(e["id"] == edge["id"] for e in edges):
+            edges.append(edge)
+        return dict(edge)
+
+    def remove_blocked_by(self, issue, blocker_id):
+        self._record("remove_blocked_by", issue, blocker_id)
         self._blocked_by[issue] = [
-            e for e in self._blocked_by.get(issue, []) if e["number"] != blocker
+            e for e in self._blocked_by.get(issue, []) if e["id"] != blocker_id
         ]
         return None
+
+    def _edge(self, blocker):
+        """An edge for a graph a *test* wrote, named however reads best.
+
+        Lenient on purpose, and only here: a fixture saying "#7 is blocked by
+        #42" should not have to be written in database ids. The operations are
+        strict, which is where the distinction has to hold.
+        """
+        if isinstance(blocker, dict):
+            blocker = blocker.get("id") or blocker["number"]
+
+        for number, issue in self._issues.items():
+            if blocker in (issue["id"], number):
+                return {"number": number, "id": issue["id"]}
+
+        # An issue the fake was not given. A read of it will 404, which is the
+        # "unknown blocker" case BLK relies on.
+        return {"number": blocker, "id": _issue_id(blocker)}
+
+    def _edge_by_id(self, blocker_id):
+        """An edge for a *write*, matched on database id and nothing else.
+
+        Strict, because being forgiving here would defeat the entire point of
+        the fake carrying two identities: a client sending a number would be
+        quietly understood, which is precisely the bug that reached production
+        (#155). The real API is not forgiving either — it resolved the number it
+        was sent as an id, found a different issue, and linked that one.
+        """
+        for number, issue in self._issues.items():
+            if issue["id"] == blocker_id:
+                return {"number": number, "id": blocker_id}
+
+        # No issue here has that id. The real API links whatever does have it,
+        # somewhere in the repository; the fake cannot know what, so it records
+        # the edge with no resolvable number and a read of it reports unknown.
+        return {"number": None, "id": blocker_id}
 
     def reactions(self, comment):
         self._record("reactions", comment)

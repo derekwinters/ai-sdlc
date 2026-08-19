@@ -232,14 +232,28 @@ class GitHub:
     def blocked_by(self, issue):
         return self.paginate(f"/issues/{issue}/dependencies/blocked_by")
 
-    def add_blocked_by(self, issue, blocker):
+    def issue_id(self, number):
+        """The database id of an issue, from its number.
+
+        The one place the two identities are converted. The dependency API
+        names a blocker by **database id**, everything else here names an issue
+        by its **number**, and both are integers — so a client that confuses
+        them is accepted and silently writes an edge to a different issue
+        (#155). Converting in one named place is what makes that a fact you can
+        find rather than an assumption spread across callers.
+        """
+        return self.issue(number)["id"]
+
+    def add_blocked_by(self, issue, blocker_id):
+        """``issue`` is a number; ``blocker_id`` is a **database id**."""
         return self.request(
-            "POST", f"/issues/{issue}/dependencies/blocked_by", {"issue_id": blocker}
+            "POST", f"/issues/{issue}/dependencies/blocked_by", {"issue_id": blocker_id}
         )
 
-    def remove_blocked_by(self, issue, blocker):
+    def remove_blocked_by(self, issue, blocker_id):
+        """``issue`` is a number; ``blocker_id`` is a **database id**."""
         return self.request(
-            "DELETE", f"/issues/{issue}/dependencies/blocked_by/{blocker}"
+            "DELETE", f"/issues/{issue}/dependencies/blocked_by/{blocker_id}"
         )
 
     def reactions(self, comment):

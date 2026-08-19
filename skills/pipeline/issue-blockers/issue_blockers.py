@@ -158,12 +158,14 @@ class Blockers:
 
         if any(b.number == by for b in self.blockers_of(issue)):
             return None
-        return self.api.add_blocked_by(issue, by)
+        # Numbers in, id across the API boundary. `block(50, 42)` reads the way
+        # a person says it; what GitHub is told is #42's database id.
+        return self.api.add_blocked_by(issue, self.api.issue_id(by))
 
     def unblock(self, issue, by):
         if not any(b.number == by for b in self.blockers_of(issue)):
             return None
-        return self.api.remove_blocked_by(issue, by)
+        return self.api.remove_blocked_by(issue, self.api.issue_id(by))
 
     def _path_to(self, start, target, seen=None):
         """A path from `start` to `target` through blocked-by edges, or None."""

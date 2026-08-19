@@ -107,3 +107,60 @@ class TestRefusals(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestTheIdentityThatCrossesTheApi(unittest.TestCase):
+    """BLK-036 — a blocker is named to GitHub by its database id.
+
+    `block(154, 153)` in the real repository did not block #154 by #153. It
+    blocked it by **#4**, an unrelated issue, and reported success: the client
+    sent the issue *number* as `issue_id`, GitHub read it as a database id, and
+    both are integers so nothing refused it.
+
+    Nothing caught it because the fake stored edges as `{"number": blocker}` —
+    the distinction the real API turns on did not exist in it, so no test
+    written against it could express the bug however many were written.
+    """
+
+    def test_the_edge_names_the_issue_that_was_asked_for(self):  # BLK-036
+        ops, github = blockers()
+        ops.block(7, 42)
+        self.assertEqual([b.number for b in ops.blockers_of(7)], [42])
+
+    def test_the_value_sent_is_the_blockers_database_id(self):  # BLK-036
+        ops, github = blockers()
+        ops.block(7, 42)
+        sent = [args for name, args in github.calls if name == "add_blocked_by"]
+        self.assertEqual(sent, [(7, github.issue(42)["id"])])
+
+    def test_the_id_is_not_the_number(self):  # BLK-036
+        """Guards the test above from passing vacuously."""
+        _, github = blockers()
+        self.assertNotEqual(github.issue(42)["id"], 42)
+
+    def test_unblock_names_the_id_too(self):  # BLK-036
+        """Covered on its own: `unblock` was never symmetric with `block`, and
+        it only appeared to work because the edge it deleted held the wrong
+        value that had been written in the first place."""
+        ops, github = blockers()
+        ops.block(7, 42)
+        ops.unblock(7, 42)
+        sent = [args for name, args in github.calls if name == "remove_blocked_by"]
+        self.assertEqual(sent, [(7, github.issue(42)["id"])])
+
+    def test_unblocking_actually_removes_it(self):  # BLK-036
+        ops, _ = blockers()
+        ops.block(7, 42)
+        ops.unblock(7, 42)
+        self.assertEqual(ops.blockers_of(7), [])
+
+    def test_a_cycle_is_still_refused_across_the_two_identities(self):  # BLK-036
+        """The cycle check compares numbers; the edges carry ids. If those two
+        spaces disagree the check walks a graph that is not the stored one."""
+        ops, _ = blockers()
+        ops.block(7, 42)
+        self.assertIn("cycle", refused(ops.block, 42, 7))
+
+
+if __name__ == "__main__":
+    unittest.main()

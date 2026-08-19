@@ -115,3 +115,30 @@ class TestItTouchesNothing(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestItModelsIdentityChangingAtTheBoundary(unittest.TestCase):
+    """API-056 — a double where two identities are equal hides the bug (#155)."""
+
+    def github(self):
+        return FakeGitHub(issues=[{"number": 42, "state": "open"}])
+
+    def test_an_issue_has_an_id_that_is_not_its_number(self):  # API-056
+        self.assertNotEqual(self.github().issue(42)["id"], 42)
+
+    def test_an_edge_carries_both_identities(self):  # API-056
+        github = self.github()
+        github.add_blocked_by(7, github.issue_id(42))
+        edge = github.blocked_by(7)[0]
+        self.assertEqual((edge["number"], edge["id"]), (42, github.issue(42)["id"]))
+
+    def test_writing_a_number_where_an_id_belongs_does_not_name_that_issue(self):  # API-056
+        """The defect, reproduced: the wrong identity is accepted and stores
+        an edge to something else, exactly as the real API did."""
+        github = self.github()
+        github.add_blocked_by(7, 42)
+        self.assertNotEqual(github.blocked_by(7)[0]["id"], github.issue(42)["id"])
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -139,6 +139,11 @@ anything at all.
 - **API-054** The fake paginates using the same page size as the real client, so pagination
   behaviour is exercised rather than bypassed.
 - **API-055** The fake performs no I/O and imports no network library.
+- **API-056** Where a value changes meaning as it crosses the boundary, the fake models the change
+  rather than the happy case. An issue's database id is not its number, so the fake gives every
+  issue an id unlike its number and its dependency edges carry both. A double in which two distinct
+  identities are equal cannot express a client confusing them, and a suite written against it is
+  green for a defect it structurally cannot see (#155).
 
 ---
 
@@ -150,8 +155,8 @@ anything at all.
 | Failure | API-010–016 | `test_github_failure.py` |
 | Pagination | API-020–026 | `test_github_pagination.py` |
 | Operations | API-030–041 | `test_github_operations.py` |
-| The fake | API-050–055 | `test_fake_github.py` |
+| The fake | API-050–056 | `test_fake_github.py` |
 | Reaching it from a workflow | API-060–061 | `test_reusable_workflows.py` |
 | Invariants | — | `test_architecture.py` |
 
-**52 requirements, 51 `auto` and 1 `manual`.**
+**53 requirements, 52 `auto` and 1 `manual`.**

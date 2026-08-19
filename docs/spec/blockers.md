@@ -64,6 +64,10 @@ An ordering hint rather than a gate. GitHub has no native form, so these stay st
 - **BLK-032** `unblock(issue, by)` removes one.
 - **BLK-033** Removing one that does not exist is a no-op, not an error.
 - **BLK-034** An issue may not block itself; the attempt is refused.
+- **BLK-036** A blocker is named to GitHub by its **database id**, never by its issue number. The
+  two are different integers for the same issue, so sending one where the other is meant is
+  accepted and writes an edge to whichever issue that value identifies. `block` and `unblock` take
+  numbers — that is what a person says — and convert in one named place.
 - **BLK-035** A cycle is refused, naming the path. Two issues each waiting for the other are both
   permanently ineligible.
 
@@ -85,7 +89,23 @@ An ordering hint rather than a gate. GitHub has no native form, so these stay st
 | Reading | BLK-001–007 | `test_blockers_read.py` |
 | Soft dependencies | BLK-010–016 | `test_blockers_text.py` |
 | Prose blockers are drift | BLK-020–022 | `test_blockers_text.py` |
-| Writing | BLK-030–035 | `test_blockers_write.py` |
+| Writing | BLK-030–036 | `test_blockers_write.py` |
 | Eligibility | BLK-040–044 | `test_blockers_read.py` |
 
-**29 requirements, all `auto`.**
+**30 requirements, all `auto`.**
+
+> **How the spec is changing (#155).** §4 said `block` creates a relationship and `unblock` removes
+> one, and said nothing about what identifies the blocker. So the client sent an issue *number*
+> where the API means a database id, GitHub accepted it, and `block(154, 153)` blocked #154 by
+> **#4** — an unrelated issue — and reported success. `blockers_of` then read the edge back and
+> reported #4, consistently, so a read-after-write confirmed a relationship nobody asked for.
+>
+> The invariant this breaks is `BLK`'s own: a prose blocker is invisible to the queue and a native
+> one is a real gate. A native relationship pointing at the wrong issue is worse than either, because
+> the queue honours it — the wrong issue gates the work and the right one does not.
+>
+> All 29 requirements were green throughout. `lib/fake_github.py` stored edges as `{"number": …}`
+> with no `id` field at all, so the distinction the real API turns on did not exist in the double,
+> and no test written against it could have expressed the defect. `API-056` states what the fake
+> owes as a result: where a value changes meaning at the boundary, the fake must model the change,
+> not the happy case.
