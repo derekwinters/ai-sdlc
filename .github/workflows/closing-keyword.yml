@@ -1,8 +1,13 @@
 name: closing-keyword
 
-# The caller. All logic lives in the reusable workflow; this file exists only
-# because a trigger cannot be centralised — `pull_request` must be declared in
-# the repository the pull request is opened against.
+# The caller. All logic lives in the action; this file exists only because a
+# trigger cannot be centralised — `pull_request` must be declared in the
+# repository the pull request is opened against.
+#
+# ai-sdlc is its own first consumer, so it runs the check it publishes. The
+# action is referenced by local path here rather than by SHA: within this
+# repository the two would be the same commit anyway, and a pin would have to
+# be bumped by hand on every change to the action it points at.
 
 on:
   pull_request:
@@ -13,4 +18,7 @@ permissions:
 
 jobs:
   closing-keyword:
-    uses: ./.github/workflows/reusable-closing-keyword.yml
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: ./.github/actions/closing-keyword

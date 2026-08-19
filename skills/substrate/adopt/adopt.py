@@ -405,6 +405,21 @@ MANUAL_TASKS = (
     "check stays pending forever and blocks the merge it was meant to permit.",
 )
 
+#: The check names an action-based caller reports under.
+#:
+#: A reusable workflow reports as `<workflow> / <job>`; a job running an action
+#: reports as `<job>`. So converting a caller *renames* its status check, and a
+#: branch protection rule naming the old one waits for a check that will never
+#: report again — the exact trap `MANUAL_TASKS` already warns about from the
+#: other direction, arriving this time through an upgrade nobody thought was
+#: risky.
+RENAMED_CHECKS_TASK = (
+    "Settings → Branches: the required check for each caller using an action "
+    "is now named after its job alone — `closing-keyword`, not "
+    "`closing-keyword / closing-keyword`. Update the protection rule, or it "
+    "waits forever on a check that no longer reports."
+)
+
 #: A permission `apply` cannot grant itself. Without it `skills-update` pushes
 #: its branch and then fails at `gh pr create`, which leaves a branch and no
 #: pull request — the confusing half of a failure rather than the loud one.
@@ -418,9 +433,16 @@ PULL_REQUEST_TASK = (
 def _manual_tasks(config):
     """The work no agent can do, for this repository's configuration."""
     tasks = list(MANUAL_TASKS)
+    if _uses_an_action(config):
+        tasks.append(RENAMED_CHECKS_TASK)
     if getattr(config, "skills", ()):
         tasks.append(PULL_REQUEST_TASK)
     return tasks
+
+
+def _uses_an_action(config):
+    """Whether this repository installs any caller that runs an action."""
+    return "hygiene" in config.capabilities or "mkdocs" in getattr(config, "profiles", ())
 
 
 def _files_for(config, pin):
@@ -445,8 +467,8 @@ def _installed(config, pin):
 
     if "hygiene" in config.capabilities:
         files[HOUSE_RULES] = _house_rules()
-        files[".github/workflows/closing-keyword.yml"] = _caller(
-            "closing-keyword", "reusable-closing-keyword.yml", pin,
+        files[".github/workflows/closing-keyword.yml"] = _action_caller(
+            "closing-keyword", "closing-keyword", pin,
             trigger=(
                 "  pull_request:\n"
                 "    types: [opened, edited, reopened, synchronize, labeled, unlabeled]\n"
@@ -486,8 +508,8 @@ def _installed(config, pin):
             ),
         )
 
-        files[".github/workflows/docs-gate.yml"] = _caller(
-            "docs-gate", "reusable-docs-gate.yml", pin,
+        files[".github/workflows/docs-gate.yml"] = _action_caller(
+            "docs-gate", "docs-gate", pin,
             # `labeled` is load-bearing: the gate's verdict depends on the
             # pull request's labels as well as its files, so adding
             # `skip-docs` to an already-failed run has to start a fresh one.
@@ -755,9 +777,7 @@ def _core_labels():
 #: Read from the workflow files by test, so this cannot drift from what they
 #: actually declare.
 GRANTS = {
-    "reusable-closing-keyword.yml": {"contents": "read"},
     "reusable-docs-build.yml": {"contents": "read"},
-    "reusable-docs-gate.yml": {"contents": "read"},
     "reusable-labels-sync.yml": {"contents": "read", "issues": "write"},
     "reusable-gatekeeper-comment.yml": {"contents": "read", "issues": "write"},
     "reusable-triage.yml": {"contents": "read", "issues": "write"},
@@ -770,6 +790,61 @@ GRANTS = {
     # pull request; it never pushes to the default branch.
     "reusable-skills-update.yml": {"contents": "write", "pull-requests": "write"},
 }
+
+
+#: What each action needs the caller to grant, for the same reason `GRANTS`
+#: exists: a job that grants too little fails before any step runs.
+ACTION_GRANTS = {
+    "closing-keyword": {"contents": "read"},
+    "docs-gate": {"contents": "read"},
+}
+
+
+def _action_caller(name, action, pin, trigger, concurrency=None):
+    """A caller that `uses:` an action, and checks nothing out.
+
+    The whole point of the shape. A reusable workflow has to fetch the code it
+    runs, which meant every consumer's run cloned ai-sdlc into its own
+    workspace — and `actions/checkout` empties the directory it writes into, so
+    that clone was one naming collision away from replacing the consumer's own
+    configuration and being read instead of it (#150).
+
+    A path-based action is fetched by the runner into its own directory before
+    any step executes. Nothing lands in the workspace, so there is nothing to
+    collide with.
+
+    There is also only **one** reference now, rather than a `uses:` and a `ref:`
+    that had to agree. `ADOPT-060` existed to keep those two in step; with one,
+    they cannot disagree.
+
+    ``concurrency`` is written by the caller because an action cannot declare
+    it — it is a workflow-level key. Where a group is what stops two runs
+    racing, that makes it generated code rather than central code, which is why
+    a test asserts every caller carrying one.
+    """
+    version, sha = pin
+    grants = "".join(
+        f"  {scope}: {level}\n" for scope, level in sorted(ACTION_GRANTS[action].items())
+    )
+    return (
+        f"name: {name}\n\n"
+        f"# A caller. The logic is in ai-sdlc; this exists because a trigger\n"
+        f"# cannot be centralised — it must be declared in the repository it\n"
+        f"# fires for.\n#\n"
+        f"# Pinned to a commit rather than a tag: a tag can move, and this runs\n"
+        f"# with this repository's token. Upgrade with `adopt apply <version>`,\n"
+        f"# which rewrites both the SHA and the comment.\n#\n"
+        f"# Nothing is checked out here. The action is fetched by the runner,\n"
+        f"# outside this repository's workspace.\n\n"
+        f"on:\n{trigger}\n"
+        f"permissions:\n{grants}\n"
+        + (f"concurrency:\n{concurrency}\n" if concurrency else "")
+        + f"jobs:\n"
+        f"  {name}:\n"
+        f"    runs-on: ubuntu-latest\n"
+        f"    steps:\n"
+        f"      - uses: {SOURCE}/.github/actions/{action}@{sha} # {version}\n"
+    )
 
 
 def _caller(name, reusable, pin, trigger, secrets=None, condition=None, inputs=""):

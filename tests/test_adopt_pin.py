@@ -19,13 +19,13 @@ OTHER = "11d5960a326750d5838078e36cf38b85af677262"
 
 
 def caller(version=("v0.4.1", SHA)):
-    return _caller("closing-keyword", "reusable-closing-keyword.yml", version,
+    return _caller("labels-sync", "reusable-labels-sync.yml", version,
                    trigger="  pull_request:\n")
 
 
 class TestTheReference(unittest.TestCase):
     def test_uses_names_the_sha(self):  # ADOPT-060
-        self.assertIn(f"reusable-closing-keyword.yml@{SHA}", caller())
+        self.assertIn(f"reusable-labels-sync.yml@{SHA}", caller())
 
     def test_uses_does_not_name_the_version(self):  # ADOPT-060
         line = [l for l in caller().splitlines() if "uses:" in l][0]
