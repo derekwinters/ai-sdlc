@@ -167,17 +167,19 @@ class TestTheThresholdIsRequired(unittest.TestCase):
         parameter = inspect.signature(run).parameters["stale_after"]
         self.assertIs(parameter.default, inspect.Parameter.empty)
 
-    def test_the_workflow_declares_the_input_required(self):  # GK-141
-        workflow = (Path(__file__).resolve().parents[1]
-                    / ".github/workflows/reusable-gatekeeper-sweep.yml").read_text()
-        block = workflow[workflow.index("stale_after:"):]
-        self.assertIn("required: true", block[:block.index("permissions:")])
+    def test_the_action_does_not_default_the_threshold(self):  # GK-141
+        """Inheriting a number nobody chose is how a threshold ends up wrong
+        and unnoticed, so the action supplies none and the run fails loudly."""
+        action = (Path(__file__).resolve().parents[1]
+                  / ".github/actions/gatekeeper/action.yml").read_text()
+        block = action[action.index("stale-after:"):]
+        self.assertIn('default: ""', block[:block.index("fire-endpoint:")])
 
     def test_adopt_writes_thirty_minutes_into_the_caller(self):  # GK-141
         """The value belongs where somebody can see and change it."""
         adopt = (Path(__file__).resolve().parents[1]
                  / "skills/substrate/adopt/adopt.py").read_text()
-        self.assertIn("stale_after: 1800", adopt)
+        self.assertIn('stale-after: \\"1800\\"', adopt)
 
 
 class TestReporting(unittest.TestCase):

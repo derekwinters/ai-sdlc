@@ -1,4 +1,4 @@
-"""ADOPT-100 to ADOPT-106 — callers that use an action, and check out nothing.
+"""ADOPT-100 to ADOPT-108 — callers that use an action, and check out nothing.
 
 A reusable workflow has to fetch the code it runs, which meant every consumer's
 run cloned ai-sdlc into its own workspace. An action is fetched by the runner
@@ -146,6 +146,103 @@ class TestTheRenamedCheckIsReported(unittest.TestCase):
 
     def test_a_repository_with_none_is_not(self):  # ADOPT-106
         self.assertNotIn("no longer reports", self._tasks("capabilities:\n  - labels\n"))
+
+
+PIPELINE = (
+    "capabilities:\n  - hygiene\n  - consistency\n  - labels\n  - release\n"
+    "  - pipeline\nowners:\n  - someone\ndashboard_issue: 7\n"
+)
+
+GATEKEEPER_CALLERS = {
+    "gatekeeper-comment": "comment",
+    "gatekeeper-close": "closed",
+    "triage": "labeled",
+    "gatekeeper-sweep": "sweep",
+}
+
+
+class TestTheGatekeeperIsOneAction(unittest.TestCase):
+    """ADOPT-107 — four callers, one action, a mode input.
+
+    They were four reusable workflows running the same script with a different
+    subcommand, identical permissions, and nothing else to tell them apart but
+    their trigger — which is the one thing that genuinely cannot be centralised.
+    """
+
+    def test_every_caller_uses_the_one_action(self):  # ADOPT-107
+        for name in GATEKEEPER_CALLERS:
+            with self.subTest(caller=name):
+                self.assertIn(
+                    f"uses: {SOURCE}/.github/actions/gatekeeper@",
+                    caller(name, PIPELINE),
+                )
+
+    def test_each_names_its_mode(self):  # ADOPT-107
+        for name, mode in GATEKEEPER_CALLERS.items():
+            with self.subTest(caller=name):
+                self.assertIn(f"mode: {mode}", caller(name, PIPELINE))
+
+    def test_none_checks_ai_sdlc_out(self):  # ADOPT-101
+        for name in GATEKEEPER_CALLERS:
+            with self.subTest(caller=name):
+                text = caller(name, PIPELINE)
+                self.assertNotIn("repository: derekwinters/ai-sdlc", text)
+                self.assertNotIn(".ai-sdlc-checkout", text)
+
+
+class TestTheConcurrencyGroupIsWritten(unittest.TestCase):
+    """ADOPT-108 — an action cannot declare `concurrency`, so the caller must.
+
+    This is the one safety property the move pushes out of the centre. Every
+    label write goes through `set_labels`, which is `PUT /issues/{n}/labels`
+    with the whole list — a full replacement, not a patch. Two runs on one
+    issue therefore read-modify-write the same set and one silently loses,
+    whichever label each *meant* to touch.
+    """
+
+    def test_every_issue_scoped_caller_serialises_on_the_issue(self):  # ADOPT-108
+        for name in ("gatekeeper-comment", "gatekeeper-close", "triage"):
+            with self.subTest(caller=name):
+                self.assertIn(
+                    "group: gatekeeper-${{ github.event.issue.number }}",
+                    caller(name, PIPELINE),
+                )
+
+    def test_the_sweep_serialises_globally(self):  # ADOPT-108
+        text = caller("gatekeeper-sweep", PIPELINE)
+        self.assertIn("group: gatekeeper-sweep", text)
+        self.assertNotIn("issue.number", text)
+
+    def test_no_caller_cancels_a_run_in_progress(self):  # ADOPT-108
+        """Cancelling one mid-write would leave the labels half applied."""
+        for name in GATEKEEPER_CALLERS:
+            with self.subTest(caller=name):
+                self.assertIn("cancel-in-progress: false", caller(name, PIPELINE))
+
+    def test_triage_shares_the_gatekeepers_group(self):  # ADOPT-108
+        """It used to have its own, so a hand-applied label could fire triage
+        while a gatekeeper comment was mid-write on the same issue."""
+        self.assertNotIn("group: triage-", caller("triage", PIPELINE))
+
+
+class TestTheGatekeeperWorkflowsAreGone(unittest.TestCase):
+    RETIRED = (
+        "reusable-gatekeeper-comment.yml",
+        "reusable-gatekeeper-close.yml",
+        "reusable-gatekeeper-sweep.yml",
+        "reusable-triage.yml",
+    )
+
+    def test_they_are_removed(self):  # ADOPT-105
+        for name in self.RETIRED:
+            with self.subTest(workflow=name):
+                self.assertFalse((ROOT / ".github" / "workflows" / name).exists())
+
+    def test_nothing_calls_them(self):  # ADOPT-105
+        for path in sorted((ROOT / ".github" / "workflows").glob("*.yml")):
+            for name in self.RETIRED:
+                with self.subTest(workflow=path.name, retired=name):
+                    self.assertNotIn(name, path.read_text())
 
 
 if __name__ == "__main__":

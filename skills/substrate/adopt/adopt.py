@@ -520,44 +520,53 @@ def _installed(config, pin):
         )
 
     if "pipeline" in config.capabilities:
-        files[".github/workflows/gatekeeper-comment.yml"] = _caller(
-            "gatekeeper-comment", "reusable-gatekeeper-comment.yml", pin,
+        # Four callers, one action. They differ in their trigger — which cannot
+        # be centralised — and in the mode they ask for. Everything else that
+        # used to differ between them was accidental.
+        fire = _fire_inputs(config)
+
+        files[".github/workflows/gatekeeper-comment.yml"] = _action_caller(
+            "gatekeeper-comment", "gatekeeper", pin,
             trigger="  issue_comment:\n    types: [created]\n",
-            # The only place a repository can say which of its secrets hold the
-            # analysis routine's endpoint and token. Without this the workflow
-            # receives empty strings and `Fire` reports the routine as
-            # unconfigured — silently, by design (#118).
-            secrets=_fire_secrets(config),
+            concurrency=ISSUE_GROUP,
+            # A pull request comment is not an issue comment for these purposes.
+            condition="github.event.issue.pull_request == null",
+            inputs="          mode: comment\n" + fire,
         )
         # Firing keyed on the label event rather than on the gatekeeper, so an
         # issue entering triage fires exactly once however the label got there
         # — including by hand, which used to fire nothing at all (#123).
-        files[".github/workflows/triage.yml"] = _caller(
-            "triage", "reusable-triage.yml", pin,
+        files[".github/workflows/triage.yml"] = _action_caller(
+            "triage", "gatekeeper", pin,
             trigger="  issues:\n    types: [labeled]\n",
+            concurrency=ISSUE_GROUP,
             condition=(
                 "github.event.label.name == "
                 f"'{config.labels['triage_queued']}'"
             ),
-            secrets=_fire_secrets(config),
+            inputs="          mode: labeled\n" + fire,
         )
-        files[".github/workflows/gatekeeper-close.yml"] = _caller(
-            "gatekeeper-close", "reusable-gatekeeper-close.yml", pin,
+        files[".github/workflows/gatekeeper-close.yml"] = _action_caller(
+            "gatekeeper-close", "gatekeeper", pin,
             trigger="  issues:\n    types: [closed]\n",
+            concurrency=ISSUE_GROUP,
+            inputs="          mode: closed\n",
         )
         # The backstop for a lost poke (#136). Hourly rather than on the
         # dashboard's daily schedule: an issue whose session never answered is
         # dead until something notices, and a day of that is a day of nothing
         # happening.
-        files[".github/workflows/gatekeeper-sweep.yml"] = _caller(
-            "gatekeeper-sweep", "reusable-gatekeeper-sweep.yml", pin,
+        files[".github/workflows/gatekeeper-sweep.yml"] = _action_caller(
+            "gatekeeper-sweep", "gatekeeper", pin,
             trigger="  schedule:\n    - cron: \"17 * * * *\"\n  workflow_dispatch:\n",
-            # Thirty minutes, written here rather than defaulted in the reusable
-            # workflow: the value belongs where somebody can see and change it,
-            # and a caller that omits it fails loudly (`GK-141`).
-            inputs="      stale_after: 1800\n",
-            # No fire secrets. The sweep starts no sessions, so it has nothing
+            concurrency=SWEEP_GROUP,
+            # Thirty minutes, written here rather than defaulted in the action:
+            # the value belongs where somebody can see and change it, and a
+            # caller that omits it fails loudly (`GK-141`).
+            #
+            # No fire inputs. The sweep starts no sessions, so it has nothing
             # to authenticate to.
+            inputs="          mode: sweep\n          stale-after: \"1800\"\n",
         )
         # The other half of report-rather-than-repair: nothing silently fixes
         # drift, so the board has to show it. A pipeline with no dashboard is
@@ -779,13 +788,7 @@ def _core_labels():
 GRANTS = {
     "reusable-docs-build.yml": {"contents": "read"},
     "reusable-labels-sync.yml": {"contents": "read", "issues": "write"},
-    "reusable-gatekeeper-comment.yml": {"contents": "read", "issues": "write"},
-    "reusable-triage.yml": {"contents": "read", "issues": "write"},
-    "reusable-gatekeeper-close.yml": {"contents": "read", "issues": "write"},
     "reusable-dashboard.yml": {"contents": "read", "issues": "write"},
-    # Reads the board and pokes the routine; it moves no labels, so it needs
-    # no write. The one workflow that spends money has the narrowest grant.
-    "reusable-gatekeeper-sweep.yml": {"contents": "read", "issues": "write"},
     # The only workflow that commits. It writes to its own branch and opens a
     # pull request; it never pushes to the default branch.
     "reusable-skills-update.yml": {"contents": "write", "pull-requests": "write"},
@@ -797,10 +800,39 @@ GRANTS = {
 ACTION_GRANTS = {
     "closing-keyword": {"contents": "read"},
     "docs-gate": {"contents": "read"},
+    "gatekeeper": {"contents": "read", "issues": "write"},
 }
 
+#: How a caller serialises against others on the same issue.
+#:
+#: An action cannot declare `concurrency` — it is a workflow-level key — so the
+#: caller carries it, which makes race prevention generated code rather than
+#: central code. That is why it is written here, from one table, and asserted
+#: by test rather than left to whoever writes a caller next.
+#:
+#: **Every issue-scoped mode shares one group.** `set_labels` is
+#: `PUT /issues/{n}/labels` with the whole list — a replacement, not a patch —
+#: so two runs on one issue read-modify-write the same set and one silently
+#: loses, whichever label each meant to touch. Before #157 triage had a group
+#: of its own, so labelling an issue by hand could fire triage while a
+#: gatekeeper comment was mid-write on the same issue.
+ISSUE_GROUP = (
+    "  # Every writer on one issue serialises. `set_labels` replaces the whole\n"
+    "  # label set rather than patching it, so two runs would read-modify-write\n"
+    "  # the same list and one would silently lose.\n"
+    "  group: gatekeeper-${{ github.event.issue.number }}\n"
+    "  cancel-in-progress: false\n"
+)
 
-def _action_caller(name, action, pin, trigger, concurrency=None):
+SWEEP_GROUP = (
+    "  # One sweep at a time, and never cancelled: it reads the whole board,\n"
+    "  # and a cancelled run leaves the labels it was moving half applied.\n"
+    "  group: gatekeeper-sweep\n"
+    "  cancel-in-progress: false\n"
+)
+
+
+def _action_caller(name, action, pin, trigger, concurrency=None, inputs="", condition=None):
     """A caller that `uses:` an action, and checks nothing out.
 
     The whole point of the shape. A reusable workflow has to fetch the code it
@@ -841,9 +873,13 @@ def _action_caller(name, action, pin, trigger, concurrency=None):
         + (f"concurrency:\n{concurrency}\n" if concurrency else "")
         + f"jobs:\n"
         f"  {name}:\n"
-        f"    runs-on: ubuntu-latest\n"
+        # A job-level condition, where the trigger alone is too broad — a
+        # comment on a pull request is not an issue comment for these purposes.
+        + (f"    if: {condition}\n" if condition else "")
+        + f"    runs-on: ubuntu-latest\n"
         f"    steps:\n"
         f"      - uses: {SOURCE}/.github/actions/{action}@{sha} # {version}\n"
+        + (f"        with:\n{inputs}" if inputs else "")
     )
 
 
@@ -912,6 +948,25 @@ def _secrets(secrets):
         for given, named in sorted(secrets.items())
     )
     return f"    secrets:\n{lines}"
+
+
+def _fire_inputs(config):
+    """The analysis routine's endpoint and token, as action inputs.
+
+    An action takes `with:` where a reusable workflow took `secrets:`. The
+    *value* still never appears — only `${{ secrets.NAME }}`, which GitHub
+    resolves in the consumer's own repository and masks in the log. A
+    repository naming neither gets neither, and a pipeline with no routine
+    keeps working (`GK-119`).
+    """
+    fire = getattr(config, "fire", None)
+    named = (
+        ("fire-endpoint", getattr(fire, "endpoint_secret", None)),
+        ("fire-token", getattr(fire, "token_secret", None)),
+    )
+    return "".join(
+        f"          {given}: ${{{{ secrets.{name} }}}}\n" for given, name in named if name
+    )
 
 
 def _fire_secrets(config):

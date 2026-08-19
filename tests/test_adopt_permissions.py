@@ -155,11 +155,13 @@ class TestTheFireSecretsReachTheCaller(unittest.TestCase):
         return (root / ".github/workflows/gatekeeper-comment.yml").read_text()
 
     def test_the_named_secrets_are_passed(self):  # ADOPT-070
+        """As `with:` inputs now the gatekeeper is an action, rather than a
+        `secrets:` block. The *value* still never appears — only the name,
+        which GitHub resolves in the consumer's repository and masks."""
         text = self._apply(
             "fire:\n  endpoint_secret: AI_TRIAGE_URL\n  token_secret: AI_TRIAGE_SECRET\n")
-        self.assertIn("    secrets:", text)
-        self.assertIn("fire_endpoint: ${{ secrets.AI_TRIAGE_URL }}", text)
-        self.assertIn("fire_token: ${{ secrets.AI_TRIAGE_SECRET }}", text)
+        self.assertIn("fire-endpoint: ${{ secrets.AI_TRIAGE_URL }}", text)
+        self.assertIn("fire-token: ${{ secrets.AI_TRIAGE_SECRET }}", text)
 
     def test_a_repository_naming_none_gets_no_block(self):  # ADOPT-070
         """A repository may legitimately run the pipeline with no routine.

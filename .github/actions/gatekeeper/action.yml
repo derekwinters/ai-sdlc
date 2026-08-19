@@ -1,0 +1,68 @@
+name: gatekeeper
+description: >-
+  Translate an owner's commands into label moves, clean up on close, fire the
+  analysis routine for a queued issue, and relabel a session that never
+  answered. One action; the caller says which.
+
+# An action rather than four reusable workflows. They ran the same script with
+# a different subcommand, granted identical permissions, and differed in
+# nothing else but their trigger — which is the one thing that cannot be
+# centralised, and stays in the caller.
+#
+# The runner fetches this repository into its own action directory before any
+# step runs, so nothing of ai-sdlc's enters the consumer's workspace.
+
+inputs:
+  mode:
+    description: comment | closed | labeled | sweep
+    required: true
+  stale-after:
+    description: >-
+      Seconds after which a triage session that has not answered is stalled.
+      Required by `sweep` and meaningless to the others. Deliberately not
+      defaulted (`GK-141`): inheriting a threshold nobody chose is how one ends
+      up wrong and unnoticed.
+    required: false
+    default: ""
+  fire-endpoint:
+    description: The analysis routine's endpoint. Absent means no routine, which is a notice rather than an error.
+    required: false
+    default: ""
+  fire-token:
+    description: The analysis routine's token.
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    # The consumer's own repository, because `lib.config` reads
+    # `.ai-sdlc/repo-config.yml` from the working directory. Shallow is enough:
+    # nothing here reads history.
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+    - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+      with:
+        python-version: "3.12"
+
+    - name: Run the gatekeeper
+      shell: bash
+      env:
+        # `github.token` rather than an input: it is the caller's token either
+        # way, and asking every caller to pass it is one more thing to get
+        # wrong in generated code.
+        GITHUB_TOKEN: ${{ github.token }}
+        GITHUB_EVENT_PATH: ${{ github.event_path }}
+        GITHUB_REPOSITORY: ${{ github.repository }}
+        FIRE_ENDPOINT: ${{ inputs.fire-endpoint }}
+        FIRE_TOKEN: ${{ inputs.fire-token }}
+        STALE_AFTER: ${{ inputs.stale-after }}
+        MODE: ${{ inputs.mode }}
+      # `../../..` is the repository root: this file is at
+      # `.github/actions/<name>/action.yml`. PYTHONPATH points there too,
+      # because the gatekeeper imports `lib`, which lives at that root and not
+      # in the consumer's workspace.
+      run: |
+        ROOT="$GITHUB_ACTION_PATH/../../.."
+        PYTHONPATH="$ROOT" python3 \
+          "$ROOT/skills/pipeline/pipeline-gatekeeper/main.py" "$MODE"
