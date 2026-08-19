@@ -126,6 +126,13 @@ class TestWhatItContains(unittest.TestCase):
     def test_it_names_the_skill(self):  # RULES-018
         self.assertIn("`ai-sdlc` skill", TEXT)
 
+    def test_it_says_to_read_back_what_was_published(self):  # RULES-019
+        """Care while writing cannot catch a leak the tooling adds afterwards."""
+        self.assertIn("read back", BODY)
+
+    def test_it_says_why_writing_carefully_is_not_enough(self):  # RULES-019
+        self.assertIn("appended after", BODY)
+
 
 class TestWhatItDoesNotContain(unittest.TestCase):
     def test_it_names_no_stack(self):  # RULES-020

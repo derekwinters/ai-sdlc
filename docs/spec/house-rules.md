@@ -47,6 +47,10 @@ Every requirement below is `auto` (covered by a named test) unless marked otherw
 - **RULES-015** Specification before code, and a failing test before an implementation.
 - **RULES-016** Ask rather than invent a design decision.
 - **RULES-017** Tasks needing a human are filed one per issue, never collected into one.
+- **RULES-019** Read back what was published. After opening a pull request, filing an issue or
+  leaving a comment, the stored text is fetched and compared against what was sent, because tooling
+  appends and rewrites *after* the author has finished. A rule stated as care cannot catch a leak
+  nobody authored, and omitting the offending text does not prevent it being added.
 - **RULES-018** Where the installed files are: the fragment names `.ai-sdlc/adoption.md`,
   `.ai-sdlc/repo-config.yml` and the `ai-sdlc` skill, so discovery does not depend on the skill
   firing. Skill discovery is probabilistic — a skill loads when the model judges its description
@@ -69,7 +73,18 @@ Every requirement below is `auto` (covered by a named test) unless marked otherw
 | Section | IDs | Tests |
 |---|---|---|
 | The fragment | RULES-001–005 | `test_house_rules.py` |
-| What it contains | RULES-010–018 | `test_house_rules.py` |
+| What it contains | RULES-010–019 | `test_house_rules.py` |
 | What it does not contain | RULES-020–022 | `test_house_rules.py` |
 
-**17 requirements, all `auto`.**
+**18 requirements, all `auto`.**
+
+> **How the spec is changing (#156).** `RULES` covered what an agent must not write, and one
+> paragraph extended that to text it merely quotes — error bodies, stack traces. Neither covers
+> text appended by the tooling that publishes the message. An attribution footer written as a plain
+> link to Claude Code was rewritten on creation to carry a session identifier, on two public
+> repositories; writing no footer at all made no difference, because one was added regardless. An
+> agent following every existing rule perfectly still published a private link, and had no reason
+> to look again, because it knew what it had written.
+>
+> `RULES-019` therefore states a **check**, not more care. It is the only form that catches a leak
+> the author did not author.
