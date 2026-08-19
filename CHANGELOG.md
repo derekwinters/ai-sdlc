@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.4.19](https://github.com/derekwinters/ai-sdlc/compare/v0.4.18...v0.4.19) (2026-08-19)
+
+
+### ⚠ BREAKING CHANGES
+
+* **substrate:** the hygiene and mkdocs gates become actions, checking nothing out ([#162](https://github.com/derekwinters/ai-sdlc/issues/162))
+
+### Features
+
+* **substrate:** the hygiene and mkdocs gates become actions, checking nothing out ([#162](https://github.com/derekwinters/ai-sdlc/issues/162)) ([bc1b403](https://github.com/derekwinters/ai-sdlc/commit/bc1b4030a005f030d623a65a380c75d9007f1d76)), closes [#161](https://github.com/derekwinters/ai-sdlc/issues/161)
+
+
+### Fixes
+
+* **pipeline:** name a blocker by its database id, not its issue number ([#159](https://github.com/derekwinters/ai-sdlc/issues/159)) ([b06b6a5](https://github.com/derekwinters/ai-sdlc/commit/b06b6a5be5d1d554235a98406d8082d55b07a03d)), closes [#155](https://github.com/derekwinters/ai-sdlc/issues/155)
+
 ## [0.4.18](https://github.com/derekwinters/ai-sdlc/compare/v0.4.17...v0.4.18) (2026-08-18)
 
 
