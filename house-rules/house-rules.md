@@ -79,6 +79,15 @@ This applies to text you did not write. Error messages, response bodies, and sta
 values they were handed, so a branch that reports a raw body needs redaction rather than trust —
 which is why a leak usually survives deleting the line that was leaking on purpose.
 
+**Read back what was actually published.** After opening a pull request, filing an issue, or leaving
+a comment, fetch the stored text and check it against what you sent. Tooling rewrites and appends:
+an attribution footer written as a plain link has been rewritten on the way in to carry a session
+identifier, on every pull request created, in more than one repository — and omitting the footer
+entirely did not prevent it, because it is **appended after** the author has finished. Nothing you
+wrote was wrong and the private link is published anyway, which is exactly why writing carefully
+cannot be the whole rule. Only looking afterwards catches it, and editing it out afterwards is what
+fixes it.
+
 ## Work only a human can do
 
 Repository settings, secrets, external accounts, physical devices, and taste calls are not yours.
