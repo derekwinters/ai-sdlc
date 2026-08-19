@@ -1321,10 +1321,32 @@ replacing a file the consumer committed and being read instead of it.</p>
   workflow reports as <code>&lt;workflow&gt; / &lt;job&gt;</code>, a job running an action as <code>&lt;job&gt;</code> — so <code>apply</code> reports
   updating branch protection as a manual task. Only a human can change a protection rule, and one
   naming the old check waits forever on a check that will never report again.</li>
-<li><strong>ADOPT-105</strong> A reusable workflow replaced by an action is removed. Two delivery mechanisms for
-  one script is a second copy that nothing installs and nothing keeps in step.</li>
+<li><strong>ADOPT-105</strong> A reusable workflow replaced by an action is removed.</li>
+<li><strong>ADOPT-107</strong> Where several callers ran one script with different arguments, they call one
+  action with a mode input. The gatekeeper was four workflows differing in their trigger, their
+  subcommand, and nothing else that was deliberate.</li>
+<li><strong>ADOPT-108</strong> A caller declares the concurrency group its mode requires, because an action
+  cannot — <code>concurrency</code> is a workflow-level key. Every issue-scoped mode shares <strong>one</strong> group per
+  issue, and no caller cancels a run in progress.</li>
 </ul>
 <blockquote>
+<p><strong>Invariant — every writer on one issue serialises.</strong> <code>set_labels</code> is
+<code>PUT /issues/{n}/labels</code> with the whole list: a replacement, not a patch. Two runs on one issue
+read-modify-write the same set and one silently loses, whichever label each <em>meant</em> to touch. A
+cancelled run leaves the set half applied, which is why none may be cancelled. Two delivery mechanisms for
+  one script is a second copy that nothing installs and nothing keeps in step.</p>
+<p><strong>How the spec is changing (#157, the concurrency half).</strong> Triage used to have a concurrency
+group of its own — <code>triage-&lt;issue&gt;</code> — while the comment and close handlers shared
+<code>gatekeeper-&lt;issue&gt;</code>. So a label applied by hand could fire triage while a gatekeeper comment was
+mid-write on the same issue, and because <code>set_labels</code> replaces the whole label set rather than
+patching it, one of the two writes would have been lost with nothing to show for it. The groups
+are now one. The cost is that a triage fire waits behind a comment on the same issue, which is
+seconds; the alternative was a race that only appears under a human doing two things at once.</p>
+<p>Moving the gatekeeper to an action is what forced the question: an action cannot declare
+<code>concurrency</code>, so the group had to become something <code>adopt</code> writes into every caller, and writing
+four different groups from one table made it obvious they had never been reasoned about together.
+<code>ADOPT-108</code> and a test now hold it, which is the trade — race prevention became generated code,
+so it needed a gate that central code did not.</p>
 <p><strong>How the spec is changing (#157).</strong> §7 pinned a caller to a reusable workflow and paired its
 <code>uses:</code> with a <code>ref:</code> input so the workflow and the code it ran could not come from different
 commits. An action has a single reference, so <code>ADOPT-060</code>'s pairing rule applies only to the
@@ -1419,7 +1441,7 @@ fewer, or the run cannot start; not more, or adoption quietly widens what the pi
 <blockquote>
 <p><strong>How the spec is changing (#118).</strong> §7 covered the caller's <code>uses:</code>, its <code>ref:</code> and its
 <code>permissions:</code>, and said nothing about secrets. Every caller <code>adopt</code> had ever written therefore
-omitted the <code>secrets:</code> block that <code>reusable-gatekeeper-comment.yml</code> declares, so <code>Fire</code> received
+omitted the <code>secrets:</code> block the gatekeeper's reusable workflow declared, so <code>Fire</code> received
 empty strings and reported the routine as unconfigured — silently, because <code>GK-119</code> makes that a
 notice rather than an error. Triage had never run in <code>connor-multiplying-frogs</code> since adoption.
 <code>CFG-046</code> had specified how a repository names those secrets since before the pipeline shipped,
@@ -1510,12 +1532,12 @@ was right to. <code>VAL-056</code> moved with it, in the same direction.</p>
 </tr>
 <tr>
 <td>Callers that use an action</td>
-<td>ADOPT-100–106</td>
+<td>ADOPT-100–108</td>
 <td><code>test_adopt_actions.py</code></td>
 </tr>
 </tbody>
 </table>
-<p><strong>69 requirements, all <code>auto</code>.</strong></p>
+<p><strong>71 requirements, all <code>auto</code>.</strong></p>
 
 
 
