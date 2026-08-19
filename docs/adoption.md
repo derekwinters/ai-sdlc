@@ -52,12 +52,17 @@ permissions:
 
 jobs:
   closing-keyword:
-    uses: derekwinters/ai-sdlc/.github/workflows/reusable-closing-keyword.yml@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071 # v0.4.1
-    with:
-      ref: 5c625bfb5d1ff62eadeeb3772007f7f66fdcf071
+    runs-on: ubuntu-latest
+    steps:
+      - uses: derekwinters/ai-sdlc/.github/actions/closing-keyword@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071 # v0.4.1
 ```
 
-Pin to a **commit**, not a tag and not `main`. A reusable workflow runs with the caller's token, on
+**Nothing of ai-sdlc's is checked out into your repository.** The runner fetches the action into
+its own directory before any step runs, so your working tree holds only your repository. Some
+capabilities still call a reusable workflow, which does check ai-sdlc out — into
+`.ai-sdlc-checkout/`, never `.ai-sdlc/`, which is yours. Those are moving to actions too.
+
+Pin to a **commit**, not a tag and not `main`. This runs with your repository's token, on
 `issue_comment` and `issues`, so a mutable ref there is the same exposure as a mutable action —
 publishing it ourselves says who could move the tag, not that it cannot move.
 

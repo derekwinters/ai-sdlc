@@ -33,15 +33,18 @@ separately from the install path.
 A caller references a **commit SHA**, with the version as a trailing comment:
 
 ```yaml
-uses: derekwinters/ai-sdlc/.github/workflows/reusable-closing-keyword.yml@5c625bfb… # v0.4.1
-with:
-  ref: 5c625bfb…
+steps:
+  - uses: derekwinters/ai-sdlc/.github/actions/closing-keyword@5c625bfb… # v0.4.1
 ```
 
-A reusable workflow runs with the *caller's* token, on `issue_comment` and `issues`, inside the
-consuming repository. A tag can move; publishing it ourselves says who could move it, not that it
-cannot. You still type a version — `adopt` resolves it and rewrites both the SHA and the comment on
-upgrade, so nobody resolves a SHA by hand.
+This runs with the *caller's* token, on `issue_comment` and `issues`, inside the consuming
+repository. A tag can move; publishing it ourselves says who could move it, not that it cannot. You
+still type a version — `adopt` resolves it and rewrites both the SHA and the comment on upgrade, so
+nobody resolves a SHA by hand.
+
+**A caller that uses an action checks nothing out**, and carries one reference rather than a `uses:`
+and a matching `ref:`. The capabilities still on a reusable workflow carry both, and that pairing is
+what stops a caller running one version of the workflow against another version of the code.
 
 ## Everything it owns is under `.ai-sdlc/`
 

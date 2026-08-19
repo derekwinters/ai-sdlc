@@ -194,6 +194,48 @@ demand and can therefore afford detail.
 > in four colours, and 27 references to a pipeline state that no longer existed — both copies of
 > things ai-sdlc already generates.
 
+## 10. Callers that use an action
+
+A reusable workflow has to fetch the code it runs, so every consumer's run
+cloned ai-sdlc into its own workspace. An action does not: the runner fetches it
+into its own directory before any step executes, outside the workspace entirely.
+
+> **Invariant — a consumer's workspace holds only the consumer.** ai-sdlc is
+> never checked out into it. `actions/checkout` empties the directory it writes
+> into, so anything ai-sdlc fetches there is one naming collision away from
+> replacing a file the consumer committed and being read instead of it.
+
+- **ADOPT-100** A caller `uses:` an action at a full commit SHA, with the version as a trailing
+  comment, and calls no reusable workflow for the same work.
+- **ADOPT-101** A caller checks out nothing of ai-sdlc's, and names no path it would have been
+  checked out to.
+- **ADOPT-102** A caller carries **one** reference. There is no `ref:` input to keep in step with
+  the `uses:`, because there is no second checkout for it to govern.
+- **ADOPT-103** Every action a caller references is present and declares itself composite.
+- **ADOPT-104** An action reaches its script by a path relative to `$GITHUB_ACTION_PATH` and never
+  an absolute one. A path-based action checks out the whole repository, so the root is reachable
+  from the action's directory — which is load-bearing and invisible, so a moved script fails here
+  rather than in a consumer's run.
+- **ADOPT-106** Converting a caller to an action **renames its status check** — a reusable
+  workflow reports as `<workflow> / <job>`, a job running an action as `<job>` — so `apply` reports
+  updating branch protection as a manual task. Only a human can change a protection rule, and one
+  naming the old check waits forever on a check that will never report again.
+- **ADOPT-105** A reusable workflow replaced by an action is removed. Two delivery mechanisms for
+  one script is a second copy that nothing installs and nothing keeps in step.
+
+> **How the spec is changing (#157).** §7 pinned a caller to a reusable workflow and paired its
+> `uses:` with a `ref:` input so the workflow and the code it ran could not come from different
+> commits. An action has a single reference, so `ADOPT-060`'s pairing rule applies only to the
+> callers that still name a workflow, and `ADOPT-067` — a callee may use `inputs.ref` only when
+> also naming `repository:` — has nothing to govern once no `ref` is passed. Both stay while any
+> reusable workflow remains, and retire with the last of them.
+>
+> The reason to move is not one less step. #150 had to rename the checkout path from `.ai-sdlc` to
+> `.ai-sdlc-checkout` because a consumer had just started keeping `repo-config.yml` at `.ai-sdlc/`,
+> and its own configuration would have been replaced by ai-sdlc's and then read — silently, in
+> every consumer, on every run. A run that fetches nothing into the workspace cannot do that at
+> all, so the class of defect ends rather than being avoided by choosing a name nobody has taken.
+
 ## 6. Verifying
 
 - **ADOPT-050** `verify` reports whether the repository matches its recorded version.
@@ -307,5 +349,6 @@ than a formatting one: a reusable workflow runs with the **caller's** token, on 
 | Caller secrets | ADOPT-070 | `test_adopt_permissions.py` |
 | Migrating out of `.claude/` | ADOPT-080–087 | `test_adopt_migrate.py` |
 | Being findable | ADOPT-090–094 | `test_adopt_surface.py` |
+| Callers that use an action | ADOPT-100–106 | `test_adopt_actions.py` |
 
-**62 requirements, all `auto`.**
+**69 requirements, all `auto`.**

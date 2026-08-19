@@ -137,10 +137,10 @@ class TestASelectedProfileInstallsItsFiles(unittest.TestCase):
         root = self._apply(["mkdocs"])
         self.assertTrue((root / ".github/workflows/docs-gate.yml").is_file())
 
-    def test_the_gate_calls_the_shared_workflow(self):  # PROF-005
+    def test_the_gate_calls_the_shared_action(self):  # PROF-005
         root = self._apply(["mkdocs"])
         text = (root / ".github/workflows/docs-gate.yml").read_text()
-        self.assertIn("reusable-docs-gate.yml@", text)
+        self.assertIn(".github/actions/docs-gate@", text)
 
     def test_the_gate_runs_on_pull_request(self):  # PROF-005
         root = self._apply(["mkdocs"])
