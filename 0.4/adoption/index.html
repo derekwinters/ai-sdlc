@@ -1122,11 +1122,15 @@ they fire for.</p>
 
 <span class="nt">jobs</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">closing-keyword</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">derekwinters/ai-sdlc/.github/workflows/reusable-closing-keyword.yml@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071</span><span class="w"> </span><span class="c1"># v0.4.1</span>
-<span class="w">    </span><span class="nt">with</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">ref</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5c625bfb5d1ff62eadeeb3772007f7f66fdcf071</span>
+<span class="w">    </span><span class="nt">runs-on</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-latest</span>
+<span class="w">    </span><span class="nt">steps</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">derekwinters/ai-sdlc/.github/actions/closing-keyword@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071</span><span class="w"> </span><span class="c1"># v0.4.1</span>
 </code></pre></div>
-<p>Pin to a <strong>commit</strong>, not a tag and not <code>main</code>. A reusable workflow runs with the caller's token, on
+<p><strong>Nothing of ai-sdlc's is checked out into your repository.</strong> The runner fetches the action into
+its own directory before any step runs, so your working tree holds only your repository. Some
+capabilities still call a reusable workflow, which does check ai-sdlc out — into
+<code>.ai-sdlc-checkout/</code>, never <code>.ai-sdlc/</code>, which is yours. Those are moving to actions too.</p>
+<p>Pin to a <strong>commit</strong>, not a tag and not <code>main</code>. This runs with your repository's token, on
 <code>issue_comment</code> and <code>issues</code>, so a mutable ref there is the same exposure as a mutable action —
 publishing it ourselves says who could move the tag, not that it cannot move.</p>
 <p>The version comment is what keeps this readable: nobody reads forty characters of hexadecimal and

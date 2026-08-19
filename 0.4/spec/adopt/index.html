@@ -497,6 +497,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#10-callers-that-use-an-action" class="md-nav__link">
+    <span class="md-ellipsis">
+      10. Callers that use an action
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#6-verifying" class="md-nav__link">
     <span class="md-ellipsis">
       6. Verifying
@@ -1042,6 +1051,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#10-callers-that-use-an-action" class="md-nav__link">
+    <span class="md-ellipsis">
+      10. Callers that use an action
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#6-verifying" class="md-nav__link">
     <span class="md-ellipsis">
       6. Verifying
@@ -1277,6 +1295,48 @@ generated page: a consumer hand-maintained a label table that disagreed with <co
 in four colours, and 27 references to a pipeline state that no longer existed — both copies of
 things ai-sdlc already generates.</p>
 </blockquote>
+<h2 id="10-callers-that-use-an-action">10. Callers that use an action<a class="headerlink" href="#10-callers-that-use-an-action" title="Permanent link">&para;</a></h2>
+<p>A reusable workflow has to fetch the code it runs, so every consumer's run
+cloned ai-sdlc into its own workspace. An action does not: the runner fetches it
+into its own directory before any step executes, outside the workspace entirely.</p>
+<blockquote>
+<p><strong>Invariant — a consumer's workspace holds only the consumer.</strong> ai-sdlc is
+never checked out into it. <code>actions/checkout</code> empties the directory it writes
+into, so anything ai-sdlc fetches there is one naming collision away from
+replacing a file the consumer committed and being read instead of it.</p>
+</blockquote>
+<ul>
+<li><strong>ADOPT-100</strong> A caller <code>uses:</code> an action at a full commit SHA, with the version as a trailing
+  comment, and calls no reusable workflow for the same work.</li>
+<li><strong>ADOPT-101</strong> A caller checks out nothing of ai-sdlc's, and names no path it would have been
+  checked out to.</li>
+<li><strong>ADOPT-102</strong> A caller carries <strong>one</strong> reference. There is no <code>ref:</code> input to keep in step with
+  the <code>uses:</code>, because there is no second checkout for it to govern.</li>
+<li><strong>ADOPT-103</strong> Every action a caller references is present and declares itself composite.</li>
+<li><strong>ADOPT-104</strong> An action reaches its script by a path relative to <code>$GITHUB_ACTION_PATH</code> and never
+  an absolute one. A path-based action checks out the whole repository, so the root is reachable
+  from the action's directory — which is load-bearing and invisible, so a moved script fails here
+  rather than in a consumer's run.</li>
+<li><strong>ADOPT-106</strong> Converting a caller to an action <strong>renames its status check</strong> — a reusable
+  workflow reports as <code>&lt;workflow&gt; / &lt;job&gt;</code>, a job running an action as <code>&lt;job&gt;</code> — so <code>apply</code> reports
+  updating branch protection as a manual task. Only a human can change a protection rule, and one
+  naming the old check waits forever on a check that will never report again.</li>
+<li><strong>ADOPT-105</strong> A reusable workflow replaced by an action is removed. Two delivery mechanisms for
+  one script is a second copy that nothing installs and nothing keeps in step.</li>
+</ul>
+<blockquote>
+<p><strong>How the spec is changing (#157).</strong> §7 pinned a caller to a reusable workflow and paired its
+<code>uses:</code> with a <code>ref:</code> input so the workflow and the code it ran could not come from different
+commits. An action has a single reference, so <code>ADOPT-060</code>'s pairing rule applies only to the
+callers that still name a workflow, and <code>ADOPT-067</code> — a callee may use <code>inputs.ref</code> only when
+also naming <code>repository:</code> — has nothing to govern once no <code>ref</code> is passed. Both stay while any
+reusable workflow remains, and retire with the last of them.</p>
+<p>The reason to move is not one less step. #150 had to rename the checkout path from <code>.ai-sdlc</code> to
+<code>.ai-sdlc-checkout</code> because a consumer had just started keeping <code>repo-config.yml</code> at <code>.ai-sdlc/</code>,
+and its own configuration would have been replaced by ai-sdlc's and then read — silently, in
+every consumer, on every run. A run that fetches nothing into the workspace cannot do that at
+all, so the class of defect ends rather than being avoided by choosing a name nobody has taken.</p>
+</blockquote>
 <h2 id="6-verifying">6. Verifying<a class="headerlink" href="#6-verifying" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>ADOPT-050</strong> <code>verify</code> reports whether the repository matches its recorded version.</li>
@@ -1448,9 +1508,14 @@ was right to. <code>VAL-056</code> moved with it, in the same direction.</p>
 <td>ADOPT-090–094</td>
 <td><code>test_adopt_surface.py</code></td>
 </tr>
+<tr>
+<td>Callers that use an action</td>
+<td>ADOPT-100–106</td>
+<td><code>test_adopt_actions.py</code></td>
+</tr>
 </tbody>
 </table>
-<p><strong>62 requirements, all <code>auto</code>.</strong></p>
+<p><strong>69 requirements, all <code>auto</code>.</strong></p>
 
 
 
