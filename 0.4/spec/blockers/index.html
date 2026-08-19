@@ -1070,6 +1070,10 @@ graph must not silently make work eligible.</p>
 <li><strong>BLK-032</strong> <code>unblock(issue, by)</code> removes one.</li>
 <li><strong>BLK-033</strong> Removing one that does not exist is a no-op, not an error.</li>
 <li><strong>BLK-034</strong> An issue may not block itself; the attempt is refused.</li>
+<li><strong>BLK-036</strong> A blocker is named to GitHub by its <strong>database id</strong>, never by its issue number. The
+  two are different integers for the same issue, so sending one where the other is meant is
+  accepted and writes an edge to whichever issue that value identifies. <code>block</code> and <code>unblock</code> take
+  numbers — that is what a person says — and convert in one named place.</li>
 <li><strong>BLK-035</strong> A cycle is refused, naming the path. Two issues each waiting for the other are both
   permanently ineligible.</li>
 </ul>
@@ -1110,7 +1114,7 @@ graph must not silently make work eligible.</p>
 </tr>
 <tr>
 <td>Writing</td>
-<td>BLK-030–035</td>
+<td>BLK-030–036</td>
 <td><code>test_blockers_write.py</code></td>
 </tr>
 <tr>
@@ -1120,7 +1124,22 @@ graph must not silently make work eligible.</p>
 </tr>
 </tbody>
 </table>
-<p><strong>29 requirements, all <code>auto</code>.</strong></p>
+<p><strong>30 requirements, all <code>auto</code>.</strong></p>
+<blockquote>
+<p><strong>How the spec is changing (#155).</strong> §4 said <code>block</code> creates a relationship and <code>unblock</code> removes
+one, and said nothing about what identifies the blocker. So the client sent an issue <em>number</em>
+where the API means a database id, GitHub accepted it, and <code>block(154, 153)</code> blocked #154 by
+<strong>#4</strong> — an unrelated issue — and reported success. <code>blockers_of</code> then read the edge back and
+reported #4, consistently, so a read-after-write confirmed a relationship nobody asked for.</p>
+<p>The invariant this breaks is <code>BLK</code>'s own: a prose blocker is invisible to the queue and a native
+one is a real gate. A native relationship pointing at the wrong issue is worse than either, because
+the queue honours it — the wrong issue gates the work and the right one does not.</p>
+<p>All 29 requirements were green throughout. <code>lib/fake_github.py</code> stored edges as <code>{"number": …}</code>
+with no <code>id</code> field at all, so the distinction the real API turns on did not exist in the double,
+and no test written against it could have expressed the defect. <code>API-056</code> states what the fake
+owes as a result: where a value changes meaning at the boundary, the fake must model the change,
+not the happy case.</p>
+</blockquote>
 
 
 

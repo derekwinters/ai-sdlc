@@ -1162,6 +1162,11 @@ the kind of thing a test should hold still.</p>
 <li><strong>API-054</strong> The fake paginates using the same page size as the real client, so pagination
   behaviour is exercised rather than bypassed.</li>
 <li><strong>API-055</strong> The fake performs no I/O and imports no network library.</li>
+<li><strong>API-056</strong> Where a value changes meaning as it crosses the boundary, the fake models the change
+  rather than the happy case. An issue's database id is not its number, so the fake gives every
+  issue an id unlike its number and its dependency edges carry both. A double in which two distinct
+  identities are equal cannot express a client confusing them, and a suite written against it is
+  green for a defect it structurally cannot see (#155).</li>
 </ul>
 <hr />
 <h2 id="traceability">Traceability<a class="headerlink" href="#traceability" title="Permanent link">&para;</a></h2>
@@ -1196,7 +1201,7 @@ the kind of thing a test should hold still.</p>
 </tr>
 <tr>
 <td>The fake</td>
-<td>API-050–055</td>
+<td>API-050–056</td>
 <td><code>test_fake_github.py</code></td>
 </tr>
 <tr>
@@ -1211,7 +1216,7 @@ the kind of thing a test should hold still.</p>
 </tr>
 </tbody>
 </table>
-<p><strong>52 requirements, 51 <code>auto</code> and 1 <code>manual</code>.</strong></p>
+<p><strong>53 requirements, 52 <code>auto</code> and 1 <code>manual</code>.</strong></p>
 
 
 
