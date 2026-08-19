@@ -1018,6 +1018,10 @@ to mentally ignore.</p>
 <li><strong>RULES-015</strong> Specification before code, and a failing test before an implementation.</li>
 <li><strong>RULES-016</strong> Ask rather than invent a design decision.</li>
 <li><strong>RULES-017</strong> Tasks needing a human are filed one per issue, never collected into one.</li>
+<li><strong>RULES-019</strong> Read back what was published. After opening a pull request, filing an issue or
+  leaving a comment, the stored text is fetched and compared against what was sent, because tooling
+  appends and rewrites <em>after</em> the author has finished. A rule stated as care cannot catch a leak
+  nobody authored, and omitting the offending text does not prevent it being added.</li>
 <li><strong>RULES-018</strong> Where the installed files are: the fragment names <code>.ai-sdlc/adoption.md</code>,
   <code>.ai-sdlc/repo-config.yml</code> and the <code>ai-sdlc</code> skill, so discovery does not depend on the skill
   firing. Skill discovery is probabilistic — a skill loads when the model judges its description
@@ -1051,7 +1055,7 @@ to mentally ignore.</p>
 </tr>
 <tr>
 <td>What it contains</td>
-<td>RULES-010–018</td>
+<td>RULES-010–019</td>
 <td><code>test_house_rules.py</code></td>
 </tr>
 <tr>
@@ -1061,7 +1065,18 @@ to mentally ignore.</p>
 </tr>
 </tbody>
 </table>
-<p><strong>17 requirements, all <code>auto</code>.</strong></p>
+<p><strong>18 requirements, all <code>auto</code>.</strong></p>
+<blockquote>
+<p><strong>How the spec is changing (#156).</strong> <code>RULES</code> covered what an agent must not write, and one
+paragraph extended that to text it merely quotes — error bodies, stack traces. Neither covers
+text appended by the tooling that publishes the message. An attribution footer written as a plain
+link to Claude Code was rewritten on creation to carry a session identifier, on two public
+repositories; writing no footer at all made no difference, because one was added regardless. An
+agent following every existing rule perfectly still published a private link, and had no reason
+to look again, because it knew what it had written.</p>
+<p><code>RULES-019</code> therefore states a <strong>check</strong>, not more care. It is the only form that catches a leak
+the author did not author.</p>
+</blockquote>
 
 
 
