@@ -35,12 +35,23 @@ fire:
 # The ai-sdlc skills installed here, kept at the pinned version by
 # `skills-update.yml`. This repository's list, not a central registry's — a
 # registry deciding what a repository should have is what reverted local work
-# the last two times a skill sync was built.
+# the last two times a skill sync was built. `adopt` seeds this key **once**, if
+# it is absent entirely, from your capabilities — and never touches it again.
+# Prune it, add to it, or write `skills: []` to install none; whatever is here
+# is what the next adoption honours.
+#
+# What belongs here is what something *in this repository* invokes. Skills that
+# only ever execute from ai-sdlc's own tree inside an action or workflow —
+# `pipeline-gatekeeper`, `pipeline-dashboard`, `label-sync`, `closing-keyword`,
+# `docs-gate` — do not: a copy here is a second version nothing reads.
+#
+# `adopt` and `issue-blockers` are absent for a different reason. They import
+# `lib`, which is not part of the skill, so an installed copy raises
+# ModuleNotFoundError. Do not list them until #153 lands.
 skills:
   - triage-issue
   - pipeline-dev
   - ci-watch
   - milestone-ops
-  - issue-blockers
   - release-flow
 

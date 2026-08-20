@@ -21,6 +21,17 @@ Every requirement below is `auto` (covered by a named test) unless marked otherw
 > built twice in this fleet and disabled twice, and both read a registry that decided what a
 > repository *should* have — so both reverted work the repository had done. A list the repository
 > owns inverts that.
+>
+> **Seeding is not deciding.** `adopt` writes a starting list into the key **once**, when the key
+> is absent entirely (`ADOPT-110`), because a repository that has never heard of it cannot exercise
+> ownership of it. From that moment the list is the repository's: adoption never reads it back to
+> compare, never adds a name to it, and never restores one that was removed — including from a
+> repository that answered "none" by writing `skills: []`.
+>
+> Written once and re-asserted on a schedule are different mechanisms, and only the second is what
+> failed twice here. Both previous syncs read a central registry every run and reverted work a
+> repository had done between runs. A default that is written when there is nothing to overwrite,
+> and then owned locally, has no run in which it can revert anything.
 
 > **Invariant — a locally-modified skill is never overwritten.** Reinstalling an already-installed
 > skill overwrites local modifications with the original content; that is what `gh skill install`

@@ -50,7 +50,7 @@ what stops a caller running one version of the workflow against another version 
 
 | Path | Holds |
 | --- | --- |
-| `.ai-sdlc/repo-config.yml` | The repository's own settings. Read, never written. |
+| `.ai-sdlc/repo-config.yml` | The repository's own settings. Read; the `skills:` key seeded once if absent. |
 | `.ai-sdlc/ai-sdlc.pin` | The installed version, and the commit it resolves to. |
 | `.ai-sdlc/house-rules.md` | The shared rules, imported by `CLAUDE.md`. |
 | `.ai-sdlc/adoption.md` | Generated: what is installed here, and links to the spec at this pin. |
@@ -97,5 +97,8 @@ workflows is the one a file comparison misses.
 - **Labels are never renamed.** Renaming rewrites the label on every issue that carried it.
 - **`CLAUDE.md` is never rewritten.** One import line is appended, once. Your rules are yours.
 - **An existing dashboard issue is reused**, never duplicated.
+- **`repo-config.yml` is yours.** Adoption reads it, and writes exactly one thing to it: a starting
+  `skills:` list, once, if the key is absent entirely. After that it never looks at the list to
+  compare — prune a name and it stays pruned.
 
-Specification: `docs/spec/adopt.md` (`ADOPT`), 62 requirements.
+Specification: `docs/spec/adopt.md` (`ADOPT`), 77 requirements.

@@ -133,9 +133,11 @@ repository the invariant forbids.
 
 - **ADOPT-080** `apply` migrates a repository out of `.claude/` before it writes anything else, so
   the rest of the run reads and writes one location.
-- **ADOPT-081** `repo-config.yml` moves **byte-for-byte**. It is authored by the repository and
-  never written by this tool: a consumer's copy carries hand-written comments explaining every
-  choice, and it gains no provenance header on the way.
+- **ADOPT-081** `repo-config.yml` moves **byte-for-byte**. It is authored by the repository: a
+  consumer's copy carries hand-written comments explaining every choice, it gains no provenance
+  header on the way, and the migration itself changes nothing in it. The one write adoption ever
+  makes to this file is appending the `skills:` key when it is absent (§11), which happens after
+  the move and never rewrites a byte of what moved.
 - **ADOPT-082** The old location is removed, never left alongside the new one. A stale copy beside
   a live one is a file somebody edits eventually. `.claude/ai-sdlc/` is removed too, unless it
   holds something adoption did not put there.
@@ -261,6 +263,47 @@ into its own directory before any step executes, outside the workspace entirely.
 > every consumer, on every run. A run that fetches nothing into the workspace cannot do that at
 > all, so the class of defect ends rather than being avoided by choosing a name nobody has taken.
 
+## 11. Seeding the skills list
+
+`DIST-001` says a repository installs the names in `skills:`, and nothing ever put that key in
+front of the person adopting. A missing optional key is not an error, so a repository that had
+never heard of it got no `skills-update` caller, no installed skill, and no indication that
+anything was absent.
+
+> **Invariant — the key is written once, and never read back.** Adoption writes `skills:` only into
+> a configuration that does not have it, and from then on the list is the repository's. There is no
+> run in which adoption compares the list to a central answer, adds a name, or restores a removed
+> one. Written-once and re-asserted-on-a-timer are different mechanisms, and `DIST`'s first
+> invariant now says which one failed twice here.
+
+- **ADOPT-110** A repository whose configuration has no `skills:` key at all has one appended, with
+  the list its capabilities suggest, and the write is reported like any other.
+- **ADOPT-111** The key is **appended**. Every byte already in the file — comments, ordering, line
+  endings, a missing trailing newline — survives unchanged, because this is the one file the
+  repository authors itself. `plan` reports the same write while making none.
+- **ADOPT-112** A repository that has answered is left alone, including one that answered "none".
+  `skills:` present and empty is a decision, and a name deleted from the list stays deleted.
+- **ADOPT-113** Only skills something in the *consumer* invokes are seeded. Those that execute from
+  ai-sdlc's own tree inside an action or workflow are excluded, because a copy in a consumer is a
+  second version nothing reads that `DIST-012` would then keep at the pin forever.
+- **ADOPT-114** The list follows the repository's capabilities, and every name in it is one ai-sdlc
+  actually ships — an unknown name would fail as `DIST-016` in the consumer, at install time.
+- **ADOPT-115** The seed is decided before the file list, so one `apply` both writes the key and
+  installs the `skills-update` caller that `ADOPT-048` makes follow from it. Deciding it afterwards
+  would leave the caller to a second run nobody knew to make.
+
+> **How the spec is changing (#149).** The issue proposed three shapes — a seed `adopt` writes once,
+> a derivation it reconciles every run, or guidance it only reports — and leaned to the seed.
+>
+> This specification first said guidance, on the reading that `ADOPT-081` made `repo-config.yml`
+> write-never. Derek's call was that it does not: the list of skills this process needs is part of
+> what it means to have installed this process, so the tool that installs it may put it there.
+> `ADOPT-081` now says what it was actually protecting — the repository's authored content — rather
+> than the whole file.
+>
+> The rejected shape remains rejected, and it is the middle one. A derivation reconciled every run
+> is the registry that got two fleet syncs disabled, and it stays out.
+
 ## 6. Verifying
 
 - **ADOPT-050** `verify` reports whether the repository matches its recorded version.
@@ -375,5 +418,6 @@ than a formatting one: a reusable workflow runs with the **caller's** token, on 
 | Migrating out of `.claude/` | ADOPT-080–087 | `test_adopt_migrate.py` |
 | Being findable | ADOPT-090–094 | `test_adopt_surface.py` |
 | Callers that use an action | ADOPT-100–108 | `test_adopt_actions.py` |
+| Recommending a skills list | ADOPT-110–114 | `test_adopt_skills_advice.py` |
 
-**71 requirements, all `auto`.**
+**76 requirements, all `auto`.**

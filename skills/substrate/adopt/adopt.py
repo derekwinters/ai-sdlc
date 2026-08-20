@@ -420,6 +420,99 @@ RENAMED_CHECKS_TASK = (
     "waits forever on a check that no longer reports."
 )
 
+#: The skills a repository with a given capability actually invokes.
+#:
+#: Only what something *in the consumer* runs: the analysis session reads
+#: `triage-issue`, the dev agent reads `pipeline-dev`, and the rest are run by
+#: hand or by an agent. Deliberately absent are the skills that only ever
+#: execute from ai-sdlc's own tree inside an action or a workflow —
+#: `pipeline-gatekeeper`, `pipeline-dashboard`, `label-sync`, `closing-keyword`,
+#: `docs-gate`, `skills-update`. A copy of one of those in a consumer is a
+#: second version nothing reads, which `DIST-012` would then keep at the pin
+#: forever.
+#:
+#: `adopt` is absent for a different reason: it imports `lib.config`, which is
+#: not part of the skill, so an installed copy cannot run at all. Upgrades are
+#: run from an ai-sdlc checkout (#153).
+INVOKED_LOCALLY = {
+    "release": ("release-flow",),
+    "pipeline": ("triage-issue", "pipeline-dev", "ci-watch", "milestone-ops"),
+}
+
+
+def _recommended_skills(config):
+    """The skills this repository's capabilities suggest, in a stable order."""
+    names = []
+    for capability, skills in INVOKED_LOCALLY.items():
+        if capability in config.capabilities:
+            names.extend(name for name in skills if name not in names)
+    return names
+
+
+#: The comment that goes above the seeded list.
+#:
+#: It says three things a reader needs and cannot get from the key itself: what
+#: the list does, that adoption wrote it once, and that it is now theirs to
+#: change. Without the last sentence the key reads like something central that
+#: will be re-asserted, and a repository that wanted to prune a name would
+#: reasonably expect it back on the next upgrade.
+SEED_COMMENT = (
+    "# Which ai-sdlc skills this repository installs. `skills-update` opens a\n"
+    "# pull request when one of them changes upstream, and a name removed here\n"
+    "# is uninstalled on the next run.\n"
+    "#\n"
+    "# Seeded once by `adopt` from the capabilities above, and never touched\n"
+    "# again: this list is yours. Add to it, prune it, or set it to `[]` to\n"
+    "# install none — whatever is here is what a later adoption will honour.\n"
+)
+
+
+def _seed_block(names, newline="\n"):
+    """The `skills:` key as it is appended to a repository's configuration."""
+    body = SEED_COMMENT + "skills:\n" + "".join(f"  - {name}\n" for name in names)
+    return body.replace("\n", newline) if newline != "\n" else body
+
+
+def _seed_for(root, config):
+    """The list adoption would seed, or `()` if it would seed none.
+
+    Absent and empty are different answers. A repository that wrote
+    `skills: []` has decided; writing a central answer over a decision the
+    repository already made is the registry behaviour `DIST` refuses, and it is
+    what got two previous fleet syncs disabled.
+    """
+    if "skills" in _raw_config(root):
+        return ()
+    return tuple(_recommended_skills(config))
+
+
+def _write_seed(root, names):
+    """Append the key. Every byte already in the file is left where it is.
+
+    This is the one file a consuming repository authors itself, and it carries
+    hand-written comments explaining every choice in it. Adoption may add a key
+    to the end; it may not reformat, reorder, or rewrite a line of it — so this
+    appends text rather than round-tripping the document through a parser.
+    """
+    path = Path(root) / CONFIG_FILE
+
+    # `newline=""` on both, so line endings survive the round trip. The default
+    # translates on read, which would quietly rewrite a CRLF file as LF — every
+    # line changed, in a diff that claims to add one key.
+    text = ""
+    if path.is_file():
+        with path.open(newline="") as handle:
+            text = handle.read()
+
+    newline = "\r\n" if "\r\n" in text else "\n"
+    if text and not text.endswith(("\n", "\r")):
+        text += newline
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", newline="") as handle:
+        handle.write(text + newline + _seed_block(names, newline))
+
+
 #: A permission `apply` cannot grant itself. Without it `skills-update` pushes
 #: its branch and then fails at `gh pr create`, which leaves a branch and no
 #: pull request — the confusing half of a failure rather than the loud one.
@@ -1066,6 +1159,26 @@ def _rewrite_import(root):
     return True
 
 
+def _raw_config(root):
+    """The configuration as written, before defaults are applied.
+
+    `lib.config` defaults `skills` to the empty list, which loses the one
+    distinction that matters here: a repository that never answered the
+    question versus one that answered "none". Advising the second would be the
+    registry behaviour `DIST` refuses.
+    """
+    from lib.yaml_lite import parse
+
+    root = Path(root)
+    for candidate in (root / CONFIG_FILE, root / LEGACY_PATHS[0][0]):
+        if candidate.is_file():
+            try:
+                return parse(candidate.read_text()) or {}
+            except Exception:  # noqa: BLE001 - a bad file is reported by the loader
+                return {}
+    return {}
+
+
 def _load_config(root):
     """The configuration, from wherever this repository currently keeps it.
 
@@ -1087,6 +1200,15 @@ def plan(root, pin, acknowledged=(), resolver=None):
     pin = as_pin(pin, resolver=resolver)
     pending = migration(root)
     config = _load_config(root)
+
+    # The seed is decided before the file list, not after, so one adoption both
+    # writes the key and installs what the key then asks for. Deciding it
+    # afterwards would leave `skills-update.yml` to a second run nobody knew to
+    # make.
+    seed = _seed_for(root, config)
+    if seed:
+        config.skills = list(seed)
+
     wanted = _files_for(config, pin)
 
     # A file about to be moved is classified where it currently *is*. Reading
@@ -1104,6 +1226,9 @@ def plan(root, pin, acknowledged=(), resolver=None):
             updates.append(path)
         elif state == CONFLICT:
             conflicts.append(path)
+
+    if seed:
+        (updates if (root / CONFIG_FILE).is_file() else creates).append(CONFIG_FILE)
 
     recorded = root / moving.get(PIN_FILE, PIN_FILE)
     if recorded.is_file():
@@ -1152,8 +1277,16 @@ def apply(root, pin, acknowledged=(), resolver=None):
         )
 
     config = _load_config(root)
-    wanted = _files_for(config, pin)
     written, skipped = [], []
+
+    # Before the file list is built, for the reason `plan` gives.
+    seed = _seed_for(root, config)
+    if seed:
+        _write_seed(root, seed)
+        config.skills = list(seed)
+        written.append(CONFIG_FILE)
+
+    wanted = _files_for(config, pin)
 
     for path, body in sorted(wanted.items()):
         state = classify(root, path, body, pin)
