@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.22](https://github.com/derekwinters/ai-sdlc/compare/v0.4.21...v0.4.22) (2026-08-20)
+
+
+### Fixes
+
+* **substrate:** fetch the branch before pushing it, so skills-update can update its own pull request ([#171](https://github.com/derekwinters/ai-sdlc/issues/171)) ([673c456](https://github.com/derekwinters/ai-sdlc/commit/673c456ee0a03400c549f9c69e6d52a49964cb80))
+
 ## [0.4.21](https://github.com/derekwinters/ai-sdlc/compare/v0.4.20...v0.4.21) (2026-08-20)
 
 
