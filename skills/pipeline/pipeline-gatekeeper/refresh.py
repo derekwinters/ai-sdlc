@@ -20,7 +20,7 @@ import sys
 from pathlib import Path
 
 _HERE = Path(__file__).resolve().parent
-for _sibling in ("pipeline-dashboard", "issue-blockers"):
+for _sibling in ("pipeline-dashboard",):
     _path = _HERE.parent / _sibling
     if str(_path) not in sys.path:
         sys.path.insert(0, str(_path))

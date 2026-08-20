@@ -84,6 +84,12 @@ Rules the `dev` agent works under, enforced by review and by the gates rather th
 
 ---
 
+> **How the spec is changing (#153).** §1 to §4 described `build_queue` and `take(api, …)`.
+> The first was pure and would have worked in a consumer; the second was not and could not, and
+> they shipped as one skill — a skill that is half usable is one nobody can rely on. Both are
+> instructions now, which is how §5 always worked: `DEV-040` onwards has been prose checked by
+> `test_dev_agent.py` since the agent existed. `DIST-043`.
+
 ## Traceability
 
 | Section | IDs | Tests |
@@ -91,7 +97,7 @@ Rules the `dev` agent works under, enforced by review and by the gates rather th
 | Eligibility | DEV-001–008 | `test_dev_queue.py` |
 | Ordering | DEV-010–014 | `test_dev_queue.py` |
 | The cap | DEV-020–024 | `test_dev_queue.py` |
-| Taking an issue | DEV-030–033 | `test_dev_take.py` |
+| Taking an issue | DEV-030–033 | `test_dev_queue.py` |
 | The agent's contract | DEV-040–046 | `test_dev_agent.py` |
 
 **33 requirements, 32 `auto` and 1 `manual`.**

@@ -87,14 +87,19 @@ Every triaged issue ends in exactly one of three places.
 
 ---
 
+> **How the spec is changing (#153).** `select_triage.py` and `triage_route.py` were code
+> around a judgement that was always the agent's: `Outcome.plan(...)` refused a plan with no
+> acceptance checks, but only ever against a value the agent had already decided, and only in a
+> process no consumer runs. The rules are stated in the skill now. `DIST-043`.
+
 ## Traceability
 
 | Section | IDs | Tests |
 |---|---|---|
-| Selecting | TRI-001–009 | `test_triage_select.py` |
-| Routing | TRI-010–015 | `test_triage_route.py` |
-| What a plan contains | TRI-020–025 | `test_triage_plan.py` |
-| Asking instead of guessing | TRI-030–033 | `test_triage_plan.py` |
-| Hand-back | TRI-040–043 | `test_triage_route.py` |
+| Selecting | TRI-001–009 | `test_triage_rules.py` |
+| Routing | TRI-010–015 | `test_triage_rules.py` |
+| What a plan contains | TRI-020–025 | `test_triage_rules.py` |
+| Asking instead of guessing | TRI-030–033 | `test_triage_rules.py` |
+| Hand-back | TRI-040–043 | `test_triage_rules.py` |
 
 **27 requirements, 26 `auto` and 1 `manual`.**

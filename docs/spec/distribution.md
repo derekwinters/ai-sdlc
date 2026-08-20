@@ -107,6 +107,50 @@ because the question is the same one: may we write here?
 - **DIST-035** A skipped skill does not fail the run. The other skills are still installed, and the
   report says what was left out — the same bargain `adopt` makes with a conflict.
 
+## 5. What may be installed
+
+`connor-multiplying-frogs` installed six skills and four of them could not do the thing they
+existed to do. `DIST` said how a skill *reaches* a repository and never said what one may *contain*,
+so four modules with a `def f(api, …)` signature installed cleanly, reported success, and had no
+possible caller once they arrived (#153).
+
+> **Invariant — a script is delivered to a runner; a skill is loaded by an agent.** These are the
+> two ways ai-sdlc's code reaches a repository and they do not overlap. A script runs in a workflow
+> with no agent present, so it talks to GitHub in code and may import `lib`; it is fetched into the
+> runner's action directory and never installed into a consumer. A skill is instructions, and every
+> GitHub read and write it needs is performed by the agent reading it, through `github-api`
+> (`API-070`).
+
+- **DIST-040** Every name a repository may put in `skills:` is a skill ai-sdlc ships. The
+  installable set is one list, and it is the same list `ADOPT-110` seeds from.
+- **DIST-041** A script is never installable. `pipeline-gatekeeper`, `pipeline-dashboard`,
+  `label-sync`, `closing-keyword`, `docs-gate`, `skills-update` and `adopt` execute from ai-sdlc's
+  own tree; a copy in a consumer is a second version nothing reads, which `DIST-012` would then
+  keep at the pin for ever.
+- **DIST-042** No module in an installable skill imports `lib`, expects an `api` parameter, or
+  imports a network library. All three are stated, because each is satisfiable while keeping the
+  defect: a module can avoid `lib` and still want a client, or want no client and still open a
+  socket.
+- **DIST-043** `issue-blockers`, `milestone-ops`, `pipeline-dev` and `triage-issue` carry no
+  modules at all, and each points at `github-api` for the reads and writes its work needs. They
+  were entirely client code around a judgement; the judgement is what an agent was always doing.
+
+> **How the spec is changing (#153).** This issue first asked how to *package* `lib` so an
+> installed skill could import it, and leaned to vendoring. That was the wrong diagnosis twice
+> over: vendoring `lib/github.py` would have put `import urllib` in four more modules and destroyed
+> the one-module network seam `API`'s first invariant exists to state — and underneath it, the
+> premise that installed skills need `lib` was itself wrong.
+>
+> Exactly three files in this repository construct a client, and all three are workflow entry
+> points. Everything else took `api` as a parameter and expected a caller. In ai-sdlc's own tests
+> that caller is the test; in a consumer there is none. The split is therefore not "skill versus
+> library" but "runner versus agent", and under it there is no packaging problem to solve, because
+> an installed skill has no code that needs `lib`.
+>
+> The cost is real and is worth naming: a rule that was a branch is now a sentence, and a test that
+> executed it now asserts it is stated. What that buys is a rule that works in the repository it
+> was shipped to, where the branch did not run at all.
+
 ---
 
 ## Traceability
@@ -117,5 +161,6 @@ because the question is the same one: may we write here?
 | Classification | DIST-010–017 | `test_skills_update_plan.py` |
 | Provenance | DIST-020–023 | `test_skills_update_plan.py` |
 | The run | DIST-030–035 | `test_skills_update_run.py` |
+| What may be installed | DIST-040–043 | `test_skill_purity.py` |
 
-**23 requirements, all `auto`.**
+**27 requirements, all `auto`.**
