@@ -1013,6 +1013,15 @@ installed, and opens a pull request when the tree changed.</p>
 built twice in this fleet and disabled twice, and both read a registry that decided what a
 repository <em>should</em> have — so both reverted work the repository had done. A list the repository
 owns inverts that.</p>
+<p><strong>Seeding is not deciding.</strong> <code>adopt</code> writes a starting list into the key <strong>once</strong>, when the key
+is absent entirely (<code>ADOPT-110</code>), because a repository that has never heard of it cannot exercise
+ownership of it. From that moment the list is the repository's: adoption never reads it back to
+compare, never adds a name to it, and never restores one that was removed — including from a
+repository that answered "none" by writing <code>skills: []</code>.</p>
+<p>Written once and re-asserted on a schedule are different mechanisms, and only the second is what
+failed twice here. Both previous syncs read a central registry every run and reverted work a
+repository had done between runs. A default that is written when there is nothing to overwrite,
+and then owned locally, has no run in which it can revert anything.</p>
 <p><strong>Invariant — a locally-modified skill is never overwritten.</strong> Reinstalling an already-installed
 skill overwrites local modifications with the original content; that is what <code>gh skill install</code>
 does, and moving a pinned skill to a new version <em>is</em> a reinstall. <code>gh skill update</code> without
