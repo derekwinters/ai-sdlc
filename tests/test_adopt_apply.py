@@ -211,7 +211,9 @@ class TestTheSkillsCaller(unittest.TestCase):
         self.assertTrue((root / self.CALLER).is_file())
 
     def test_a_repository_naming_none_gets_no_caller(self):  # ADOPT-048
-        self.assertFalse((self._apply("") / self.CALLER).exists())
+        """`skills: []` is the answer "none". An *absent* key is not an answer,
+        and `ADOPT-110` seeds it rather than leaving the repository silent."""
+        self.assertFalse((self._apply("skills: []\n") / self.CALLER).exists())
 
     def test_the_caller_runs_on_a_schedule(self):  # ADOPT-048
         text = (self._apply("skills:\n  - ci-watch\n") / self.CALLER).read_text()
@@ -249,5 +251,5 @@ class TestTheManualTaskForPullRequests(unittest.TestCase):
         self.assertIn("pull request", self._tasks("skills:\n  - ci-watch\n"))
 
     def test_naming_none_does_not(self):  # ADOPT-012
-        self.assertNotIn("create and approve pull requests", self._tasks(""))
+        self.assertNotIn("create and approve pull requests", self._tasks("skills: []\n"))
 
