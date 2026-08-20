@@ -75,6 +75,10 @@ class TestTheConfigurationIsNotRewritten(unittest.TestCase):
         "#   an indented note\t\twith tabs\r\n"
         "capabilities:\r\n"
         "  - hygiene\r\n"
+        # An explicit "none", so this fixture tests migration alone. Without it
+        # `ADOPT-110` would seed the key and the equality below would be
+        # asserting two things at once.
+        "skills: []\r\n"
         "\r\n"
         "# a trailing comment, and no trailing newline"
     )
@@ -158,10 +162,11 @@ class TestItIsIdempotent(unittest.TestCase):
         self.assertEqual(apply(root, pin=PIN).written, [])
 
     def test_the_configuration_survives_both(self):  # ADOPT-084
-        root = adopted()
+        answered = CONFIG + "skills: []\n"
+        root = adopted({".claude/repo-config.yml": answered})
         apply(root, pin=PIN)
         apply(root, pin=PIN)
-        self.assertEqual((root / CONFIG_FILE).read_text(), CONFIG)
+        self.assertEqual((root / CONFIG_FILE).read_text(), answered)
 
     def test_a_repository_never_in_the_old_place_has_nothing_to_move(self):  # ADOPT-084
         root = repository({CONFIG_FILE: CONFIG})

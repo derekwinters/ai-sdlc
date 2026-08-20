@@ -128,6 +128,58 @@ anything at all.
 > `dashboard` set `PYTHONPATH` correctly, so the defect was a difference between siblings, which is
 > the kind of thing a test should hold still.
 
+## 7. The skill
+
+`lib/github.py` encodes its constraints in code: the vocabulary is what the method table has, the
+truncation is `MAX_DETAIL`, the token's absence from a log is `__repr__`. Every one of those
+constraints applies just as much to an **agent** — and an agent has no method table. It can call
+anything its tools expose, so a rule that exists only as an absent method does not exist for it.
+
+> **Invariant — one statement of the rules, two implementations.** The skill governs agents *and*
+> scripts. `lib/github.py` is an implementation of what the skill says rather than a second,
+> independent statement of it, and the vocabulary is compared between them by test. "No delete"
+> being true in two places for two different reasons is the shape that comes apart quietly, which
+> is the whole reason this project has a consistency capability.
+
+- **API-070** A `github-api` skill states, for any caller, what may be done to GitHub and what may
+  not. It is installed by the **substrate** capability, because it is the rules for touching
+  GitHub at all rather than the rules for any one capability.
+- **API-071** The skill carries a machine-readable vocabulary block naming every permitted read
+  and write. It matches the client's public operations exactly, in both directions: the client
+  cannot gain an operation the skill does not state, and the skill cannot state one the client
+  does not have. Reads and writes are disjoint.
+- **API-072** The forbidden operations are stated *with their reasons*, and none of them appears
+  in the permitted vocabulary. A bare list is a rule an agent under pressure will reason its way
+  around; a reason is what it has to argue with.
+- **API-073** The skill states the identity rule: the dependency API takes an issue's database
+  `id`, not its `number`, both are integers, and the wrong one silently succeeds (#155).
+- **API-074** The skill states that a collection read is capped and reports truncation, and that a
+  count is never reported from a partial read.
+- **API-075** The skill states that nothing is written on a schedule — every write reacts to an
+  event or to a person.
+- **API-076** The skill states the redaction rule for anything quoted back from an API response,
+  and that the token is never printed.
+- **API-077** The skill's `description` names the acts a caller is about to perform — read an
+  issue, move a label, set a milestone, record a blocker — rather than offering GitHub access in
+  the abstract. A description that describes a category is loaded after the decision it should
+  have informed.
+- **API-078** The skill does not restate the pipeline. It names `GK`, `BLK` and `LBL` as the
+  owners of what the states mean and when they move, and mentions no state label itself. A second
+  copy of the state machine would rot against the first.
+- **API-079** The skill is seeded into every adopting repository's `skills:` list, because a skill
+  nothing installs is the silence `ADOPT-110` exists to cure.
+
+> **How the spec is changing (#158).** `API` described one Python module and the seam it draws.
+> That was the whole truth while every GitHub interaction went through it; it stopped being the
+> whole truth the moment an agent with its own GitHub tools started doing pipeline work, which is
+> most of what happens in these repositories now.
+>
+> The issue posed the choice: does the skill govern scripts too, or only agents? It governs both.
+> The alternative keeps the module's constraints in code and the agent's in prose, which is two
+> descriptions of one vocabulary with nothing comparing them — and this project exists because
+> two descriptions of one thing drift. The stated cost was a test that parses prose; the
+> vocabulary is a fenced block instead, so the test parses data and the prose stays prose.
+
 ## 5. The fake
 
 - **API-050** `FakeGitHub` implements the same interface and is constructed from a plain dictionary
@@ -156,7 +208,8 @@ anything at all.
 | Pagination | API-020–026 | `test_github_pagination.py` |
 | Operations | API-030–041 | `test_github_operations.py` |
 | The fake | API-050–056 | `test_fake_github.py` |
+| The skill | API-070–079 | `test_github_api_skill.py` |
 | Reaching it from a workflow | API-060–061 | `test_reusable_workflows.py` |
 | Invariants | — | `test_architecture.py` |
 
-**53 requirements, 52 `auto` and 1 `manual`.**
+**63 requirements, 62 `auto` and 1 `manual`.**

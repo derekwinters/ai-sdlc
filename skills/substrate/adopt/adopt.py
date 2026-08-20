@@ -434,7 +434,11 @@ RENAMED_CHECKS_TASK = (
 #: `adopt` is absent for a different reason: it imports `lib.config`, which is
 #: not part of the skill, so an installed copy cannot run at all. Upgrades are
 #: run from an ai-sdlc checkout (#153).
+#:
+#: `github-api` is under `substrate`, which every repository has, because it is
+#: the rules for touching GitHub at all rather than for any one capability.
 INVOKED_LOCALLY = {
+    "substrate": ("github-api",),
     "release": ("release-flow",),
     "pipeline": ("triage-issue", "pipeline-dev", "ci-watch", "milestone-ops"),
 }
