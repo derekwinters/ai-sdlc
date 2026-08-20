@@ -520,15 +520,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#traceability" class="md-nav__link">
-    <span class="md-ellipsis">
-      Traceability
-    </span>
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -987,15 +978,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#traceability" class="md-nav__link">
-    <span class="md-ellipsis">
-      Traceability
-    </span>
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -1104,8 +1086,10 @@ because the question is the same one: may we write here?</p>
   changed nothing.</li>
 <li><strong>DIST-032</strong> A run that changed the tree opens a pull request. It never commits to the default
   branch.</li>
-<li><strong>DIST-033</strong> A run uses one stable branch, so a second run proposes changes on the open pull
-  request rather than opening another beside it.</li>
+<li><strong>DIST-033</strong> A run uses one stable branch <strong>and can push to it on every run</strong>, so a second run
+  proposes changes on the open pull request rather than opening another beside it. The branch is
+  fetched before it is pushed — a lease with no remote-tracking ref to compare against refuses —
+  and the push keeps its lease rather than being forced.</li>
 <li><strong>DIST-034</strong> Skipped skills are named in the run's report and in the pull request body, with the
   reason for each. A skip nobody is told about is indistinguishable from an install.</li>
 <li><strong>DIST-035</strong> A skipped skill does not fail the run. The other skills are still installed, and the
@@ -1153,6 +1137,17 @@ an installed skill has no code that needs <code>lib</code>.</p>
 <p>The cost is real and is worth naming: a rule that was a branch is now a sentence, and a test that
 executed it now asserts it is stated. What that buys is a rule that works in the repository it
 was shipped to, where the branch did not run at all.</p>
+<p><strong>How the spec is changing (#170).</strong> <code>DIST-033</code> made two claims and only the first was ever
+asserted: the branch <strong>name</strong> is stable, and a second run <strong>reuses</strong> it. The name was tested; the
+reuse was not, and it did not work. Every run after the one that created the branch pushed to a
+branch the runner had never fetched, <code>--force-with-lease</code> correctly refused with <code>stale info</code>,
+and the job died at its last step having done all the work.</p>
+<p>The visible cost was a <code>connor-multiplying-frogs</code> pull request that sat open for two days and
+four releases looking like a live proposal, installing skills at a commit from before #153
+deleted them. A mechanism whose entire job is keeping installed skills at the pin had frozen at
+the first pin it ever saw.</p>
+<p>The requirement now states the property rather than the symptom of the property, which is</p>
+<h1 id="141s-point-a-claim-with-a-constraint-in-it-needs-the-constraint-asserted-not-the-easy-half">141's point: a claim with a constraint in it needs the constraint asserted, not the easy half.<a class="headerlink" href="#141s-point-a-claim-with-a-constraint-in-it-needs-the-constraint-asserted-not-the-easy-half" title="Permanent link">&para;</a></h1>
 </blockquote>
 <hr />
 <h2 id="traceability">Traceability<a class="headerlink" href="#traceability" title="Permanent link">&para;</a></h2>
