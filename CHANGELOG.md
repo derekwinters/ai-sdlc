@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.4.21](https://github.com/derekwinters/ai-sdlc/compare/v0.4.20...v0.4.21) (2026-08-20)
+
+
+### Features
+
+* **pipeline:** convert the four installed skills to instructions an agent follows ([#169](https://github.com/derekwinters/ai-sdlc/issues/169)) ([68a72f0](https://github.com/derekwinters/ai-sdlc/commit/68a72f051c716d861766321ed95131518a4f789f))
+* **substrate:** seed the skills list, once, in the repository's own configuration ([#167](https://github.com/derekwinters/ai-sdlc/issues/167)) ([e09257b](https://github.com/derekwinters/ai-sdlc/commit/e09257b9d6905b7d09b9525a1506b7f77a0ab9f3))
+* **substrate:** state how anything touches GitHub, once, in a skill ([#168](https://github.com/derekwinters/ai-sdlc/issues/168)) ([58d0ac3](https://github.com/derekwinters/ai-sdlc/commit/58d0ac32c0b416231ccadcf2682aa87937229c8e))
+
+
+### Documentation
+
+* **hygiene:** read back what was published, because care cannot catch what tooling appends ([#165](https://github.com/derekwinters/ai-sdlc/issues/165)) ([bcdffcc](https://github.com/derekwinters/ai-sdlc/commit/bcdffcc4fd62d3c75038a18e8f36d2f199c24245)), closes [#156](https://github.com/derekwinters/ai-sdlc/issues/156)
+
 ## [0.4.20](https://github.com/derekwinters/ai-sdlc/compare/v0.4.19...v0.4.20) (2026-08-19)
 
 
