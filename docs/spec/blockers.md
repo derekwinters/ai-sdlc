@@ -28,7 +28,7 @@ Every requirement below is `auto` (covered by a named test) unless marked otherw
 
 ## 1. Reading
 
-- **BLK-001** `blockers_of(issue)` returns the issues blocking it, from the native graph.
+- **BLK-001** Reading an issue's blockers returns them from the native graph.
 - **BLK-002** Each carries its number, state and milestone, so a caller can judge without a second
   read.
 - **BLK-003** A closed blocker is marked resolved.
@@ -42,7 +42,7 @@ Every requirement below is `auto` (covered by a named test) unless marked otherw
 
 An ordering hint rather than a gate. GitHub has no native form, so these stay structured text.
 
-- **BLK-010** `depends_on(body)` reads `Depends on: #N` lines from an issue body.
+- **BLK-010** `Depends on: #N` lines in an issue body are soft dependencies.
 - **BLK-011** Several numbers on one line are all read.
 - **BLK-012** Several lines are all read.
 - **BLK-013** The reference is case-insensitive and tolerates surrounding punctuation.
@@ -52,16 +52,16 @@ An ordering hint rather than a gate. GitHub has no native form, so these stay st
 
 ## 3. Prose blockers are drift
 
-- **BLK-020** `prose_blockers(body)` finds `Blocked by #N` written as text.
+- **BLK-020** `Blocked by #N` written as text is found by the same reading rules.
 - **BLK-021** Finding one is reported as drift, with the issue and the numbers.
 - **BLK-022** A prose blocker is never treated as a real blocker. Honouring it would make the
   invisible-to-tooling form work, and it would stay.
 
 ## 4. Writing
 
-- **BLK-030** `block(issue, by)` creates a native blocked-by relationship.
+- **BLK-030** Blocking creates a native blocked-by relationship, and nothing that reads the graph may also write it.
 - **BLK-031** Creating one that already exists is a no-op, not an error.
-- **BLK-032** `unblock(issue, by)` removes one.
+- **BLK-032** Unblocking removes one.
 - **BLK-033** Removing one that does not exist is a no-op, not an error.
 - **BLK-034** An issue may not block itself; the attempt is refused.
 - **BLK-036** A blocker is named to GitHub by its **database id**, never by its issue number. The
@@ -73,7 +73,7 @@ An ordering hint rather than a gate. GitHub has no native form, so these stay st
 
 ## 5. Eligibility
 
-- **BLK-040** `is_eligible(issue, blockers)` is true when every hard blocker is resolved.
+- **BLK-040** An issue is eligible when every hard blocker is resolved.
 - **BLK-041** An issue with no blockers is eligible.
 - **BLK-042** One unresolved blocker is enough to make it ineligible.
 - **BLK-043** An unknown blocker — one whose state could not be read — is treated as unresolved.
@@ -82,15 +82,27 @@ An ordering hint rather than a gate. GitHub has no native form, so these stay st
 
 ---
 
+> **How the spec is changing (#153).** These requirements named functions — `blockers_of`,
+> `depends_on`, `block`, `is_eligible` — in a module installed into consuming repositories, where
+> nothing ever constructed the client every one of them took. They are behaviour now rather than
+> signatures, and where the behaviour happens depends on who needs it: the **dashboard** reads the
+> graph in code, because it runs in a workflow with nobody there; everything else is an agent's
+> work through `github-api`, stated in the `issue-blockers` skill.
+>
+> The traversal was the reason to keep code, and it is also why code could not stay. A cycle check
+> cannot know which issue to fetch next until it has read the last one, so it never decomposed into
+> "fetch, then call a pure function" — it was always going to be the whole walk or none of it, and
+> in a consumer it was none of it. `DIST-043`.
+
 ## Traceability
 
 | Section | IDs | Tests |
 |---|---|---|
 | Reading | BLK-001–007 | `test_blockers_read.py` |
-| Soft dependencies | BLK-010–016 | `test_blockers_text.py` |
+| Soft dependencies | BLK-010–016 | `test_blockers_rules.py` |
 | Prose blockers are drift | BLK-020–022 | `test_blockers_text.py` |
-| Writing | BLK-030–036 | `test_blockers_write.py` |
-| Eligibility | BLK-040–044 | `test_blockers_read.py` |
+| Writing | BLK-030–036 | `test_blockers_rules.py` |
+| Eligibility | BLK-040–044 | `test_blockers_rules.py` |
 
 **30 requirements, all `auto`.**
 

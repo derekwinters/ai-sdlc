@@ -1,4 +1,10 @@
-"""API-042, API-043 — milestone create and edit on the client."""
+"""API-042 to API-047 — the milestone, label and dependency operations.
+
+These are `lib/github.py`'s, not any skill's. The file was called
+`test_milestone_client.py` and was nearly deleted with `milestone-ops` in
+#153 — a name that says which caller a test serves rather than what it tests
+is a name that goes out with the caller.
+"""
 
 import json
 import unittest
@@ -53,10 +59,6 @@ class TestUpdate(unittest.TestCase):
         self.assertTrue(transport.requests[0]["url"].endswith("/milestones/2"))
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 class TestLabelOperations(unittest.TestCase):
     """API-044 to API-046 — the label vocabulary on the client."""
 
@@ -107,3 +109,7 @@ class TestDependencyOperations(unittest.TestCase):
         api.remove_blocked_by(7, 42)
         self.assertEqual(transport.requests[0]["method"], "DELETE")
         self.assertTrue(transport.requests[0]["url"].endswith("/blocked_by/42"))
+
+
+if __name__ == "__main__":
+    unittest.main()

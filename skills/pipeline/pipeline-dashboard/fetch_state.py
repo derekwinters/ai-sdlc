@@ -21,17 +21,9 @@ Specification: docs/spec/dashboard.md (`DASH`).
 from __future__ import annotations
 
 import re
-import sys
-from pathlib import Path
 
-_HERE = Path(__file__).resolve().parent
-for _sibling in ("issue-blockers",):
-    _path = _HERE.parent / _sibling
-    if str(_path) not in sys.path:
-        sys.path.insert(0, str(_path))
-
-from issue_blockers import Blockers, prose_blockers  # noqa: E402
-from lib.github import GitHubError  # noqa: E402
+from blocker_state import prose_blockers, read_blockers
+from lib.github import GitHubError
 
 #: The markers the dashboard keeps in its own body. The renderer writes them
 #: back out on every render, which is what makes a `/focus` survive from the
@@ -50,7 +42,6 @@ def fetch(api, labels, bot_login, dashboard_issue=None, overrides=None):
     state_labels = {name: state for state, name in labels.items()}
 
     issues = _issues(api, dashboard_issue)
-    blockers = Blockers(api)
 
     prepared, faults = [], _empty_faults()
 
@@ -58,7 +49,7 @@ def fetch(api, labels, bot_login, dashboard_issue=None, overrides=None):
         names = [label["name"] for label in issue.get("labels") or []]
         state_label = next((n for n in names if n in state_labels), None)
 
-        found = _safe(lambda i=issue["number"]: blockers.blockers_of(i), [])
+        found = _safe(lambda i=issue["number"]: read_blockers(api, i), [])
         unresolved = [b.number for b in found if not b.resolved]
         closed = issue.get("state") == "closed"
         milestone = issue.get("milestone") or {}

@@ -1,14 +1,13 @@
 ---
 name: milestone-ops
-description: Create, edit, close, reopen and inspect GitHub milestones, including the create and edit the MCP server does not provide. Use whenever a milestone must be made, renamed, re-described, closed at the end of a release, or checked for remaining open work.
-allowed-tools: Bash, Read
+description: Create, edit, close, reopen and inspect GitHub milestones, including the create and edit the MCP server does not provide. Use whenever a milestone must be made, renamed, re-described, closed at the end of a release, checked for remaining open work, or marked as the focus.
 ---
 
 # Milestone ops
 
-The GitHub MCP server exposes **no** milestone operations at all. This skill is how milestones are
-managed — including creating and editing them, which the earlier implementations of this skill
-lacked despite calling themselves "milestone CRUD".
+The GitHub MCP server exposes **no** milestone operations at all. Every one of them goes through
+`github-api` — `milestones`, `create_milestone`, `update_milestone` — and this skill says what to
+do with them.
 
 That gap matters more than it looks: the focus milestone is matched live from a milestone's
 **description**, so one created through the web interface without the right marker exists and is
@@ -16,59 +15,85 @@ invisible to the pipeline meant to consume it.
 
 ## Reading
 
-```python
-from milestone_ops import Milestones
-ms = Milestones(api)
+Read every milestone with its number, title, state, and open and closed issue counts. **Report them
+by number**, which is a stable order — a list that reorders between two runs is a list nobody can
+diff.
 
-ms.list()                      # every milestone, ordered by number
-ms.find("v0.4")                # exact title, or unique prefix; never guesses
-ms.open_issue_count("v0.4")    # how much work remains
-ms.focus()                     # the milestone marked focus, or None
-```
+Finding one by name:
 
-An ambiguous prefix resolves to nothing. Two candidates means picking one would be a guess.
+- an **exact title** matches;
+- a **unique prefix** matches, so `v0.4` finds `v0.4 — Adoption`;
+- an **ambiguous prefix matches nothing**. Two candidates means picking one would be a guess, and
+  a guess here renames or closes the wrong release.
 
-## Creating and editing
+Search open **and** closed milestones. A caller that means open only says so; a search that
+silently excluded closed ones would report "no such milestone" for something that plainly exists.
 
-```python
-ms.create("v0.4 — Adoption", description="focus. the adopt command")
-ms.edit("v0.4", description="new words")     # only what you name changes
-ms.edit("v0.4", title="v0.4 — Renamed")
-```
+`open_issues` is how much work remains in a milestone, and it is what decides whether it may close.
 
-`edit`'s first argument finds the milestone; the keywords change it. An omitted field is left
-alone — editing is not replacement.
+## Creating
 
-**Editing a description preserves markers you did not mention.** Rewriting the prose of the focus
-milestone does not silently stop it being the focus.
+A milestone needs a title, and may have a description and a due date. Before creating one:
 
-## Closing
+- **an empty title is refused** — an untitled milestone cannot be found again;
+- **a title that already exists is refused**, naming the existing one. Two milestones called
+  `v0.4` is a state nothing downstream can resolve.
 
-```python
-ms.close("v0.4")               # refuses while open issues remain
-ms.close("v0.4", force=True)   # closes anyway, reports how many it orphaned
-ms.reopen("v0.4")
-```
+Report the created milestone **with its assigned number**, so whatever asked for it can use it
+immediately rather than searching for what it just made.
 
-The refusal is not bureaucracy: issues in a closed milestone carry a milestone that no longer
-appears in any open list, so they become hard to find again.
+**Never create a milestone closed.** A milestone created closed is a mistake every time — there is
+no work in it and nothing to have finished.
 
-**Nothing here deletes a milestone**, and nothing ever will. Deleting detaches it from every issue
-that carried it and cannot be undone. Closing is always available and always reversible.
+## Editing
+
+Title, description and due date may all change. Two rules:
+
+- **an omitted field is left unchanged.** Editing is not replacement, and `update_milestone`
+  changes only the fields it is given. Sending the whole object back would silently revert anything
+  changed since you read it;
+- **renaming to a title another milestone already has is refused**, for the same reason creating a
+  duplicate is.
+
+Editing something that does not exist is refused, **naming what was searched for** — "no milestone
+found" without the search term is a message that cannot be acted on.
+
+**Editing a description preserves the markers you did not mention.** Rewriting the prose of the
+focus milestone must not silently stop it being the focus. Read the description, change the prose,
+put the markers back.
+
+## Closing and reopening
+
+**Closing refuses while open issues remain, and says how many.** That is not bureaucracy: an issue
+in a closed milestone carries a milestone that no longer appears in any open list, so it becomes
+hard to find again. Closing anyway is available deliberately — when you force it, **say how many
+issues it orphaned**.
+
+Closing an already-closed milestone is a **no-op, not an error**, and so is reopening an
+already-open one. Reopening a closed milestone is always available.
+
+**Nothing deletes a milestone**, and nothing ever will. Deleting detaches it from every issue that
+carried it and cannot be undone, where closing is always reversible. `github-api` has no delete for
+this, and that is deliberate rather than an omission.
 
 ## The markers
 
-The description carries machine-read markers alongside prose:
+A description carries machine-read markers alongside its prose:
 
 | Marker | Meaning |
 | --- | --- |
 | `focus.` | the milestone the pipeline is currently working through |
 | `frozen.` | scope is settled; no more issues should be added |
 
-```python
-ms.set_focus("v0.4")   # marks this one, clears the marker from any other
-```
+`focus.` marks the focus when the description **begins** with it. `frozen.` counts anywhere in the
+description. Both are read **case-insensitively**, and both may sit alongside ordinary prose —
+`Focus. the adoption release` is a marked milestone with a description.
 
-Exactly one milestone is the focus, which `set_focus` enforces rather than assumes.
+**Exactly one milestone is the focus.** Setting it on one means clearing it from every other, in
+the same operation — not assuming no other has it. Two focus milestones is a state the pipeline
+resolves by picking one, and which one is not something anybody chose.
 
-Specification: `docs/spec/milestones.md` (`MS`), 27 requirements.
+**Setting or clearing a marker preserves the prose around it.** The marker is a prefix on a
+description somebody wrote; it is not the description.
+
+Specification: `docs/spec/milestones.md` (`MS`).

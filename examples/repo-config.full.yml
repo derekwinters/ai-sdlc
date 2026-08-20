@@ -45,12 +45,14 @@ fire:
 # `pipeline-gatekeeper`, `pipeline-dashboard`, `label-sync`, `closing-keyword`,
 # `docs-gate` — do not: a copy here is a second version nothing reads.
 #
-# `adopt` and `issue-blockers` are absent for a different reason. They import
-# `lib`, which is not part of the skill, so an installed copy raises
-# ModuleNotFoundError. Do not list them until #153 lands.
+# `adopt` is absent for a different reason: it is a script, run from an ai-sdlc
+# checkout, and an installed copy would import `lib` and raise
+# ModuleNotFoundError.
 skills:
+  - github-api
   - triage-issue
   - pipeline-dev
+  - issue-blockers
   - ci-watch
   - milestone-ops
   - release-flow

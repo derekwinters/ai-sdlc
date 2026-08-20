@@ -31,28 +31,28 @@ Every requirement below is `auto` (covered by a named test) unless marked otherw
 
 ## 1. Reading
 
-- **MS-001** `list` returns every milestone with its number, title, state, and open and closed
+- **MS-001** A listing returns every milestone with its number, title, state, and open and closed
   issue counts.
 - **MS-002** Milestones are returned in a stable order — by number — so output is diffable.
-- **MS-003** `find` resolves a milestone by exact title.
-- **MS-004** `find` resolves by unique title prefix, so `v0.4` matches `v0.4 — Something`.
+- **MS-003** A milestone is resolved by exact title.
+- **MS-004** A unique title prefix resolves, so `v0.4` matches `v0.4 — Something`.
 - **MS-005** An ambiguous prefix resolves to nothing rather than guessing.
-- **MS-006** `find` searches open and closed milestones; a caller that means open only says so.
-- **MS-007** `open_issue_count` reports how much work remains in a milestone.
+- **MS-006** Open and closed milestones are both searched; meaning open only is said out loud.
+- **MS-007** How much work remains in a milestone is readable.
 
 ## 2. Creating
 
-- **MS-010** `create` makes a milestone with a title, and optionally a description and due date.
+- **MS-010** Creating makes a milestone with a title, and optionally a description and due date.
 - **MS-011** Creating a milestone whose title already exists is refused, naming the existing one.
 - **MS-012** An empty title is refused.
 - **MS-013** A created milestone is returned with its assigned number, so a caller can use it
   immediately.
-- **MS-014** `create` never sets a state other than open. A milestone created closed is a
+- **MS-014** Nothing is created in a state other than open. A milestone created closed is a
   contradiction.
 
 ## 3. Editing
 
-- **MS-020** `edit` changes any of title, description, due date.
+- **MS-020** Editing changes any of title, description, due date.
 - **MS-021** An omitted field is left unchanged; editing is not replacement.
 - **MS-022** Editing a milestone that does not exist is refused, naming what was searched for.
 - **MS-023** Renaming to a title another milestone already has is refused.
@@ -60,10 +60,10 @@ Every requirement below is `auto` (covered by a named test) unless marked otherw
 
 ## 4. Closing and reopening
 
-- **MS-030** `close` refuses while the milestone has open issues, reporting how many.
-- **MS-031** `close --force` closes anyway, and says how many issues it orphaned.
+- **MS-030** Closing refuses while the milestone has open issues, reporting how many.
+- **MS-031** Closing anyway is available deliberately, and says how many issues it orphaned.
 - **MS-032** Closing an already-closed milestone is a no-op, not an error.
-- **MS-033** `reopen` reopens a closed milestone.
+- **MS-033** Reopening a closed milestone is always available.
 - **MS-034** Reopening an already-open milestone is a no-op, not an error.
 - **MS-035** No operation deletes a milestone, and none is exposed that could.
 
@@ -73,7 +73,7 @@ The description carries machine-read markers as well as prose. The focus milesto
 from it, so a milestone created without the right marker is invisible to the pipeline.
 
 - **MS-040** A description beginning `focus.` marks the focus milestone.
-- **MS-041** Exactly one milestone may be the focus; `set_focus` clears the marker from any other.
+- **MS-041** Exactly one milestone is the focus; marking one clears the marker from every other, in the same operation.
 - **MS-042** A description containing `frozen.` marks a milestone whose scope is settled.
 - **MS-043** Markers are read case-insensitively and may appear with surrounding prose.
 - **MS-044** Setting a marker preserves the prose around it.
@@ -81,14 +81,20 @@ from it, so a milestone created without the right marker is invisible to the pip
 
 ---
 
+> **How the spec is changing (#153).** These requirements named methods on a `Milestones(api)`
+> class that was installed into consuming repositories, where nothing constructed the client it
+> took. They are behaviour now, applied by an agent through `github-api`. Unlike blockers, no
+> script manages milestones — the dashboard resolves its focus from a marker in its own body — so
+> nothing here stayed as code. `DIST-043`.
+
 ## Traceability
 
 | Section | IDs | Tests |
 |---|---|---|
-| Reading | MS-001–007 | `test_milestone_read.py` |
-| Creating | MS-010–014 | `test_milestone_write.py` |
-| Editing | MS-020–024 | `test_milestone_write.py` |
-| Closing and reopening | MS-030–035 | `test_milestone_write.py` |
-| Description markers | MS-040–045 | `test_milestone_markers.py` |
+| Reading | MS-001–007 | `test_milestone_rules.py` |
+| Creating | MS-010–014 | `test_milestone_rules.py` |
+| Editing | MS-020–024 | `test_milestone_rules.py` |
+| Closing and reopening | MS-030–035 | `test_milestone_rules.py` |
+| Description markers | MS-040–045 | `test_milestone_rules.py` |
 
 **27 requirements, all `auto`.**
