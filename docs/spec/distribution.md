@@ -100,8 +100,10 @@ because the question is the same one: may we write here?
   changed nothing.
 - **DIST-032** A run that changed the tree opens a pull request. It never commits to the default
   branch.
-- **DIST-033** A run uses one stable branch, so a second run proposes changes on the open pull
-  request rather than opening another beside it.
+- **DIST-033** A run uses one stable branch **and can push to it on every run**, so a second run
+  proposes changes on the open pull request rather than opening another beside it. The branch is
+  fetched before it is pushed — a lease with no remote-tracking ref to compare against refuses —
+  and the push keeps its lease rather than being forced.
 - **DIST-034** Skipped skills are named in the run's report and in the pull request body, with the
   reason for each. A skip nobody is told about is indistinguishable from an install.
 - **DIST-035** A skipped skill does not fail the run. The other skills are still installed, and the
@@ -150,6 +152,20 @@ possible caller once they arrived (#153).
 > The cost is real and is worth naming: a rule that was a branch is now a sentence, and a test that
 > executed it now asserts it is stated. What that buys is a rule that works in the repository it
 > was shipped to, where the branch did not run at all.
+
+> **How the spec is changing (#170).** `DIST-033` made two claims and only the first was ever
+> asserted: the branch **name** is stable, and a second run **reuses** it. The name was tested; the
+> reuse was not, and it did not work. Every run after the one that created the branch pushed to a
+> branch the runner had never fetched, `--force-with-lease` correctly refused with `stale info`,
+> and the job died at its last step having done all the work.
+>
+> The visible cost was a `connor-multiplying-frogs` pull request that sat open for two days and
+> four releases looking like a live proposal, installing skills at a commit from before #153
+> deleted them. A mechanism whose entire job is keeping installed skills at the pin had frozen at
+> the first pin it ever saw.
+>
+> The requirement now states the property rather than the symptom of the property, which is
+> #141's point: a claim with a constraint in it needs the constraint asserted, not the easy half.
 
 ---
 

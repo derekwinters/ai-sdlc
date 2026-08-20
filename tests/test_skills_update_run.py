@@ -183,6 +183,35 @@ class TestTheWorkflow(unittest.TestCase):
         self.assertNotIn("github.run", branch.group(1))
         self.assertNotIn("github.sha", branch.group(1))
 
+    def test_the_branch_is_fetched_before_it_is_pushed(self):  # DIST-033
+        """The half of `DIST-033` that was never asserted.
+
+        A stable name only reuses the pull request if the push lands. The
+        consumer is checked out with a default `actions/checkout`, which fetches
+        the default branch alone — so on every run but the first the branch
+        exists on the remote and the runner has no remote-tracking ref for it.
+        `--force-with-lease` then compares against nothing and refuses with
+        `stale info`, which is it working correctly on a question it should not
+        have been asked (#170).
+        """
+        push = re.search(r"(?m)^\s*git push .*\$BRANCH", self.text)
+        self.assertTrue(push, "the workflow never pushes the branch")
+        before = self.text[: push.start()]
+        self.assertRegex(before, r"(?m)^\s*git fetch [^\n]*\$BRANCH")
+
+    def test_the_lease_is_kept(self):  # DIST-033
+        """Fetching first is the fix; `--force` would also make the push land,
+        and would overwrite whatever a person had pushed to the branch."""
+        push = re.search(r"(?m)^\s*git push [^\n]*\$BRANCH[^\n]*", self.text).group(0)
+        self.assertIn("--force-with-lease", push)
+
+    def test_the_first_run_survives_having_nothing_to_fetch(self):  # DIST-033
+        """On the run that creates the branch there is nothing to fetch, and a
+        `set -euo pipefail` script dies on the failed fetch — which would move
+        the breakage from every run after the first to the first one."""
+        fetch = re.search(r"(?m)^\s*git fetch [^\n]*\$BRANCH[^\n]*", self.text).group(0)
+        self.assertRegex(fetch, r"\|\|\s*true")
+
     def test_the_report_becomes_the_pull_request_body(self):  # DIST-034
         command = re.search(r"(?m)^\s*gh pr create\b", self.text)
         create = self.text[command.start():]

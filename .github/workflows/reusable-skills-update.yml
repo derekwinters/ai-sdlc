@@ -92,6 +92,20 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # The consumer was checked out with a default `actions/checkout`,
+          # which fetches its default branch alone. So on every run but the
+          # first, this branch exists on the remote and the runner has never
+          # heard of it — and `--force-with-lease` compares against a
+          # remote-tracking ref that is not there and refuses with `stale
+          # info`. Fetching gives the lease something real to hold, which is
+          # the whole point of using a lease rather than `--force`: if somebody
+          # pushed to this branch after the fetch, the push should still fail.
+          #
+          # `|| true` because on the run that creates the branch there is
+          # nothing to fetch, and `set -e` would make that the failing run
+          # instead. Nothing downstream needs the fetch to have succeeded.
+          git fetch origin "$BRANCH" || true
+
           git checkout -B "$BRANCH"
           git add -A .claude/skills
           git commit -m "chore(skills): install ai-sdlc skills at ${REF}"
