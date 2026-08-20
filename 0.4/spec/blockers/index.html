@@ -1035,7 +1035,7 @@ graph must not silently make work eligible.</p>
 <hr />
 <h2 id="1-reading">1. Reading<a class="headerlink" href="#1-reading" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>BLK-001</strong> <code>blockers_of(issue)</code> returns the issues blocking it, from the native graph.</li>
+<li><strong>BLK-001</strong> Reading an issue's blockers returns them from the native graph.</li>
 <li><strong>BLK-002</strong> Each carries its number, state and milestone, so a caller can judge without a second
   read.</li>
 <li><strong>BLK-003</strong> A closed blocker is marked resolved.</li>
@@ -1048,7 +1048,7 @@ graph must not silently make work eligible.</p>
 <h2 id="2-soft-dependencies">2. Soft dependencies<a class="headerlink" href="#2-soft-dependencies" title="Permanent link">&para;</a></h2>
 <p>An ordering hint rather than a gate. GitHub has no native form, so these stay structured text.</p>
 <ul>
-<li><strong>BLK-010</strong> <code>depends_on(body)</code> reads <code>Depends on: #N</code> lines from an issue body.</li>
+<li><strong>BLK-010</strong> <code>Depends on: #N</code> lines in an issue body are soft dependencies.</li>
 <li><strong>BLK-011</strong> Several numbers on one line are all read.</li>
 <li><strong>BLK-012</strong> Several lines are all read.</li>
 <li><strong>BLK-013</strong> The reference is case-insensitive and tolerates surrounding punctuation.</li>
@@ -1058,16 +1058,16 @@ graph must not silently make work eligible.</p>
 </ul>
 <h2 id="3-prose-blockers-are-drift">3. Prose blockers are drift<a class="headerlink" href="#3-prose-blockers-are-drift" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>BLK-020</strong> <code>prose_blockers(body)</code> finds <code>Blocked by #N</code> written as text.</li>
+<li><strong>BLK-020</strong> <code>Blocked by #N</code> written as text is found by the same reading rules.</li>
 <li><strong>BLK-021</strong> Finding one is reported as drift, with the issue and the numbers.</li>
 <li><strong>BLK-022</strong> A prose blocker is never treated as a real blocker. Honouring it would make the
   invisible-to-tooling form work, and it would stay.</li>
 </ul>
 <h2 id="4-writing">4. Writing<a class="headerlink" href="#4-writing" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>BLK-030</strong> <code>block(issue, by)</code> creates a native blocked-by relationship.</li>
+<li><strong>BLK-030</strong> Blocking creates a native blocked-by relationship, and nothing that reads the graph may also write it.</li>
 <li><strong>BLK-031</strong> Creating one that already exists is a no-op, not an error.</li>
-<li><strong>BLK-032</strong> <code>unblock(issue, by)</code> removes one.</li>
+<li><strong>BLK-032</strong> Unblocking removes one.</li>
 <li><strong>BLK-033</strong> Removing one that does not exist is a no-op, not an error.</li>
 <li><strong>BLK-034</strong> An issue may not block itself; the attempt is refused.</li>
 <li><strong>BLK-036</strong> A blocker is named to GitHub by its <strong>database id</strong>, never by its issue number. The
@@ -1079,7 +1079,7 @@ graph must not silently make work eligible.</p>
 </ul>
 <h2 id="5-eligibility">5. Eligibility<a class="headerlink" href="#5-eligibility" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>BLK-040</strong> <code>is_eligible(issue, blockers)</code> is true when every hard blocker is resolved.</li>
+<li><strong>BLK-040</strong> An issue is eligible when every hard blocker is resolved.</li>
 <li><strong>BLK-041</strong> An issue with no blockers is eligible.</li>
 <li><strong>BLK-042</strong> One unresolved blocker is enough to make it ineligible.</li>
 <li><strong>BLK-043</strong> An unknown blocker — one whose state could not be read — is treated as unresolved.
@@ -1087,6 +1087,18 @@ graph must not silently make work eligible.</p>
 <li><strong>BLK-044</strong> The reason an issue is ineligible names the blockers responsible.</li>
 </ul>
 <hr />
+<blockquote>
+<p><strong>How the spec is changing (#153).</strong> These requirements named functions — <code>blockers_of</code>,
+<code>depends_on</code>, <code>block</code>, <code>is_eligible</code> — in a module installed into consuming repositories, where
+nothing ever constructed the client every one of them took. They are behaviour now rather than
+signatures, and where the behaviour happens depends on who needs it: the <strong>dashboard</strong> reads the
+graph in code, because it runs in a workflow with nobody there; everything else is an agent's
+work through <code>github-api</code>, stated in the <code>issue-blockers</code> skill.</p>
+<p>The traversal was the reason to keep code, and it is also why code could not stay. A cycle check
+cannot know which issue to fetch next until it has read the last one, so it never decomposed into
+"fetch, then call a pure function" — it was always going to be the whole walk or none of it, and
+in a consumer it was none of it. <code>DIST-043</code>.</p>
+</blockquote>
 <h2 id="traceability">Traceability<a class="headerlink" href="#traceability" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -1105,7 +1117,7 @@ graph must not silently make work eligible.</p>
 <tr>
 <td>Soft dependencies</td>
 <td>BLK-010–016</td>
-<td><code>test_blockers_text.py</code></td>
+<td><code>test_blockers_rules.py</code></td>
 </tr>
 <tr>
 <td>Prose blockers are drift</td>
@@ -1115,12 +1127,12 @@ graph must not silently make work eligible.</p>
 <tr>
 <td>Writing</td>
 <td>BLK-030–036</td>
-<td><code>test_blockers_write.py</code></td>
+<td><code>test_blockers_rules.py</code></td>
 </tr>
 <tr>
 <td>Eligibility</td>
 <td>BLK-040–044</td>
-<td><code>test_blockers_read.py</code></td>
+<td><code>test_blockers_rules.py</code></td>
 </tr>
 </tbody>
 </table>

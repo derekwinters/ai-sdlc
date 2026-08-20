@@ -1038,28 +1038,28 @@ change.</p>
 <hr />
 <h2 id="1-reading">1. Reading<a class="headerlink" href="#1-reading" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>MS-001</strong> <code>list</code> returns every milestone with its number, title, state, and open and closed
+<li><strong>MS-001</strong> A listing returns every milestone with its number, title, state, and open and closed
   issue counts.</li>
 <li><strong>MS-002</strong> Milestones are returned in a stable order — by number — so output is diffable.</li>
-<li><strong>MS-003</strong> <code>find</code> resolves a milestone by exact title.</li>
-<li><strong>MS-004</strong> <code>find</code> resolves by unique title prefix, so <code>v0.4</code> matches <code>v0.4 — Something</code>.</li>
+<li><strong>MS-003</strong> A milestone is resolved by exact title.</li>
+<li><strong>MS-004</strong> A unique title prefix resolves, so <code>v0.4</code> matches <code>v0.4 — Something</code>.</li>
 <li><strong>MS-005</strong> An ambiguous prefix resolves to nothing rather than guessing.</li>
-<li><strong>MS-006</strong> <code>find</code> searches open and closed milestones; a caller that means open only says so.</li>
-<li><strong>MS-007</strong> <code>open_issue_count</code> reports how much work remains in a milestone.</li>
+<li><strong>MS-006</strong> Open and closed milestones are both searched; meaning open only is said out loud.</li>
+<li><strong>MS-007</strong> How much work remains in a milestone is readable.</li>
 </ul>
 <h2 id="2-creating">2. Creating<a class="headerlink" href="#2-creating" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>MS-010</strong> <code>create</code> makes a milestone with a title, and optionally a description and due date.</li>
+<li><strong>MS-010</strong> Creating makes a milestone with a title, and optionally a description and due date.</li>
 <li><strong>MS-011</strong> Creating a milestone whose title already exists is refused, naming the existing one.</li>
 <li><strong>MS-012</strong> An empty title is refused.</li>
 <li><strong>MS-013</strong> A created milestone is returned with its assigned number, so a caller can use it
   immediately.</li>
-<li><strong>MS-014</strong> <code>create</code> never sets a state other than open. A milestone created closed is a
+<li><strong>MS-014</strong> Nothing is created in a state other than open. A milestone created closed is a
   contradiction.</li>
 </ul>
 <h2 id="3-editing">3. Editing<a class="headerlink" href="#3-editing" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>MS-020</strong> <code>edit</code> changes any of title, description, due date.</li>
+<li><strong>MS-020</strong> Editing changes any of title, description, due date.</li>
 <li><strong>MS-021</strong> An omitted field is left unchanged; editing is not replacement.</li>
 <li><strong>MS-022</strong> Editing a milestone that does not exist is refused, naming what was searched for.</li>
 <li><strong>MS-023</strong> Renaming to a title another milestone already has is refused.</li>
@@ -1067,10 +1067,10 @@ change.</p>
 </ul>
 <h2 id="4-closing-and-reopening">4. Closing and reopening<a class="headerlink" href="#4-closing-and-reopening" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>MS-030</strong> <code>close</code> refuses while the milestone has open issues, reporting how many.</li>
-<li><strong>MS-031</strong> <code>close --force</code> closes anyway, and says how many issues it orphaned.</li>
+<li><strong>MS-030</strong> Closing refuses while the milestone has open issues, reporting how many.</li>
+<li><strong>MS-031</strong> Closing anyway is available deliberately, and says how many issues it orphaned.</li>
 <li><strong>MS-032</strong> Closing an already-closed milestone is a no-op, not an error.</li>
-<li><strong>MS-033</strong> <code>reopen</code> reopens a closed milestone.</li>
+<li><strong>MS-033</strong> Reopening a closed milestone is always available.</li>
 <li><strong>MS-034</strong> Reopening an already-open milestone is a no-op, not an error.</li>
 <li><strong>MS-035</strong> No operation deletes a milestone, and none is exposed that could.</li>
 </ul>
@@ -1079,13 +1079,20 @@ change.</p>
 from it, so a milestone created without the right marker is invisible to the pipeline.</p>
 <ul>
 <li><strong>MS-040</strong> A description beginning <code>focus.</code> marks the focus milestone.</li>
-<li><strong>MS-041</strong> Exactly one milestone may be the focus; <code>set_focus</code> clears the marker from any other.</li>
+<li><strong>MS-041</strong> Exactly one milestone is the focus; marking one clears the marker from every other, in the same operation.</li>
 <li><strong>MS-042</strong> A description containing <code>frozen.</code> marks a milestone whose scope is settled.</li>
 <li><strong>MS-043</strong> Markers are read case-insensitively and may appear with surrounding prose.</li>
 <li><strong>MS-044</strong> Setting a marker preserves the prose around it.</li>
 <li><strong>MS-045</strong> Clearing a marker preserves the prose around it.</li>
 </ul>
 <hr />
+<blockquote>
+<p><strong>How the spec is changing (#153).</strong> These requirements named methods on a <code>Milestones(api)</code>
+class that was installed into consuming repositories, where nothing constructed the client it
+took. They are behaviour now, applied by an agent through <code>github-api</code>. Unlike blockers, no
+script manages milestones — the dashboard resolves its focus from a marker in its own body — so
+nothing here stayed as code. <code>DIST-043</code>.</p>
+</blockquote>
 <h2 id="traceability">Traceability<a class="headerlink" href="#traceability" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -1099,27 +1106,27 @@ from it, so a milestone created without the right marker is invisible to the pip
 <tr>
 <td>Reading</td>
 <td>MS-001–007</td>
-<td><code>test_milestone_read.py</code></td>
+<td><code>test_milestone_rules.py</code></td>
 </tr>
 <tr>
 <td>Creating</td>
 <td>MS-010–014</td>
-<td><code>test_milestone_write.py</code></td>
+<td><code>test_milestone_rules.py</code></td>
 </tr>
 <tr>
 <td>Editing</td>
 <td>MS-020–024</td>
-<td><code>test_milestone_write.py</code></td>
+<td><code>test_milestone_rules.py</code></td>
 </tr>
 <tr>
 <td>Closing and reopening</td>
 <td>MS-030–035</td>
-<td><code>test_milestone_write.py</code></td>
+<td><code>test_milestone_rules.py</code></td>
 </tr>
 <tr>
 <td>Description markers</td>
 <td>MS-040–045</td>
-<td><code>test_milestone_markers.py</code></td>
+<td><code>test_milestone_rules.py</code></td>
 </tr>
 </tbody>
 </table>

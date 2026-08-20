@@ -1089,6 +1089,13 @@ not reviewable, and cannot be reverted for one of them.</p>
   assuming a stack. <em>(manual: verified by the agent working unchanged across repositories.)</em></li>
 </ul>
 <hr />
+<blockquote>
+<p><strong>How the spec is changing (#153).</strong> §1 to §4 described <code>build_queue</code> and <code>take(api, …)</code>.
+The first was pure and would have worked in a consumer; the second was not and could not, and
+they shipped as one skill — a skill that is half usable is one nobody can rely on. Both are
+instructions now, which is how §5 always worked: <code>DEV-040</code> onwards has been prose checked by
+<code>test_dev_agent.py</code> since the agent existed. <code>DIST-043</code>.</p>
+</blockquote>
 <h2 id="traceability">Traceability<a class="headerlink" href="#traceability" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -1117,7 +1124,7 @@ not reviewable, and cannot be reverted for one of them.</p>
 <tr>
 <td>Taking an issue</td>
 <td>DEV-030–033</td>
-<td><code>test_dev_take.py</code></td>
+<td><code>test_dev_queue.py</code></td>
 </tr>
 <tr>
 <td>The agent's contract</td>

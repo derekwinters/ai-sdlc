@@ -512,6 +512,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#5-what-may-be-installed" class="md-nav__link">
+    <span class="md-ellipsis">
+      5. What may be installed
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#traceability" class="md-nav__link">
     <span class="md-ellipsis">
       Traceability
@@ -970,6 +979,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#5-what-may-be-installed" class="md-nav__link">
+    <span class="md-ellipsis">
+      5. What may be installed
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#traceability" class="md-nav__link">
     <span class="md-ellipsis">
       Traceability
@@ -1093,6 +1111,49 @@ because the question is the same one: may we write here?</p>
 <li><strong>DIST-035</strong> A skipped skill does not fail the run. The other skills are still installed, and the
   report says what was left out — the same bargain <code>adopt</code> makes with a conflict.</li>
 </ul>
+<h2 id="5-what-may-be-installed">5. What may be installed<a class="headerlink" href="#5-what-may-be-installed" title="Permanent link">&para;</a></h2>
+<p><code>connor-multiplying-frogs</code> installed six skills and four of them could not do the thing they
+existed to do. <code>DIST</code> said how a skill <em>reaches</em> a repository and never said what one may <em>contain</em>,
+so four modules with a <code>def f(api, …)</code> signature installed cleanly, reported success, and had no
+possible caller once they arrived (#153).</p>
+<blockquote>
+<p><strong>Invariant — a script is delivered to a runner; a skill is loaded by an agent.</strong> These are the
+two ways ai-sdlc's code reaches a repository and they do not overlap. A script runs in a workflow
+with no agent present, so it talks to GitHub in code and may import <code>lib</code>; it is fetched into the
+runner's action directory and never installed into a consumer. A skill is instructions, and every
+GitHub read and write it needs is performed by the agent reading it, through <code>github-api</code>
+(<code>API-070</code>).</p>
+</blockquote>
+<ul>
+<li><strong>DIST-040</strong> Every name a repository may put in <code>skills:</code> is a skill ai-sdlc ships. The
+  installable set is one list, and it is the same list <code>ADOPT-110</code> seeds from.</li>
+<li><strong>DIST-041</strong> A script is never installable. <code>pipeline-gatekeeper</code>, <code>pipeline-dashboard</code>,
+  <code>label-sync</code>, <code>closing-keyword</code>, <code>docs-gate</code>, <code>skills-update</code> and <code>adopt</code> execute from ai-sdlc's
+  own tree; a copy in a consumer is a second version nothing reads, which <code>DIST-012</code> would then
+  keep at the pin for ever.</li>
+<li><strong>DIST-042</strong> No module in an installable skill imports <code>lib</code>, expects an <code>api</code> parameter, or
+  imports a network library. All three are stated, because each is satisfiable while keeping the
+  defect: a module can avoid <code>lib</code> and still want a client, or want no client and still open a
+  socket.</li>
+<li><strong>DIST-043</strong> <code>issue-blockers</code>, <code>milestone-ops</code>, <code>pipeline-dev</code> and <code>triage-issue</code> carry no
+  modules at all, and each points at <code>github-api</code> for the reads and writes its work needs. They
+  were entirely client code around a judgement; the judgement is what an agent was always doing.</li>
+</ul>
+<blockquote>
+<p><strong>How the spec is changing (#153).</strong> This issue first asked how to <em>package</em> <code>lib</code> so an
+installed skill could import it, and leaned to vendoring. That was the wrong diagnosis twice
+over: vendoring <code>lib/github.py</code> would have put <code>import urllib</code> in four more modules and destroyed
+the one-module network seam <code>API</code>'s first invariant exists to state — and underneath it, the
+premise that installed skills need <code>lib</code> was itself wrong.</p>
+<p>Exactly three files in this repository construct a client, and all three are workflow entry
+points. Everything else took <code>api</code> as a parameter and expected a caller. In ai-sdlc's own tests
+that caller is the test; in a consumer there is none. The split is therefore not "skill versus
+library" but "runner versus agent", and under it there is no packaging problem to solve, because
+an installed skill has no code that needs <code>lib</code>.</p>
+<p>The cost is real and is worth naming: a rule that was a branch is now a sentence, and a test that
+executed it now asserts it is stated. What that buys is a rule that works in the repository it
+was shipped to, where the branch did not run at all.</p>
+</blockquote>
 <hr />
 <h2 id="traceability">Traceability<a class="headerlink" href="#traceability" title="Permanent link">&para;</a></h2>
 <table>
@@ -1124,9 +1185,14 @@ because the question is the same one: may we write here?</p>
 <td>DIST-030–035</td>
 <td><code>test_skills_update_run.py</code></td>
 </tr>
+<tr>
+<td>What may be installed</td>
+<td>DIST-040–043</td>
+<td><code>test_skill_purity.py</code></td>
+</tr>
 </tbody>
 </table>
-<p><strong>23 requirements, all <code>auto</code>.</strong></p>
+<p><strong>27 requirements, all <code>auto</code>.</strong></p>
 
 
 
