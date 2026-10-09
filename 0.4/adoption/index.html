@@ -388,6 +388,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#6-generate-your-routines" class="md-nav__link">
+    <span class="md-ellipsis">
+      6. Generate your routines
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#where-it-all-lives" class="md-nav__link">
     <span class="md-ellipsis">
       Where it all lives
@@ -545,6 +554,27 @@
   
   <span class="md-ellipsis">
     Distribution
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../spec/routines/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Routines
   </span>
   
 
@@ -995,6 +1025,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#6-generate-your-routines" class="md-nav__link">
+    <span class="md-ellipsis">
+      6. Generate your routines
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#where-it-all-lives" class="md-nav__link">
     <span class="md-ellipsis">
       Where it all lives
@@ -1161,6 +1200,34 @@ stops that skill being updated, and <code>skills-update</code> will say so on ev
 Workflow permissions → Allow GitHub Actions to create and approve pull requests</strong>. Without it the
 job pushes its branch and then cannot open the pull request.</p>
 <p>See <a href="../spec/distribution/">Distribution</a> for the whole mechanism.</p>
+<h2 id="6-generate-your-routines">6. Generate your routines<a class="headerlink" href="#6-generate-your-routines" title="Permanent link">&para;</a></h2>
+<p>Claude Code Routines — the triage routine the gatekeeper fires, the weekly Dependabot sweep — are
+defined once in ai-sdlc and rendered for each repository, rather than typed into the web UI by
+hand. Name the ones you want, in your configuration:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">routines</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">triage</span><span class="w">       </span><span class="c1"># needs the pipeline capability</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dependabot</span><span class="w">   </span><span class="c1"># needs hygiene</span>
+</code></pre></div>
+<p>and make sure <code>routines</code> is in your <code>skills:</code> list (<code>adopt</code> seeds it for a new adoption; an
+existing one adds it by hand), so <code>skills-update</code> installs it.</p>
+<p>Then, in a <strong>Claude Code cloud session in that repository</strong> — only those sessions can create
+routines — ask:</p>
+<blockquote>
+<p>Use the routines skill to create or update this repository's routines.</p>
+</blockquote>
+<p>The agent runs <code>python3 .claude/skills/routines/main.py plan</code>, shows you exactly what it will
+create or update, and waits for you to confirm. It matches routines by name, updates one whose
+prompt or schedule has drifted, and never deletes or duplicates one. Run it again whenever ai-sdlc
+changes a definition.</p>
+<p>Two steps are always yours, in the web UI, and the agent ends by listing them:</p>
+<ol>
+<li><strong>For an API-triggered routine (<code>triage</code>)</strong>, open it, add an API trigger, generate the token,
+   and store the URL and token as the repository secrets your <code>fire.endpoint_secret</code> and
+   <code>fire.token_secret</code> name. No tool can create a trigger token.</li>
+<li><strong>For every routine</strong>, confirm on its page that your repository is attached, and attach it if
+   not.</li>
+</ol>
+<p>See <a href="../spec/routines/">Routines</a> for the definitions and the rules.</p>
 <h2 id="where-it-all-lives">Where it all lives<a class="headerlink" href="#where-it-all-lives" title="Permanent link">&para;</a></h2>
 <p>Everything ai-sdlc owns in your repository sits in one directory:</p>
 <table>
