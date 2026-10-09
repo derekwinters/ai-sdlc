@@ -126,6 +126,24 @@ Parsing is stdlib-only, so the accepted subset is stated rather than inherited.
   loader that reached for it would be doing I/O. An unknown name is caught where the source is
   present — `DIST-016`.
 
+## 8. Routines
+
+- **CFG-070** `routines` names the routine definitions the repository wants created in Claude
+  Code (`RTN`). It defaults to the empty list, and a repository listing none has none planned.
+- **CFG-071** Every entry is a non-empty string. Anything else is an error naming the key path and
+  what was found.
+- **CFG-072** A repeated name is collapsed, as one in `skills` is.
+- **CFG-073** The list is not checked against the definitions ai-sdlc ships, nor against
+  `capabilities`, for `CFG-063`'s reason: the loader is pure, and the definitions are not in the
+  consumer's tree until the `routines` skill is. An unknown name is `RTN-022`, and a routine whose
+  capability is absent is `RTN-023`, both caught where the definitions are.
+
+> **How the spec is changing.** Routines were configured by hand in the web UI, so no key
+> described them. `routines` is the repository's own list for the same reason `skills` is:
+> nothing central decides what a repository should have. `adopt` does not seed it — a routine
+> needs manual web steps and acts on its own once created, so having one is a decision the
+> repository makes, not a default it inherits.
+
 ---
 
 ## Traceability
@@ -139,6 +157,7 @@ Parsing is stdlib-only, so the accepted subset is stated rather than inherited.
 | Pipeline settings | CFG-040–046 | `test_config_pipeline.py` |
 | The YAML subset | CFG-050–054 | `test_yaml_subset.py` |
 | Installed skills | CFG-060–063 | `test_config_skills.py` |
+| Routines | CFG-070–073 | `test_config_routines.py` |
 | Schema agreement | CFG-010 | `test_config_schema.py` |
 
-**44 requirements, 43 `auto` and 1 `manual`.**
+**48 requirements, 47 `auto` and 1 `manual`.**

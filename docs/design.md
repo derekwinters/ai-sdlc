@@ -165,7 +165,8 @@ document a reader consults to learn what the system does.
 - Every behaviour carries a requirement ID of the form `AREA-NNN`.
 - Areas, grouped by the capability that owns them:
   - *substrate*: `CFG` (configuration), `API` (GitHub access), `DIST` (distribution — how
-    skills reach a consumer and stay current), `ADOPT` (adoption and upgrade)
+    skills reach a consumer and stay current), `ADOPT` (adoption and upgrade), `RTN` (Claude
+    Code routines as code)
   - *hygiene*: `SYS` (commit and pull-request rules)
   - *consistency*: `VAL` (validators and gates)
   - *labels*: `LBL`
