@@ -154,6 +154,15 @@
         "minLength": 1
       },
       "uniqueItems": true
+    },
+    "routines": {
+      "description": "The Claude Code routine definitions this repository wants, by id. The list is the repository's own; adopt does not seed it.",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
     }
   }
 }

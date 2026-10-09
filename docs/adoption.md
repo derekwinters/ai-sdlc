@@ -106,6 +106,41 @@ job pushes its branch and then cannot open the pull request.
 
 See [Distribution](spec/distribution.md) for the whole mechanism.
 
+## 6. Generate your routines
+
+Claude Code Routines — the triage routine the gatekeeper fires, the weekly Dependabot sweep — are
+defined once in ai-sdlc and rendered for each repository, rather than typed into the web UI by
+hand. Name the ones you want, in your configuration:
+
+```yaml
+routines:
+  - triage       # needs the pipeline capability
+  - dependabot   # needs hygiene
+```
+
+and make sure `routines` is in your `skills:` list (`adopt` seeds it for a new adoption; an
+existing one adds it by hand), so `skills-update` installs it.
+
+Then, in a **Claude Code cloud session in that repository** — only those sessions can create
+routines — ask:
+
+> Use the routines skill to create or update this repository's routines.
+
+The agent runs `python3 .claude/skills/routines/main.py plan`, shows you exactly what it will
+create or update, and waits for you to confirm. It matches routines by name, updates one whose
+prompt or schedule has drifted, and never deletes or duplicates one. Run it again whenever ai-sdlc
+changes a definition.
+
+Two steps are always yours, in the web UI, and the agent ends by listing them:
+
+1. **For an API-triggered routine (`triage`)**, open it, add an API trigger, generate the token,
+   and store the URL and token as the repository secrets your `fire.endpoint_secret` and
+   `fire.token_secret` name. No tool can create a trigger token.
+2. **For every routine**, confirm on its page that your repository is attached, and attach it if
+   not.
+
+See [Routines](spec/routines.md) for the definitions and the rules.
+
 ## Where it all lives
 
 Everything ai-sdlc owns in your repository sits in one directory:

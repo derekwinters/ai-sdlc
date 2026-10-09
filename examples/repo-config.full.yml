@@ -50,6 +50,7 @@ fire:
 # ModuleNotFoundError.
 skills:
   - github-api
+  - routines
   - triage-issue
   - pipeline-dev
   - issue-blockers
@@ -57,3 +58,11 @@ skills:
   - milestone-ops
   - release-flow
 
+# The Claude Code routines this repository wants, by definition id. The
+# `routines` skill renders them for this repository and an agent in a cloud
+# session creates or updates them to match (see docs/spec/routines.md). Yours,
+# like `skills:` — `adopt` never writes it. `triage` needs the pipeline and an
+# API trigger whose URL and token go in the secrets `fire:` names above.
+routines:
+  - triage
+  - dependabot

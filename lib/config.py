@@ -137,6 +137,7 @@ class Config:
         "commands",
         "fire",
         "skills",
+        "routines",
     )
 
     def __init__(self, **values):
@@ -208,7 +209,8 @@ def parse_config(text, source=None):
         dashboard_issue=_dashboard_issue(raw, pipeline, problems),
         commands=_commands(raw, problems),
         fire=_fire(raw, problems),
-        skills=_skills(raw, problems),
+        skills=_names(raw, "skills", problems),
+        routines=_names(raw, "routines", problems),
     )
 
     if problems:
@@ -230,6 +232,7 @@ _SCHEMA_KEYS = {
     "commands": dict,
     "fire": dict,
     "skills": list,
+    "routines": list,
 }
 
 _NESTED_KEYS = {
@@ -402,15 +405,15 @@ def _commands(raw, problems):
     )
 
 
-def _skills(raw, problems):
-    """The skills this repository installs from ai-sdlc.
+def _names(raw, key, problems):
+    """A list of names the repository owns: `skills` or `routines`.
 
     Names only. Nothing here checks a name against ai-sdlc's tree, and nothing
     checks it against `capabilities`: the loader is pure (CFG-005), and
-    resolving a name needs the source. `DIST-016` makes that check where the
-    source is actually present.
+    resolving a name needs the source. `DIST-016` and `RTN-022` make that check
+    where the source is actually present (CFG-063, CFG-073).
     """
-    listed = raw.get("skills") or []
+    listed = raw.get(key) or []
     if not isinstance(listed, list):
         # The type error is reported by _reject_unknown; do not report it twice.
         return []
@@ -419,7 +422,7 @@ def _skills(raw, problems):
     for index, name in enumerate(listed):
         if not isinstance(name, str) or not name.strip():
             problems.append(
-                f"'skills[{index}]' must be a non-empty skill name, found "
+                f"'{key}[{index}]' must be a non-empty name, found "
                 f"{type(name).__name__} {name!r}"
             )
             continue

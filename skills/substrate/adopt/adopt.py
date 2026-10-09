@@ -441,8 +441,11 @@ RENAMED_CHECKS_TASK = (
 #:
 #: `github-api` is under `substrate`, which every repository has, because it is
 #: the rules for touching GitHub at all rather than for any one capability.
+#: `routines` is there too: it is run by an agent in a cloud session of the
+#: consumer, and which routines it plans is the repository's `routines:` list,
+#: which adoption never writes (`RTN`).
 INVOKED_LOCALLY = {
-    "substrate": ("github-api",),
+    "substrate": ("github-api", "routines"),
     "release": ("release-flow",),
     "pipeline": ("triage-issue", "pipeline-dev", "issue-blockers", "ci-watch",
                  "milestone-ops"),
