@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/derekwinters/ai-sdlc/compare/v0.4.22...v0.5.0) (2026-10-09)
+
+
+### Features
+
+* **substrate:** define Claude Code routines as code, rendered per repository ([#181](https://github.com/derekwinters/ai-sdlc/issues/181)) ([8c0b4e5](https://github.com/derekwinters/ai-sdlc/commit/8c0b4e566ba415e0261dabf484971bab2dd16ca4))
+
 ## [0.4.22](https://github.com/derekwinters/ai-sdlc/compare/v0.4.21...v0.4.22) (2026-08-20)
 
 
