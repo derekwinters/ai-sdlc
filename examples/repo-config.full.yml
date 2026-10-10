@@ -61,8 +61,23 @@ skills:
 # The Claude Code routines this repository wants, by definition id. The
 # `routines` skill renders them for this repository and an agent in a cloud
 # session creates or updates them to match (see docs/spec/routines.md). Yours,
-# like `skills:` — `adopt` never writes it. `triage` needs the pipeline and an
-# API trigger whose URL and token go in the secrets `fire:` names above.
+# like `skills:` — `adopt` never writes it.
+#
+# Triage is one of two, never both. `repo-triage` is a routine of this
+# repository's own. `project-triage`, used here, is one routine shared by every
+# repository in `project:` below. Either needs the pipeline and an API trigger
+# whose URL and token go in the secrets `fire:` names above — for the project
+# routine, the same URL and token in every member.
 routines:
-  - triage
+  - project-triage
   - dependabot
+
+# The project this repository belongs to, for routines it shares with the
+# other repositories in it. Keep this block identical in every member: each
+# renders the shared routine from its own copy, and two copies that disagree
+# render two different prompts for one routine.
+project:
+  name: Doggiehood
+  repos:
+    - derekwinters/lucas-doggiehood
+    - derekwinters/doggiehood-api

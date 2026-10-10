@@ -1,5 +1,5 @@
-"""RTN-050 to RTN-053 — the two routines every repository has been typing in
-by hand, rendered for a sample repository and checked for what they must say.
+"""RTN-050 to RTN-055 — the routines every repository has been typing in by
+hand, rendered for a sample repository and checked for what they must say.
 """
 
 import re
@@ -11,10 +11,15 @@ from routines import load_definitions, plan
 
 REPO = "derekwinters/example"
 
+PROJECT = (
+    "project:\n  name: Doggiehood\n  repos:\n"
+    "    - derekwinters/lucas-doggiehood\n    - derekwinters/doggiehood-api\n"
+)
 
-def rendered(routine_id):
-    root = repository(PIPELINE + f"routines:\n  - {routine_id}\n")
-    (entry,) = plan(root, REPO, DEFINITIONS)["routines"]
+
+def rendered(routine_id, config=PIPELINE, repo=REPO):
+    root = repository(config + f"routines:\n  - {routine_id}\n")
+    (entry,) = plan(root, repo, DEFINITIONS)["routines"]
     return entry
 
 
@@ -22,12 +27,13 @@ def words(text):
     return re.sub(r"\s+", " ", text)
 
 
-class TestTriage(unittest.TestCase):
+class TestRepoTriage(unittest.TestCase):
     def setUp(self):
-        self.definition = load_definitions(DEFINITIONS)["triage"]
-        self.entry = rendered("triage")
+        self.definition = load_definitions(DEFINITIONS)["repo-triage"]
+        self.entry = rendered("repo-triage")
 
     def test_its_shape(self):  # RTN-050
+        self.assertEqual(self.definition.scope, "repository")
         self.assertEqual(self.definition.requires, "pipeline")
         self.assertTrue(self.definition.api)
         self.assertIsNone(self.definition.schedule)
@@ -45,6 +51,71 @@ class TestTriage(unittest.TestCase):
 
     def test_it_stays_short(self):  # RTN-050
         self.assertLess(len(self.entry["prompt"]), 600)
+
+
+class TestProjectTriage(unittest.TestCase):
+    def setUp(self):
+        self.definition = load_definitions(DEFINITIONS)["project-triage"]
+        self.entry = rendered("project-triage", PIPELINE + PROJECT,
+                              "derekwinters/lucas-doggiehood")
+        self.prompt = words(self.entry["prompt"])
+
+    def test_its_shape(self):  # RTN-054
+        self.assertEqual(self.definition.scope, "project")
+        self.assertEqual(self.definition.requires, "pipeline")
+        self.assertTrue(self.definition.api)
+        self.assertIsNone(self.definition.schedule)
+        self.assertEqual(self.definition.connectors, [])
+        self.assertEqual(self.definition.name, "{project} Triage")
+        self.assertEqual(self.entry["name"], "Doggiehood Triage")
+
+    def test_the_payload_is_untrusted(self):  # RTN-054
+        self.assertIn("<routine-fire-payload>", self.prompt)
+        self.assertIn("untrusted", self.prompt)
+
+    def test_it_extracts_exactly_one_issue_and_one_repository(self):  # RTN-054
+        self.assertIn("exactly one issue number", self.prompt)
+        self.assertIn("exactly one `owner/name` repository", self.prompt)
+
+    def test_it_stops_on_anything_doubtful(self):  # RTN-054
+        self.assertRegex(self.prompt, r"(?i)missing or ambiguous")
+        self.assertIn("stop without changing anything", self.prompt)
+
+    def test_the_allowlist_is_the_rendered_project(self):  # RTN-054
+        self.assertIn(
+            "- derekwinters/doggiehood-api\n- derekwinters/lucas-doggiehood",
+            self.entry["prompt"],
+        )
+        self.assertIn("not in this list", self.prompt)
+
+    def test_it_runs_triage_issue_in_that_repository(self):  # RTN-054
+        self.assertIn("/triage-issue", self.prompt)
+        self.assertIn("in that repository", self.prompt)
+
+    def test_it_stays_short(self):  # RTN-054
+        self.assertLess(len(self.entry["prompt"]), 700)
+
+
+class TestTheFireNamesWhatProjectTriageNeeds(unittest.TestCase):
+    def test_the_gatekeeper_text_names_one_issue_and_one_repository(self):  # RTN-055
+        import json
+
+        import _gatekeeper  # noqa: F401
+        from downstream import Fire
+
+        sent = {}
+
+        def record(url, headers, body):
+            sent["body"] = body
+            return 200, '{"claude_code_session_id": "x"}'
+
+        Fire("https://example.invalid", "t", transport=record).send(
+            12, "derekwinters/doggiehood-api"
+        )
+        text = json.loads(sent["body"])["text"]
+        self.assertEqual(re.findall(r"#(\d+)", text), ["12"])
+        self.assertEqual(re.findall(r"\b[\w.-]+/[\w.-]+\b", text),
+                         ["derekwinters/doggiehood-api"])
 
 
 class TestDependabot(unittest.TestCase):

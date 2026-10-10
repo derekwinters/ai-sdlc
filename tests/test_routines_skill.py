@@ -1,4 +1,4 @@
-"""RTN-040 to RTN-045, RTN-060 — the instructions an agent follows to make
+"""RTN-040 to RTN-046, RTN-060 — the instructions an agent follows to make
 live routines match the plan.
 
 There is no API to call from a test: the trigger tools exist only inside a
@@ -79,6 +79,33 @@ class TestTheEnd(unittest.TestCase):
 
     def test_it_never_publishes_a_link_or_token(self):  # RTN-045
         self.assertRegex(flat(), r"(?i)never write .*(token|session link)")
+
+
+class TestAProjectRoutineUpdate(unittest.TestCase):
+    def section(self):
+        match = re.search(r"(?s)## Project routines\n(.*?)\n## ", TEXT)
+        self.assertIsNotNone(match, "SKILL.md has no '## Project routines' section")
+        return re.sub(r"\s+", " ", match.group(1))
+
+    def test_it_names_the_repository_list_difference(self):  # RTN-046
+        text = self.section()
+        self.assertIn("project_repos", text)
+        self.assertRegex(text, r"(?i)adds")
+        self.assertRegex(text, r"(?i)removes")
+
+    def test_it_names_the_likely_cause(self):  # RTN-046
+        self.assertRegex(self.section(), r"(?i)another member.*project\.repos")
+
+    def test_it_needs_an_explicit_confirmation_of_that_update(self):  # RTN-046
+        text = self.section()
+        self.assertRegex(text, r"(?i)explicit")
+        self.assertRegex(text, r"(?i)general (yes|confirmation) is not enough")
+
+    def test_otherwise_it_reports_and_leaves_it_alone(self):  # RTN-046
+        self.assertRegex(self.section(), r"(?i)report .*leave .*alone")
+
+    def test_the_match_table_points_at_it(self):  # RTN-046
+        self.assertRegex(flat(), r"(?i)project routine.*Project routines")
 
 
 class TestDistribution(unittest.TestCase):

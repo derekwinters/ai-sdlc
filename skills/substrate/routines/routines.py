@@ -33,11 +33,32 @@ CONFIG_PATH = Path(".ai-sdlc") / "repo-config.yml"
 #: The capability names `lib/config.py` declares, in its order (RTN-004).
 CAPABILITIES = ("substrate", "hygiene", "consistency", "labels", "release", "pipeline")
 
-PLACEHOLDERS = ("repo", "owner", "repo_name")
+#: Placeholders naming the repository being planned. A project routine uses
+#: none of them, so every member renders it identically (RTN-009).
+REPOSITORY_PLACEHOLDERS = ("repo", "owner", "repo_name")
+
+#: Placeholders naming the project, from `project:` (RTN-015).
+PROJECT_PLACEHOLDERS = ("project", "project_repos")
+
+PLACEHOLDERS = REPOSITORY_PLACEHOLDERS + PROJECT_PLACEHOLDERS
 
 REQUIRED = ("id", "name", "requires", "session")
-OPTIONAL = ("schedule", "api", "connectors")
+OPTIONAL = ("schedule", "api", "connectors", "scope")
 SESSIONS = ("fresh",)
+SCOPES = ("repository", "project")
+
+#: Definitions that no longer exist, and what to list instead (RTN-025). No
+#: alias: `triage` would have to pick one of its two successors on the
+#: repository's behalf.
+RENAMED = {
+    "triage": ("'triage' was renamed in the routines skill: list 'repo-triage' for a triage "
+               "routine of this repository's own, or 'project-triage' for one shared by every "
+               "repository in project.repos"),
+}
+
+#: Pairs a repository may not name together (RTN-028). Both triage routines
+#: answer the same fire, and a repository has one `fire.endpoint_secret`.
+EXCLUSIVE = (("repo-triage", "project-triage"),)
 
 _SLUG = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?/[A-Za-z0-9._-]+$")
 
@@ -55,7 +76,7 @@ class RoutineError(ValueError):
 
 class Definition:
     __slots__ = ("id", "name", "requires", "schedule", "api", "connectors", "session",
-                 "prompt")
+                 "scope", "prompt")
 
     def __init__(self, **values):
         for key in self.__slots__:
@@ -111,9 +132,10 @@ def _split_key(content, number):
 
 def _read_block(text, nested=()):
     """Top-level keys: scalars, `- ` lists, and for the keys in `nested` one
-    level of `key: value`. Everything this reads, `lib/yaml_lite` reads the
-    same way (RTN-003); anything else is refused rather than guessed at."""
-    result, current, kind = {}, None, None
+    level of `key: value`, whose value may itself be a `- ` list one level
+    further in (`project.repos`). Everything this reads, `lib/yaml_lite` reads
+    the same way (RTN-003); anything else is refused rather than guessed at."""
+    result, current, kind, inner_list = {}, None, None, None
     for number, raw in enumerate(text.splitlines(), start=1):
         line = _strip_comment(raw).rstrip()
         if not line.strip():
@@ -123,7 +145,15 @@ def _read_block(text, nested=()):
         if indent == 0:
             key, value = _split_key(content, number)
             result[key] = _scalar(value, number) if value else None
-            current, kind = (key if value == "" else None), None
+            current, kind, inner_list = (key if value == "" else None), None, None
+            continue
+        if indent == 4 and inner_list is not None and (
+            content.startswith("- ") or content == "-"
+        ):
+            mapping, inner = inner_list
+            if mapping[inner] is None:
+                mapping[inner] = []
+            mapping[inner].append(_scalar(content[2:].strip(), number))
             continue
         if current is None or indent != 2:
             raise RoutineError(f"line {number}: unexpected indentation")
@@ -142,7 +172,8 @@ def _read_block(text, nested=()):
             if result[key] is None:
                 result[key] = {}
             inner, value = _split_key(content, number)
-            result[key][inner] = _scalar(value, number)
+            result[key][inner] = _scalar(value, number) if value else None
+            inner_list = (result[key], inner) if value == "" else None
     return result
 
 
@@ -213,6 +244,20 @@ def load_definition(path):
     if schedule is None and api is not True:
         problems.append("no trigger: a definition needs 'schedule', 'api: true', or both")
 
+    scope = front.get("scope")
+    if scope is None:
+        scope = "repository"
+    if scope not in SCOPES:
+        problems.append(f"'scope' is {scope!r}; valid scopes: {', '.join(SCOPES)}")
+    elif scope == "project":
+        for field, text in (("name", front.get("name")), ("prompt", body)):
+            for used in _placeholders(text if isinstance(text, str) else ""):
+                if used in REPOSITORY_PLACEHOLDERS:
+                    problems.append(
+                        f"a project routine's {field} cannot use {{{used}}}: every repository "
+                        f"in the project must render the same routine"
+                    )
+
     connectors = front.get("connectors")
     if connectors is None:
         connectors = []
@@ -227,7 +272,7 @@ def load_definition(path):
 
     return Definition(
         id=front["id"], name=front["name"], requires=requires, schedule=schedule,
-        api=api is True, connectors=list(connectors), session=session,
+        api=api is True, connectors=list(connectors), session=session, scope=scope,
         prompt=body.strip(),
     )
 
@@ -247,19 +292,42 @@ def load_definitions(directory=DEFINITIONS):
 # --------------------------------------------------------------- rendering
 
 
-def render(template, repo, where):
-    """Fill `{repo}`, `{owner}` and `{repo_name}`; refuse anything else."""
+def _escaped(template):
+    return template.replace("{{", "\0").replace("}}", "\1")
+
+
+def _placeholders(template):
+    """The placeholder names a template uses, literal braces excepted."""
+    return [m.group(1) for m in _PLACEHOLDER.finditer(_escaped(template))]
+
+
+def project_repos(project):
+    """`project.repos` sorted and without repeats (RTN-015)."""
+    return sorted(set(project["repos"]))
+
+
+def render(template, repo, where, project=None):
+    """Fill the placeholders; refuse an unknown one, and a project one when
+    there is no project."""
     owner, _, name = repo.partition("/")
     values = {"repo": repo, "owner": owner, "repo_name": name}
-    escaped = template.replace("{{", "\0").replace("}}", "\1")
+    if project is not None:
+        values["project"] = project["name"]
+        values["project_repos"] = "\n".join(f"- {r}" for r in project_repos(project))
+    escaped = _escaped(template)
 
-    unknown = [m.group(0) for m in _PLACEHOLDER.finditer(escaped)
-               if m.group(1) not in values]
-    if unknown:
-        raise RoutineError([
-            f"{where}: unknown placeholder {u}; known: "
-            f"{', '.join('{' + p + '}' for p in PLACEHOLDERS)}" for u in unknown
-        ])
+    problems = []
+    for match in _PLACEHOLDER.finditer(escaped):
+        if match.group(1) in values:
+            continue
+        if match.group(1) in PROJECT_PLACEHOLDERS:
+            problems.append(f"{where}: {match.group(0)} needs project: in "
+                            f"{CONFIG_PATH.as_posix()}, and this configuration has none")
+        else:
+            problems.append(f"{where}: unknown placeholder {match.group(0)}; known: "
+                            f"{', '.join('{' + p + '}' for p in PLACEHOLDERS)}")
+    if problems:
+        raise RoutineError(problems)
     out = _PLACEHOLDER.sub(lambda m: values[m.group(1)], escaped)
     return out.replace("\0", "{").replace("\1", "}")
 
@@ -306,7 +374,8 @@ def read_config(root):
     if not path.is_file():
         raise RoutineError(f"no configuration at {CONFIG_PATH.as_posix()}")
     try:
-        raw = _read_block(path.read_text(), nested=("fire", "bot", "labels", "commands"))
+        raw = _read_block(path.read_text(),
+                          nested=("fire", "bot", "labels", "commands", "project"))
     except RoutineError as error:
         raise RoutineError([f"{CONFIG_PATH.as_posix()}: {p}" for p in error.problems]) from error
 
@@ -322,13 +391,40 @@ def read_config(root):
 
     fire = raw.get("fire") if isinstance(raw.get("fire"), dict) else {}
     return {"capabilities": names("capabilities"), "routines": names("routines"),
-            "fire": dict(fire)}
+            "fire": dict(fire), "project": _project(raw)}
 
 
-def _manual_tasks(definition, name, repo, fire):
+def _project(raw):
+    """`project:` as {name, repos}, repos sorted and collapsed, or None.
+
+    The shape `lib/config.py` validates (CFG-074); a shape this cannot use is
+    refused rather than planned around.
+    """
+    if "project" not in raw:
+        return None
+    section = raw["project"]
+    where = CONFIG_PATH.as_posix()
+    if not isinstance(section, dict):
+        raise RoutineError(f"{where}: 'project' must be a mapping of name and repos")
+    name, repos = section.get("name"), section.get("repos")
+    problems = []
+    if not isinstance(name, str) or not name.strip():
+        problems.append(f"{where}: 'project.name' must be a non-empty string")
+    if not isinstance(repos, list) or not repos or not all(
+        isinstance(r, str) and _SLUG.match(r) for r in repos
+    ):
+        problems.append(f"{where}: 'project.repos' must be a non-empty list of owner/name")
+    if problems:
+        raise RoutineError(problems)
+    return {"name": name, "repos": project_repos({"repos": repos})}
+
+
+def _manual_tasks(definition, name, repo, fire, project):
+    endpoint, token = fire.get("endpoint_secret"), fire.get("token_secret")
+    if definition.scope == "project":
+        return _project_tasks(definition, name, project, endpoint, token)
     tasks = []
     if definition.api:
-        endpoint, token = fire.get("endpoint_secret"), fire.get("token_secret")
         if endpoint and token:
             where = (f"as the repository secrets {endpoint} (the URL) and {token} "
                      f"(the token)")
@@ -347,14 +443,52 @@ def _manual_tasks(definition, name, repo, fire):
     return tasks
 
 
+def _project_tasks(definition, name, project, endpoint, token):
+    """RTN-035 and RTN-036: the shared routine's steps, for every member."""
+    members = ", ".join(project["repos"])
+    tasks = []
+    if definition.api:
+        if endpoint and token:
+            where = f"as the repository secrets {endpoint} (the URL) and {token} (the token)"
+        else:
+            where = ("as two repository secrets, named under fire.endpoint_secret and "
+                     "fire.token_secret in each one's .ai-sdlc/repo-config.yml")
+        tasks.append(
+            f"On the routine '{name}' in the Claude Code web UI, add an API trigger and "
+            f"generate its token once for the whole project {project['name']}: if one was "
+            f"already added from another of its repositories, use that one and never add a "
+            f"second. Store the same trigger URL and token {where} in every repository in the "
+            f"project: {members}. No tool can create an API trigger, and the token is shown "
+            f"once."
+        )
+    tasks.append(
+        f"Open the routine '{name}' in the Claude Code web UI and attach every repository "
+        f"in the project {project['name']}: {members}. Confirm each one is attached."
+    )
+    return tasks
+
+
+def _selection_problems(listed):
+    problems = [f"routines: {RENAMED[r]}" for r in listed if r in RENAMED]
+    for pair in EXCLUSIVE:
+        if all(r in listed for r in pair):
+            problems.append(f"routines: name one of {' and '.join(repr(r) for r in pair)}, not "
+                            f"both: they answer the same fire, and the gatekeeper can reach "
+                            f"only one")
+    return problems
+
+
 def plan(root, repo, directory=DEFINITIONS):
     """The plan for one repository, or RoutineError with every problem."""
     config = read_config(root)
     definitions = load_definitions(directory)
     installed = set(config["capabilities"]) | {"substrate"}
 
-    problems, routines = [], []
+    project = config["project"]
+    problems, routines = _selection_problems(config["routines"]), []
     for routine_id in config["routines"]:
+        if routine_id in RENAMED:
+            continue
         definition = definitions.get(routine_id)
         if definition is None:
             problems.append(f"routines: no definition {routine_id!r}; available: "
@@ -364,13 +498,22 @@ def plan(root, repo, directory=DEFINITIONS):
             problems.append(f"routines: {routine_id!r} requires the {definition.requires!r} "
                             f"capability, which this repository has not installed")
             continue
+        if definition.scope == "project":
+            if project is None:
+                problems.append(f"routines: {routine_id!r} is shared by a project and needs "
+                                f"project: (name and repos) in {CONFIG_PATH.as_posix()}")
+                continue
+            if repo not in project["repos"]:
+                problems.append(f"routines: {routine_id!r} is shared by the project "
+                                f"{project['name']!r}, and {repo} is not in its project.repos")
+                continue
         try:
-            name = render(definition.name, repo, f"{routine_id} name")
-            prompt = render(definition.prompt, repo, f"{routine_id} prompt")
+            name = render(definition.name, repo, f"{routine_id} name", project)
+            prompt = render(definition.prompt, repo, f"{routine_id} prompt", project)
         except RoutineError as error:
             problems.extend(error.problems)
             continue
-        routines.append({
+        entry = {
             "id": routine_id,
             "name": name,
             "prompt": prompt,
@@ -378,8 +521,12 @@ def plan(root, repo, directory=DEFINITIONS):
             "api": definition.api,
             "connectors": list(definition.connectors),
             "create_new_session_on_fire": True,
-            "manual_tasks": _manual_tasks(definition, name, repo, config["fire"]),
-        })
+            "scope": definition.scope,
+            "manual_tasks": _manual_tasks(definition, name, repo, config["fire"], project),
+        }
+        if definition.scope == "project":
+            entry["project_repos"] = list(project["repos"])
+        routines.append(entry)
 
     if problems:
         raise RoutineError(problems)

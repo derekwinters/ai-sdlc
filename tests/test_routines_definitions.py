@@ -1,4 +1,4 @@
-"""RTN-001 to RTN-007 — what a routine definition is, and what it may say.
+"""RTN-001 to RTN-009 — what a routine definition is, and what it may say.
 
 A definition is a file in the skill, so it ships and pins with the skill. Its
 front matter is read by the skill's own stdlib reader, because the skill runs
@@ -103,6 +103,26 @@ class TestTheReaderAgreesWithLib(unittest.TestCase):
                 with self.assertRaises(RoutineError):
                     parse_front_matter("---\nid: x\n" + line + "\n---\nbody\n")
 
+    def test_the_configuration_constructs_read_the_same_both_ways(self):  # RTN-003
+        from lib.yaml_lite import parse
+        from routines import _read_block
+
+        block = (
+            "routines:\n  - project-triage\nfire:\n  endpoint_secret: A\n"
+            "project:\n  name: Doggiehood\n  repos:\n    - a/b\n    - c/d\n"
+        )
+        self.assertEqual(_read_block(block, nested=("fire", "project")), parse(block))
+
+    def test_a_deeper_construct_is_still_refused(self):  # RTN-003
+        from routines import _read_block
+
+        for block in ("project:\n  repos:\n    deeper: 1\n",
+                      "project:\n  repos:\n    - a\n      - b\n",
+                      "fire:\n  - a\n  b: c\n"):
+            with self.subTest(block=block):
+                with self.assertRaises(RoutineError):
+                    _read_block(block, nested=("fire", "project"))
+
 
 class TestRequires(unittest.TestCase):
     def test_the_capability_list_matches_the_loaders(self):  # RTN-004
@@ -152,12 +172,41 @@ class TestConnectorsAndSession(unittest.TestCase):
         self.assertIn("fresh", refused(definition(api=True, session="reused")))
 
 
+class TestScope(unittest.TestCase):
+    def test_it_defaults_to_repository(self):  # RTN-008
+        self.assertEqual(loaded(definition(api=True)).scope, "repository")
+
+    def test_project_is_accepted(self):  # RTN-008
+        item = loaded(definition(api=True, name="{project} X", body="In {project_repos}.\n",
+                                 extra="scope: project"))
+        self.assertEqual(item.scope, "project")
+
+    def test_anything_else_is_refused(self):  # RTN-008
+        self.assertIn("organisation", refused(definition(api=True, extra="scope: organisation")))
+
+    def test_a_project_definition_names_no_repository(self):  # RTN-009
+        for name, body in (("{repo_name} X", "Hello.\n"), ("{project} X", "In {repo}.\n"),
+                           ("{project} X", "By {owner}.\n")):
+            with self.subTest(name=name, body=body):
+                found = refused(definition(api=True, name=name, body=body,
+                                           extra="scope: project"))
+                self.assertIn("project", found)
+                self.assertRegex(found, r"\{(repo|owner|repo_name)\}")
+
+    def test_a_literal_brace_is_not_a_placeholder(self):  # RTN-009
+        loaded(definition(api=True, name="{project} X", body="Say {{repo}}.\n",
+                          extra="scope: project"))
+
+
 class TestEveryShippedDefinitionIsValid(unittest.TestCase):
     def test_they_all_load(self):  # RTN-007
         found = load_definitions(DEFINITIONS)
         self.assertEqual(sorted(found), sorted(p.stem for p in DEFINITIONS.glob("*.md")))
-        self.assertIn("triage", found)
-        self.assertIn("dependabot", found)
+        for name in ("repo-triage", "project-triage", "dependabot"):
+            self.assertIn(name, found)
+
+    def test_triage_is_gone(self):  # RTN-007
+        self.assertNotIn("triage", load_definitions(DEFINITIONS))
 
 
 if __name__ == "__main__":
