@@ -398,12 +398,17 @@ LEGACY_PATHS = (
 
 LEGACY_IMPORT_LINE = "@.claude/ai-sdlc/house-rules.md"
 
-MANUAL_TASKS = (
+REQUIRE_CHECKS_TASK = (
     "Make the checks required: Settings → Branches → protect the default "
-    "branch and require the checks this adds. An unrequired check is advisory.",
-    "Do not add an `if:` that skips a required check — a skipped required "
-    "check stays pending forever and blocks the merge it was meant to permit.",
+    "branch and require the checks this adds. An unrequired check is advisory."
 )
+
+NO_SKIP_IF_TASK = (
+    "Do not add an `if:` that skips a required check — a skipped required "
+    "check stays pending forever and blocks the merge it was meant to permit."
+)
+
+MANUAL_TASKS = (REQUIRE_CHECKS_TASK, NO_SKIP_IF_TASK)
 
 #: The check names an action-based caller reports under.
 #:
@@ -535,19 +540,401 @@ PULL_REQUEST_TASK = (
 )
 
 
+DASHBOARD_TASK = "Create a dashboard issue and set `dashboard_issue` in the config."
+
+
 def _manual_tasks(config):
-    """The work no agent can do, for this repository's configuration."""
-    tasks = list(MANUAL_TASKS)
+    """The work no agent can do, for this repository's configuration.
+
+    Each is a fresh `ManualTask`, unchecked: `check_tasks` gives it a status.
+    """
+    tasks = [
+        ManualTask("require-checks", "Require the checks ai-sdlc installs",
+                   REQUIRE_CHECKS_TASK),
+        ManualTask("no-skip-if", "Never skip a required check with `if:`",
+                   NO_SKIP_IF_TASK),
+    ]
     if _uses_an_action(config):
-        tasks.append(RENAMED_CHECKS_TASK)
+        tasks.append(ManualTask("renamed-checks",
+                                "Rename the required checks for action callers",
+                                RENAMED_CHECKS_TASK))
     if getattr(config, "skills", ()):
-        tasks.append(PULL_REQUEST_TASK)
+        tasks.append(ManualTask("actions-can-open-prs",
+                                "Allow GitHub Actions to create pull requests",
+                                PULL_REQUEST_TASK))
+    if "pipeline" in config.capabilities and not getattr(config, "dashboard_issue", None):
+        tasks.append(ManualTask("dashboard-issue", "Create the pipeline dashboard issue",
+                                DASHBOARD_TASK))
     return tasks
 
 
 def _uses_an_action(config):
     """Whether this repository installs any caller that runs an action."""
     return "hygiene" in config.capabilities or "mkdocs" in getattr(config, "profiles", ())
+
+
+# ------------------------------------------------- checking the manual tasks
+#
+# Reported unconditionally, a manual task becomes an issue for a setting that
+# was switched on a year ago, and the same issue again on every upgrade. So a
+# task is checked first, where GitHub can answer, and the answer travels with
+# it (`ADOPT-120`–`ADOPT-132`). Checking only reads: whoever reads the report
+# opens the issues, and opens one only for a task that is `needed`.
+
+DONE = "done"
+TRACKED = "tracked"
+NEEDED = "needed"
+UNKNOWN = "unknown"
+
+#: Carried in the body of an issue or pull request opened for a task, so the
+#: next run finds it by identifier rather than by wording that may change.
+TASK_MARKER = "<!-- ai-sdlc-task: {} -->"
+
+
+class ManualTask(str):
+    """A manual task: still its prose, so existing readers join it as text, and
+    also an identifier, a suggested issue, and a status once checked."""
+
+    def __new__(cls, identifier, title, text):
+        task = super().__new__(cls, text)
+        task.id = identifier
+        task.title = title
+        task.status = UNKNOWN
+        task.issue = None
+        task.reason = "not checked"
+        return task
+
+    @property
+    def text(self):
+        return str.__str__(self)
+
+    @property
+    def marker(self):
+        return TASK_MARKER.format(self.id)
+
+    @property
+    def issue_title(self):
+        return f"ai-sdlc: {self.title}"
+
+    @property
+    def issue_body(self):
+        return (
+            f"{self.text}\n\n"
+            f"Reported by `adopt` as a manual task: a repository setting no agent can "
+            f"change. Close this issue once it is done.\n\n{self.marker}\n"
+        )
+
+    def _set(self, status, reason, issue=None):
+        self.status, self.reason, self.issue = status, reason, issue
+        return self
+
+
+def pull_request_checks(config, pin):
+    """The status checks this adoption's pull-request callers report, by name.
+
+    A caller running an action reports as `<job>`; a caller of a reusable
+    workflow as `<job> / <callee job>` — the rename `ADOPT-106` is about.
+    Derived from the callers themselves, so a new caller cannot be forgotten.
+    """
+    names = []
+    for path, body in sorted(_installed(config, pin).items()):
+        if not path.startswith(".github/workflows/") or "\n  pull_request:" not in body:
+            continue
+        job = re.search(r"^jobs:\n  ([\w-]+):", body, re.M).group(1)
+        called = re.search(r"uses: \S+/\.github/workflows/([\w.-]+)@", body)
+        if called:
+            names.extend(f"{job} / {callee}" for callee in _callee_jobs(called.group(1)))
+        else:
+            names.append(job)
+    return names
+
+
+def _old_check_names(config, pin):
+    """What each action caller's check was called while it was a reusable workflow."""
+    return [f"{name} / {name}" for name in pull_request_checks(config, pin) if " / " not in name]
+
+
+def _callee_jobs(reusable):
+    """The check name of each job in one of ai-sdlc's reusable workflows."""
+    source = Path(__file__).resolve().parents[3] / ".github" / "workflows" / reusable
+    names, in_jobs = [], False
+    for line in source.read_text().splitlines():
+        if re.match(r"^\S", line):
+            in_jobs = line.startswith("jobs:")
+            continue
+        job = re.match(r"^  ([\w-]+):\s*$", line)
+        if in_jobs and job:
+            names.append(job.group(1))
+            continue
+        named = re.match(r"^    name:\s*(.+?)\s*$", line)
+        if in_jobs and named and names:
+            names[-1] = named.group(1).strip("'\"")
+    return names
+
+
+def check_tasks(tasks, config, pin, github):
+    """Give each task a status. Reads GitHub only; never fails the run.
+
+    Without a client every task is `unknown`, and adoption is otherwise exactly
+    what it was offline.
+    """
+    if github is None:
+        for task in tasks:
+            task._set(UNKNOWN, "not checked: no GitHub token or repository")
+        return tasks
+
+    open_items = _guarded(lambda: github.issues(state="open"), [])
+    branch = _Lazy(lambda: _branch_requirements(github))
+
+    unusable = _unusable_dashboard(config, github)
+    if unusable is not None:
+        tasks.append(ManualTask(
+            "dashboard-issue", "Create the pipeline dashboard issue",
+            f"`dashboard_issue` names #{unusable}, which is not an open issue. "
+            + DASHBOARD_TASK,
+        ))
+
+    for task in tasks:
+        try:
+            CHECKS.get(task.id, _advice)(task, config, pin, github, open_items, branch)
+        except Exception as error:  # noqa: BLE001 - a check never fails the run
+            task._set(UNKNOWN, f"could not check: {_why(error)}")
+        if task.status != DONE:
+            tracker = _tracker(task, open_items)
+            if tracker is not None:
+                task._set(TRACKED, f"#{tracker} already tracks it", tracker)
+    return tasks
+
+
+def _guarded(read, fallback):
+    try:
+        return read() or fallback
+    except Exception:  # noqa: BLE001 - an unreadable list tracks nothing
+        return fallback
+
+
+class _Lazy:
+    """One read shared by the tasks that need it, made only if one does."""
+
+    def __init__(self, read):
+        self._read, self._done, self._value = read, False, None
+
+    def __call__(self):
+        if not self._done:
+            self._value, self._done = self._read(), True
+        return self._value
+
+
+def _why(error):
+    """A reason safe to print: a status, never a response body or a URL."""
+    status = getattr(error, "status", None)
+    if status:
+        return f"GitHub answered {status}"
+    return "GitHub could not be reached" if hasattr(error, "status") else type(error).__name__
+
+
+def _tracker(task, open_items):
+    for item in open_items:
+        if task.marker in (item.get("body") or ""):
+            return item.get("number")
+    return None
+
+
+def _advice(task, *_):
+    task._set(UNKNOWN, "advice, not a setting; nothing to check")
+
+
+def _check_pull_requests(task, config, pin, github, *_):
+    allowed = github.workflow_permissions().get("can_approve_pull_request_reviews")
+    if allowed:
+        task._set(DONE, "already enabled")
+    else:
+        task._set(NEEDED, "GitHub Actions may not create pull requests here")
+
+
+def _branch_requirements(github):
+    """(branch, required check names), or raises when nothing could be read.
+
+    Classic protection and rulesets both count. A `404` on protection beside a
+    readable ruleset is a branch with no classic protection, not a failure.
+    """
+    from lib.github import GitHubError
+
+    branch = github.default_branch()
+    required, failures, read = set(), [], False
+    try:
+        checks = github.branch_protection(branch).get("required_status_checks") or {}
+        required |= set(checks.get("contexts") or ())
+        required |= {c.get("context") for c in checks.get("checks") or () if c.get("context")}
+        read = True
+    except GitHubError as error:
+        if error.status != 404:
+            failures.append(error)
+
+    try:
+        for rule in github.branch_rules(branch) or ():
+            if rule.get("type") == "required_status_checks":
+                for check in (rule.get("parameters") or {}).get("required_status_checks") or ():
+                    if check.get("context"):
+                        required.add(check["context"])
+        read = True
+    except GitHubError as error:
+        failures.append(error)
+
+    if not read:
+        raise failures[0]
+    return branch, required
+
+
+def _check_required(task, config, pin, github, _items, branch):
+    wanted = pull_request_checks(config, pin)
+    if not wanted:
+        task._set(DONE, "no pull-request check is installed; nothing to require")
+        return
+    name, required = branch()
+    missing = [check for check in wanted if check not in required]
+    if missing:
+        task._set(NEEDED, f"`{name}` does not require: " + ", ".join(f"`{m}`" for m in missing))
+    else:
+        task._set(DONE, f"`{name}` already requires them")
+
+
+def _check_old_names(task, config, pin, github, _items, branch):
+    name, required = branch()
+    stale = [old for old in _old_check_names(config, pin) if old in required]
+    if stale:
+        task._set(NEEDED, f"`{name}` still requires: " + ", ".join(f"`{s}`" for s in stale))
+    else:
+        task._set(DONE, f"`{name}` requires no old check name")
+
+
+def _unusable_dashboard(config, github):
+    """The configured dashboard issue's number, when GitHub says it is not an
+    open issue; otherwise None. A read that fails says nothing either way, so
+    the configuration is trusted (`ADOPT-044`)."""
+    number = getattr(config, "dashboard_issue", None)
+    if "pipeline" not in config.capabilities or not number:
+        return None
+    try:
+        issue = github.issue(number)
+    except Exception as error:  # noqa: BLE001 - a check never fails the run
+        return number if getattr(error, "status", None) in (404, 410) else None
+    if issue.get("state", "open") != "open" or "pull_request" in issue:
+        return number
+    return None
+
+
+def _is_dashboard(item):
+    """Whether an open issue is already a pipeline dashboard: its body is the
+    dashboard's render (`DASH`), or carries one of its markers."""
+    if "pull_request" in item:
+        return False
+    body = (item.get("body") or "").lstrip()
+    return body.startswith("# Pipeline\n") or "<!-- pipeline-" in body
+
+
+def _check_dashboard(task, config, pin, github, open_items, _branch):
+    existing = next((i for i in open_items if _is_dashboard(i)), None)
+    if existing is not None:
+        number = existing.get("number")
+        task._set(TRACKED, f"#{number} is already a dashboard; set `dashboard_issue: {number}`",
+                  number)
+    else:
+        configured = getattr(config, "dashboard_issue", None)
+        task._set(NEEDED, f"#{configured} is not an open issue, and no other is a dashboard"
+                  if configured else "no open dashboard issue")
+
+
+CHECKS = {
+    "actions-can-open-prs": _check_pull_requests,
+    "require-checks": _check_required,
+    "renamed-checks": _check_old_names,
+    "dashboard-issue": _check_dashboard,
+}
+
+
+def task_line(task):
+    """One line of the report: status, identifier, and what to know."""
+    if task.status == DONE:
+        return f"[done] {task.id} — {task.reason}; skipped"
+    if task.status == TRACKED:
+        return f"[tracked #{task.issue}] {task.id} — {task.reason}; skipped"
+    if task.status == NEEDED:
+        return f"[needed] {task.id} — {task.text} ({task.reason})"
+    return f"[unknown] {task.id} — {task.text} ({task.reason})"
+
+
+def task_summary(tasks):
+    tasks = list(tasks)
+    done = sum(t.status == DONE for t in tasks)
+    tracked = sum(t.status == TRACKED for t in tasks)
+    return (
+        f"skipped {done + tracked} of {len(tasks)}: {done} done, {tracked} tracked. "
+        f"Open an issue only for a task marked [needed], carrying its marker; "
+        f"`tasks` prints them as JSON."
+    )
+
+
+def task_report(tasks):
+    """The tasks as plain data, for an agent deciding which issues to open."""
+    return [
+        {
+            "id": t.id,
+            "status": t.status,
+            "issue": t.issue,
+            "reason": t.reason,
+            "text": t.text,
+            "marker": t.marker,
+            "title": t.issue_title,
+            "body": t.issue_body,
+        }
+        for t in tasks
+    ]
+
+
+def _origin(root):  # pragma: no cover - the real git path
+    import subprocess
+
+    try:
+        done = subprocess.run(["git", "remote", "get-url", "origin"], cwd=root,
+                              capture_output=True, text=True, check=False)
+    except OSError:
+        return None
+    return done.stdout.strip() if done.returncode == 0 else None
+
+
+_SLUG = re.compile(r"^[\w.-]+/[\w.-]+$")
+
+
+def client_from_environment(root, environ=None, remote=_origin):
+    """A read client for this repository, or None when there is no way to get one.
+
+    The token from `GITHUB_TOKEN` or `GH_TOKEN`; the repository from
+    `GITHUB_REPOSITORY` or the origin remote. The remote URL is never printed:
+    a cloud session's origin can carry a credential in it.
+    """
+    import os
+
+    environ = os.environ if environ is None else environ
+    token = environ.get("GITHUB_TOKEN") or environ.get("GH_TOKEN")
+    if not token:
+        return None
+
+    slug = environ.get("GITHUB_REPOSITORY") or ""
+    if not slug:
+        url = remote(root) or ""
+        parts = re.split(r"[/:]", re.sub(r"\.git$", "", url.rstrip("/")))
+        slug = "/".join(parts[-2:]) if len(parts) >= 2 else ""
+        if "@" in slug:
+            slug = ""
+    if not _SLUG.match(slug):
+        return None
+
+    try:
+        from lib.github import GitHub
+    except ImportError:  # pragma: no cover - run outside an ai-sdlc checkout
+        return None
+    return GitHub(token, slug)
 
 
 def _files_for(config, pin):
@@ -1206,8 +1593,12 @@ def _load_config(root):
     return load(root=root)
 
 
-def plan(root, pin, acknowledged=(), resolver=None):
-    """What adoption would do. Writes nothing."""
+def plan(root, pin, acknowledged=(), resolver=None, github=None):
+    """What adoption would do. Writes nothing.
+
+    ``github`` is an optional read client: given one, each manual task is
+    checked against the repository's settings (`ADOPT-122`).
+    """
     root = Path(root)
     pin = as_pin(pin, resolver=resolver)
     pending = migration(root)
@@ -1257,7 +1648,7 @@ def plan(root, pin, acknowledged=(), resolver=None):
         updates=sorted(updates),
         conflicts=sorted(conflicts),
         collisions=found,
-        manual_tasks=_manual_tasks(config),
+        manual_tasks=check_tasks(_manual_tasks(config), config, pin, github),
         detection=detect(root),
         migrations=pending,
     )
@@ -1270,7 +1661,7 @@ def _claimed_by(config):
     return claimed
 
 
-def apply(root, pin, acknowledged=(), resolver=None):
+def apply(root, pin, acknowledged=(), resolver=None, github=None):
     """Make the changes. Refuses on an unacknowledged trigger collision."""
     root = Path(root)
     pin = as_pin(pin, resolver=resolver)
@@ -1319,9 +1710,7 @@ def apply(root, pin, acknowledged=(), resolver=None):
     if _add_import(root):
         written.append("CLAUDE.md")
 
-    tasks = _manual_tasks(config)
-    if "pipeline" in config.capabilities and not config.dashboard_issue:
-        tasks.append("Create a dashboard issue and set `dashboard_issue` in the config.")
+    tasks = check_tasks(_manual_tasks(config), config, pin, github)
 
     return Applied(written=sorted(written), skipped=sorted(skipped), manual_tasks=tasks,
                    migrated=migrated)

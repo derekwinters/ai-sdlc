@@ -12,12 +12,13 @@ Joins one repository to ai-sdlc, run in place, when that repository is ready.
 command that changed eleven repositories at once would be exactly the "how many changes did that
 just make" problem this project exists to avoid.
 
-## The three commands
+## The commands
 
 ```bash
 python3 .claude/skills/adopt/main.py plan   v0.4.0   # read-only
 python3 .claude/skills/adopt/main.py apply  v0.4.0   # writes, on a branch
 python3 .claude/skills/adopt/main.py verify v0.4.0   # read-only
+python3 .claude/skills/adopt/main.py tasks  v0.4.0   # read-only; the manual tasks as JSON
 ```
 
 `plan` is safe to run on a repository you have not decided about. It writes nothing at all and
@@ -27,6 +28,34 @@ only you can do.
 **`apply` is also the upgrade path.** Running it at a higher pin updates managed files and leaves
 everything else alone. Install and upgrade are one mechanism, so the upgrade path cannot rot
 separately from the install path.
+
+## Manual tasks: open an issue only for what is `needed`
+
+Some of adoption is a setting no agent can change — required checks, the Actions permission to open
+pull requests, a dashboard issue. Each manual task has an identifier and, when `GITHUB_TOKEN` or
+`GH_TOKEN` is set (the repository comes from `GITHUB_REPOSITORY` or the `origin` remote), a status
+read from GitHub:
+
+```
+manual tasks:
+  - [needed] require-checks — Make the checks required: … (`main` does not require: `docs-build / build`)
+  - [unknown] no-skip-if — Do not add an `if:` that skips a required check — … (advice, not a setting; nothing to check)
+  - [tracked #42] renamed-checks — #42 already tracks it; skipped
+  - [done] actions-can-open-prs — already enabled; skipped
+skipped 2 of 4: 1 done, 1 tracked. …
+```
+
+| Status | Means | Do |
+| --- | --- | --- |
+| `done` | already in place | nothing |
+| `tracked` | an open issue or pull request carries the task's marker | nothing; it is named |
+| `needed` | checked, and not in place | open **one** issue |
+| `unknown` | no token, a refused read, or advice with nothing to check | tell the person; open nothing |
+
+**Open an issue only for a task reported `needed`**, using the `title` and `body` that `tasks` prints.
+The body ends with the task's marker, `<!-- ai-sdlc-task: <id> -->`; keep it, because that is how the
+next upgrade finds the issue and reports `tracked` instead of asking again. Checking only reads —
+`adopt` never opens an issue itself — and a check that fails is `unknown`, never a failed run.
 
 ## Callers are pinned to a commit
 
@@ -101,4 +130,4 @@ workflows is the one a file comparison misses.
   `skills:` list, once, if the key is absent entirely. After that it never looks at the list to
   compare — prune a name and it stays pruned.
 
-Specification: `docs/spec/adopt.md` (`ADOPT`), 77 requirements.
+Specification: `docs/spec/adopt.md` (`ADOPT`), 90 requirements.
