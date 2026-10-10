@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.6.0](https://github.com/derekwinters/ai-sdlc/compare/v0.5.0...v0.6.0) (2026-10-10)
+
+
+### ⚠ BREAKING CHANGES
+
+* **substrate:** the `triage` routine definition is renamed with no alias. A repo-config listing `triage` under `routines:` now fails to plan, with an error naming `repo-triage` and `project-triage`. List `repo-triage` for the 0.5.0 behaviour.
+
+### Features
+
+* **substrate:** repo-triage and project-triage routines, with project: in repo-config ([#187](https://github.com/derekwinters/ai-sdlc/issues/187)) ([9ef2f27](https://github.com/derekwinters/ai-sdlc/commit/9ef2f2729677dbe56a72247ed6e12c3f8f880e7d)), closes [#186](https://github.com/derekwinters/ai-sdlc/issues/186)
+
 ## [0.5.0](https://github.com/derekwinters/ai-sdlc/compare/v0.4.22...v0.5.0) (2026-10-09)
 
 
