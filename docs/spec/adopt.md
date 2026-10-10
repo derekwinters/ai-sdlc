@@ -304,6 +304,69 @@ anything was absent.
 > The rejected shape remains rejected, and it is the middle one. A derivation reconciled every run
 > is the registry that got two fleet syncs disabled, and it stays out.
 
+## 12. Manual tasks, checked before they are reported
+
+Some of adoption is a repository setting no agent can change: a required check, a workflow
+permission, a dashboard issue. `plan` and `apply` report those as manual tasks, and the person or
+agent running adoption turns each into an issue. Reported unconditionally, that opens an issue for a
+setting switched on a year ago, and every upgrade opens it again.
+
+So a task is checked before it is reported, where GitHub can answer, and the answer travels with
+it.
+
+> **Invariant — checking a manual task only reads.** `plan` writes nothing, and it does not start
+> writing to GitHub because it learned to read from it. Opening an issue is left to whoever reads
+> the report.
+
+> **Invariant — a check that cannot be made is `unknown`, never a failure.** No token, a refusal, a
+> transport error: the run carries on and says what it could not see. Adoption works fully offline.
+
+- **ADOPT-120** Every manual task carries a stable identifier alongside its text —
+  `require-checks`, `no-skip-if`, `renamed-checks`, `actions-can-open-prs`, `dashboard-issue`. The
+  wording may change between versions; the identifier may not, because an issue opened by an
+  earlier version is found by it.
+- **ADOPT-121** Every task has a marker, `<!-- ai-sdlc-task: <id> -->`, and the issue body adoption
+  suggests for it carries that marker.
+- **ADOPT-122** With a GitHub client, each task is classified `done` (already in place),
+  `tracked` (an open issue or pull request already exists for it), `needed`, or `unknown`.
+  Without one, every task is `unknown` and `plan` and `apply` are otherwise unchanged.
+- **ADOPT-123** An open issue or pull request whose body carries a task's marker makes that task
+  `tracked`, naming its number — unless the setting is already `done`, which wins.
+- **ADOPT-124** `actions-can-open-prs` is `done` when the repository's workflow permissions allow
+  GitHub Actions to create and approve pull requests, and `needed` when they do not.
+- **ADOPT-125** `require-checks` is `done` when every pull-request check adoption installs is
+  required on the default branch, by branch protection or by a ruleset, and `needed` otherwise.
+  The names are derived from the installed callers: a caller running an action reports as
+  `<job>`, a caller of a reusable workflow as `<job> / <callee job>`. A repository whose callers
+  report no pull-request check has nothing to require, and the task is `done`.
+- **ADOPT-126** `renamed-checks` is `needed` only while the default branch still requires a
+  caller's old `<job> / <job>` name, and `done` when it requires none.
+- **ADOPT-127** `dashboard-issue` is reported while `pipeline` is enabled and the dashboard issue
+  is not usable: `dashboard_issue` unset, or — with a client — naming an issue that does not
+  exist, is closed, or is a pull request. Without a client a configured `dashboard_issue` is
+  trusted and nothing is reported (`ADOPT-044`). Another open issue that is already a pipeline
+  dashboard — its body is the dashboard's render — makes the task `tracked`, naming that issue,
+  so a second dashboard is never suggested.
+- **ADOPT-128** `no-skip-if` is advice, not a setting, and is `unknown` unless an issue tracks it.
+- **ADOPT-129** A check that fails — no credential, a refusal, a missing resource, a transport
+  error — makes that task `unknown` with the reason, and never fails `plan` or `apply`. A branch
+  with no classic protection is not a failure: a `404` there, beside a readable ruleset, is a
+  branch that requires nothing.
+- **ADOPT-130** Classifying the tasks makes no write to GitHub.
+- **ADOPT-131** `tasks` prints the manual tasks as JSON — identifier, status, the tracking issue's
+  number, the reason, the marker, and a suggested issue title and body — and writes nothing. It is
+  the input for an agent opening issues: one per `needed` task, and none for anything else.
+- **ADOPT-132** The client is built from `GITHUB_TOKEN` or `GH_TOKEN`, and the repository from
+  `GITHUB_REPOSITORY` or the `origin` remote. Without both there is no client. The remote URL is
+  never printed, because a cloud session's origin can carry a credential.
+
+> **How the spec is changing.** Adoption reported five manual tasks as prose, unconditionally, and
+> an agent running it opened an issue for each — including "allow GitHub Actions to create pull
+> requests" on a repository where that was already on, and the same issue again on every upgrade.
+> The choice was between adoption opening the issues itself and adoption only reporting what is
+> needed. It reports: `adopt` has never written to GitHub, and the report is enough for whoever
+> opens the issue to open only the right ones.
+
 ## 6. Verifying
 
 - **ADOPT-050** `verify` reports whether the repository matches its recorded version.
@@ -418,6 +481,7 @@ than a formatting one: a reusable workflow runs with the **caller's** token, on 
 | Migrating out of `.claude/` | ADOPT-080–087 | `test_adopt_migrate.py` |
 | Being findable | ADOPT-090–094 | `test_adopt_surface.py` |
 | Callers that use an action | ADOPT-100–108 | `test_adopt_actions.py` |
-| Recommending a skills list | ADOPT-110–114 | `test_adopt_skills_advice.py` |
+| Recommending a skills list | ADOPT-110–115 | `test_adopt_skills_advice.py` |
+| Manual tasks, checked | ADOPT-120–132 | `test_adopt_tasks.py` |
 
-**76 requirements, all `auto`.**
+**90 requirements, all `auto`.**

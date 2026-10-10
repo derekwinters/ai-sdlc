@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Command line for adopt: plan, apply, verify."""
+"""Command line for adopt: plan, apply, verify, tasks."""
 
 from __future__ import annotations
 
@@ -9,7 +9,20 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path.cwd()))
 
-from adopt import AdoptRefused, apply, as_pin, plan, verify  # noqa: E402
+import json  # noqa: E402
+
+from adopt import (  # noqa: E402
+    AdoptRefused, apply, as_pin, client_from_environment, plan, task_line, task_report,
+    task_summary, verify,
+)
+
+
+def _report_tasks(tasks):
+    print("\nmanual tasks:")
+    for task in tasks:
+        print(f"  - {task_line(task)}")
+    if tasks:
+        print(task_summary(tasks))
 
 
 def _report_plan(result):
@@ -31,14 +44,12 @@ def _report_plan(result):
     if result.current and not result.conflicts:
         print("  nothing to do; this repository is current")
 
-    print("\nmanual tasks:")
-    for task in result.manual_tasks:
-        print(f"  - {task}")
+    _report_tasks(result.manual_tasks)
 
 
 def main(argv):
     if len(argv) < 3:
-        raise SystemExit(f"usage: {argv[0]} plan|apply|verify <pin> [--ack <workflow>...]")
+        raise SystemExit(f"usage: {argv[0]} plan|apply|verify|tasks <pin> [--ack <workflow>...]")
 
     command, version = argv[1], argv[2]
     acknowledged = [a for a in argv[4:]] if "--ack" in argv else []
@@ -52,15 +63,25 @@ def main(argv):
         print(f"refused: {error}", file=sys.stderr)
         return 1
 
+    # A read client when the environment offers one, for checking the manual
+    # tasks. None is fine: every task is then reported `unknown`.
+    github = client_from_environment(root) if command in ("plan", "apply", "tasks") else None
+
+    if command == "tasks":
+        # Read-only, and nothing but JSON on stdout, so an agent can parse it.
+        result = plan(root, pin, acknowledged=acknowledged, github=github)
+        print(json.dumps(task_report(result.manual_tasks), indent=2))
+        return 0
+
     print(f"ai-sdlc {pin[0]} = {pin[1]}")
 
     if command == "plan":
-        _report_plan(plan(root, pin, acknowledged=acknowledged))
+        _report_plan(plan(root, pin, acknowledged=acknowledged, github=github))
         return 0
 
     if command == "apply":
         try:
-            result = apply(root, pin, acknowledged=acknowledged)
+            result = apply(root, pin, acknowledged=acknowledged, github=github)
         except AdoptRefused as error:
             print(f"refused: {error}", file=sys.stderr)
             return 1
@@ -70,9 +91,7 @@ def main(argv):
             print(f"  wrote    {path}")
         for path in result.skipped:
             print(f"  skipped  {path} (conflict)")
-        print("\nmanual tasks:")
-        for task in result.manual_tasks:
-            print(f"  - {task}")
+        _report_tasks(result.manual_tasks)
         return 0
 
     if command == "verify":

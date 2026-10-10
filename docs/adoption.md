@@ -79,6 +79,15 @@ default branch and require the checks you added.
 and blocks the merge it was meant to permit. Escape hatches — the `no-closing-keyword` label, the
 `skip-docs` label — make a check *pass*, never absent.
 
+**`adopt` checks these settings before it asks for them.** Each manual task it reports — require the
+checks, rename an old required check, allow GitHub Actions to create pull requests, a dashboard
+issue — carries an identifier and a status read from GitHub when `GITHUB_TOKEN` or `GH_TOKEN` is
+set: `done` (already in place), `tracked` (an open issue or pull request carrying the task's marker,
+`<!-- ai-sdlc-task: <id> -->`, already exists), `needed`, or `unknown` (could not be checked, or is
+advice). Open an issue only for a task reported `needed`, and put its marker in the body so the next
+upgrade finds it instead of asking again; `adopt tasks <version>` prints each task as JSON with a
+suggested title and body. See [Adoption](spec/adopt.md), `ADOPT-120`–`ADOPT-132`.
+
 ## 5. Name the skills you install
 
 The workflows are only half of ai-sdlc; the rest is skills an agent reads. Which ones a repository

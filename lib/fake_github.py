@@ -67,6 +67,10 @@ class FakeGitHub:
         actor="github-actions[bot]",
         fail=None,
         repository="owner/repo",
+        default_branch="main",
+        workflow_permissions=None,
+        protection=None,
+        rules=None,
     ):
         self.repository = repository
         self.base_url = "https://api.github.com"
@@ -82,6 +86,16 @@ class FakeGitHub:
         self._reactions = {c: list(rs) for c, rs in (reactions or {}).items()}
         self._labels = [dict(label) for label in (labels or [])]
         self._fail = dict(fail or {})
+        self._default_branch = default_branch
+        self._workflow_permissions = dict(workflow_permissions or {
+            "default_workflow_permissions": "read",
+            "can_approve_pull_request_reviews": False,
+        })
+        #: Branch name to classic protection. A branch absent here is
+        #: unprotected, and reading it is a 404 — as the real API answers.
+        self._protection = {b: dict(p) for b, p in (protection or {}).items()}
+        #: Branch name to the ruleset rules that apply to it.
+        self._rules = {b: [dict(r) for r in rs] for b, rs in (rules or {}).items()}
         self._ids = itertools.count(1000)
 
         #: Every operation, in order, as (name, args).
@@ -254,6 +268,25 @@ class FakeGitHub:
         # somewhere in the repository; the fake cannot know what, so it records
         # the edge with no resolvable number and a read of it reports unknown.
         return {"number": None, "id": blocker_id}
+
+    def default_branch(self):
+        self._record("default_branch")
+        return self._default_branch
+
+    def workflow_permissions(self):
+        self._record("workflow_permissions")
+        return dict(self._workflow_permissions)
+
+    def branch_protection(self, branch):
+        self._record("branch_protection", branch)
+        if branch not in self._protection:
+            raise GitHubError("Not found.", status=404, method="GET",
+                              path=f"/branches/{branch}/protection")
+        return dict(self._protection[branch])
+
+    def branch_rules(self, branch):
+        self._record("branch_rules", branch)
+        return self._page([dict(r) for r in self._rules.get(branch, [])])
 
     def reactions(self, comment):
         self._record("reactions", comment)
