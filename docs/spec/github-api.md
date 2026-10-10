@@ -95,6 +95,11 @@ The vocabulary is deliberately small. Anything absent here is absent by design.
 - **API-042** `create_milestone(title, description, due_on)` creates one and returns it with its
   assigned number.
 - **API-043** `update_milestone(number, **fields)` changes only the fields it is given.
+- **API-048** `default_branch()` and `workflow_permissions()` read a repository's default branch
+  and its GitHub Actions workflow permissions. Both are reads of a setting, so a caller can tell
+  whether it is already in place before asking a person to change it.
+- **API-049** `branch_protection(branch)` and `branch_rules(branch)` read what a branch requires —
+  its classic protection, and the ruleset rules that apply to it, paginated.
 - **API-041** The client exposes no operation that closes, reopens, or deletes an issue, and none
   that edits an issue body. Milestones are different: a milestone's state is a normal field, and
   closing one is reversible, so `update_milestone` may set it. Nothing deletes a milestone.
@@ -206,10 +211,10 @@ anything its tools expose, so a rule that exists only as an absent method does n
 | The client | API-001–007 | `test_github_client.py` |
 | Failure | API-010–016 | `test_github_failure.py` |
 | Pagination | API-020–026 | `test_github_pagination.py` |
-| Operations | API-030–041 | `test_github_operations.py` |
+| Operations | API-030–041, API-048–049 | `test_github_operations.py` |
 | The fake | API-050–056 | `test_fake_github.py` |
 | The skill | API-070–079 | `test_github_api_skill.py` |
 | Reaching it from a workflow | API-060–061 | `test_reusable_workflows.py` |
 | Invariants | — | `test_architecture.py` |
 
-**63 requirements, 62 `auto` and 1 `manual`.**
+**60 requirements, 59 `auto` and 1 `manual`.**

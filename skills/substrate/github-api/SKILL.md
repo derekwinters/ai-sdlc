@@ -28,6 +28,10 @@ reads:
   - blocked_by
   - labels
   - issue_id
+  - default_branch
+  - workflow_permissions
+  - branch_protection
+  - branch_rules
 writes:
   - set_labels
   - set_milestone

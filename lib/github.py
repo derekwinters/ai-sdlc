@@ -256,6 +256,26 @@ class GitHub:
             "DELETE", f"/issues/{issue}/dependencies/blocked_by/{blocker_id}"
         )
 
+    def default_branch(self):
+        """The repository's default branch, by name."""
+        return self.request("GET", "")["default_branch"]
+
+    def workflow_permissions(self):
+        """The GitHub Actions workflow permissions: the default token grant and
+        whether Actions may create and approve pull requests."""
+        return self.request("GET", "/actions/permissions/workflow")
+
+    def branch_protection(self, branch):
+        """A branch's classic protection. A `404` is an unprotected branch, or a
+        credential not allowed to see it — the API does not say which."""
+        return self.request(
+            "GET", f"/branches/{urllib.parse.quote(branch, safe='')}/protection"
+        )
+
+    def branch_rules(self, branch):
+        """The ruleset rules that apply to a branch, readable with read access."""
+        return self.paginate(f"/rules/branches/{urllib.parse.quote(branch, safe='')}")
+
     def reactions(self, comment):
         return self.paginate(f"/issues/comments/{comment}/reactions")
 

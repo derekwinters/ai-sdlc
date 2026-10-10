@@ -1,4 +1,4 @@
-"""API-030 to API-041 — the operation vocabulary, and what it deliberately omits."""
+"""API-030 to API-041, API-048 and API-049 — the operation vocabulary, and what it deliberately omits."""
 
 import json
 import unittest
@@ -36,6 +36,30 @@ class TestReads(unittest.TestCase):
         api.blocked_by(7)
         self.assertIn("/issues/7/dependencies/blocked_by", transport.requests[0]["url"])
 
+
+class TestSettingReads(unittest.TestCase):
+    """API-048 and API-049 — reads of a setting, so a caller can check before it asks."""
+
+    def test_default_branch_reads_the_repository(self):  # API-048
+        api, transport = client('{"default_branch": "trunk"}')
+        self.assertEqual(api.default_branch(), "trunk")
+        self.assertTrue(transport.requests[0]["url"].endswith("/repos/derekwinters/ai-sdlc"))
+
+    def test_workflow_permissions_are_read(self):  # API-048
+        api, transport = client('{"can_approve_pull_request_reviews": true}')
+        self.assertTrue(api.workflow_permissions()["can_approve_pull_request_reviews"])
+        self.assertTrue(transport.requests[0]["url"].endswith("/actions/permissions/workflow"))
+        self.assertEqual(transport.requests[0]["method"], "GET")
+
+    def test_branch_protection_names_the_branch(self):  # API-049
+        api, transport = client("{}")
+        api.branch_protection("release/1")
+        self.assertTrue(transport.requests[0]["url"].endswith("/branches/release%2F1/protection"))
+
+    def test_branch_rules_paginate(self):  # API-049
+        api, transport = client(page(2))
+        self.assertEqual(len(api.branch_rules("main")), 2)
+        self.assertIn("/rules/branches/main?", transport.requests[0]["url"])
 
 class TestWrites(unittest.TestCase):
     def sent(self, transport):
