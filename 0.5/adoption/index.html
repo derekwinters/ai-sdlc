@@ -394,6 +394,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="6. Generate your routines">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#repository-triage-or-project-triage" class="md-nav__link">
+    <span class="md-ellipsis">
+      Repository triage or project triage
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1031,6 +1046,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="6. Generate your routines">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#repository-triage-or-project-triage" class="md-nav__link">
+    <span class="md-ellipsis">
+      Repository triage or project triage
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1205,7 +1235,7 @@ job pushes its branch and then cannot open the pull request.</p>
 defined once in ai-sdlc and rendered for each repository, rather than typed into the web UI by
 hand. Name the ones you want, in your configuration:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">routines</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">triage</span><span class="w">       </span><span class="c1"># needs the pipeline capability</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">repo-triage</span><span class="w">  </span><span class="c1"># needs the pipeline capability; or project-triage, below</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dependabot</span><span class="w">   </span><span class="c1"># needs hygiene</span>
 </code></pre></div>
 <p>and make sure <code>routines</code> is in your <code>skills:</code> list (<code>adopt</code> seeds it for a new adoption; an
@@ -1221,13 +1251,43 @@ prompt or schedule has drifted, and never deletes or duplicates one. Run it agai
 changes a definition.</p>
 <p>Two steps are always yours, in the web UI, and the agent ends by listing them:</p>
 <ol>
-<li><strong>For an API-triggered routine (<code>triage</code>)</strong>, open it, add an API trigger, generate the token,
-   and store the URL and token as the repository secrets your <code>fire.endpoint_secret</code> and
-   <code>fire.token_secret</code> name. No tool can create a trigger token.</li>
+<li><strong>For an API-triggered routine (<code>repo-triage</code>, <code>project-triage</code>)</strong>, open it, add an API
+   trigger, generate the token, and store the URL and token as the repository secrets your
+   <code>fire.endpoint_secret</code> and <code>fire.token_secret</code> name. No tool can create a trigger token.</li>
 <li><strong>For every routine</strong>, confirm on its page that your repository is attached, and attach it if
    not.</li>
 </ol>
 <p>See <a href="../spec/routines/">Routines</a> for the definitions and the rules.</p>
+<h3 id="repository-triage-or-project-triage">Repository triage or project triage<a class="headerlink" href="#repository-triage-or-project-triage" title="Permanent link">&para;</a></h3>
+<p>The gatekeeper fires a triage routine whenever an issue enters triage. There are two to choose
+from, and each repository names <strong>one</strong> of them — naming both is an error, because a repository
+has one set of <code>fire</code> secrets and only one of them would ever run.</p>
+<ul>
+<li><strong><code>repo-triage</code></strong> — a routine of this repository's own, named <code>&lt;repository&gt; Triage</code>. Nothing to
+  coordinate; the right choice for a repository that stands alone.</li>
+<li><strong><code>project-triage</code></strong> — one routine shared by several repositories you treat as one project,
+  named <code>&lt;project&gt; Triage</code>. One place to read triage runs and one trigger token to rotate, instead
+  of one per repository. Its prompt triages an issue only in a repository on the project's list,
+  and refuses a fire that names any other.</li>
+</ul>
+<p>For <code>project-triage</code>, describe the project in <strong>every</strong> member's configuration — identically,
+because each member renders the shared routine from its own copy:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">routines</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">project-triage</span>
+<span class="nt">project</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Doggiehood</span>
+<span class="w">  </span><span class="nt">repos</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">derekwinters/lucas-doggiehood</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">derekwinters/doggiehood-api</span>
+</code></pre></div>
+<p>The order and any repeats in <code>repos</code> do not matter; it is rendered sorted. Run the routines skill
+from any member. The manual steps change shape: attach <strong>every</strong> repository in <code>repos</code> to the one
+routine, add its API trigger <strong>once</strong> (a member that runs the skill later reuses it), and store
+the same URL and token as the <code>fire</code> secrets in every member. If the members' lists ever
+disagree, the skill shows which repositories differ and will not update the shared routine without
+your explicit confirmation of that change — fix <code>project:</code> so every member agrees instead.</p>
+<p>A project can mix the two: a repository left out of <code>repos</code> keeps <code>repo-triage</code>. <code>triage</code>, the
+name 0.5.0 shipped, is now an error naming both replacements.</p>
 <h2 id="where-it-all-lives">Where it all lives<a class="headerlink" href="#where-it-all-lives" title="Permanent link">&para;</a></h2>
 <p>Everything ai-sdlc owns in your repository sits in one directory:</p>
 <table>

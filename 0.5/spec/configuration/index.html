@@ -1220,6 +1220,18 @@ makes the one case that is really a migration say so.</p>
   <code>capabilities</code>, for <code>CFG-063</code>'s reason: the loader is pure, and the definitions are not in the
   consumer's tree until the <code>routines</code> skill is. An unknown name is <code>RTN-022</code>, and a routine whose
   capability is absent is <code>RTN-023</code>, both caught where the definitions are.</li>
+<li><strong>CFG-074</strong> <code>project</code> describes the project this repository belongs to, for routines shared by
+  several repositories (<code>RTN-008</code>). It is a mapping of <code>name</code>, a non-empty string, and <code>repos</code>, a
+  non-empty list of <code>owner/name</code> repositories; when <code>project</code> is present both are required. It
+  defaults to absent. Every error names the key path, down to <code>project.repos[N]</code>.</li>
+<li><strong>CFG-075</strong> <code>project.repos</code> is exposed sorted, with repeats collapsed. Every member of a project
+  renders the same routine from it (<code>RTN-015</code>), and two members listing the same repositories in a
+  different order mean the same thing.</li>
+<li><strong>CFG-076</strong> The loader does not check <code>project</code> against <code>routines</code> or against the repository it
+  is in. It is pure and does not know which repository that is (<code>CFG-005</code>), and which definitions
+  are project-scoped is known only where the definitions are. Requiring <code>project:</code> for a project
+  routine, requiring the repository to be in <code>project.repos</code>, and refusing <code>repo-triage</code> beside
+  <code>project-triage</code> are <code>RTN-026</code>, <code>RTN-027</code> and <code>RTN-028</code>.</li>
 </ul>
 <blockquote>
 <p><strong>How the spec is changing.</strong> Routines were configured by hand in the web UI, so no key
@@ -1227,6 +1239,10 @@ described them. <code>routines</code> is the repository's own list for the same 
 nothing central decides what a repository should have. <code>adopt</code> does not seed it — a routine
 needs manual web steps and acts on its own once created, so having one is a decision the
 repository makes, not a default it inherits.</p>
+<p><code>project</code> was added when one owner's projects spanned one, three and seven repositories and
+wanted one triage routine per project rather than one per repository. It describes a fact about
+the repository — which project it belongs to — rather than switching anything on; selecting the
+project routine is still <code>routines:</code>.</p>
 </blockquote>
 <hr />
 <h2 id="traceability">Traceability<a class="headerlink" href="#traceability" title="Permanent link">&para;</a></h2>
@@ -1276,7 +1292,7 @@ repository makes, not a default it inherits.</p>
 </tr>
 <tr>
 <td>Routines</td>
-<td>CFG-070–073</td>
+<td>CFG-070–076</td>
 <td><code>test_config_routines.py</code></td>
 </tr>
 <tr>
@@ -1286,7 +1302,7 @@ repository makes, not a default it inherits.</p>
 </tr>
 </tbody>
 </table>
-<p><strong>48 requirements, 47 <code>auto</code> and 1 <code>manual</code>.</strong></p>
+<p><strong>47 requirements, 46 <code>auto</code> and 1 <code>manual</code>.</strong></p>
 
 
 

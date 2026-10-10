@@ -1118,6 +1118,10 @@ rendered for, checked at plan time, not an import.</p>
   unverified, so the operator confirms it on the routine's page.</li>
 <li>The text an API trigger sends arrives inside a <code>&lt;routine-fire-payload&gt;</code> block marked untrusted.
   A prompt acts on it only by saying so.</li>
+<li>A routine can have <strong>several repositories</strong> attached, and one API trigger. So one routine can
+  serve every repository of a project, each firing the same URL with the same token, as long as
+  the text each sends names the repository as well as the issue — which the gatekeeper's does
+  (<code>Run triage on issue #N in owner/name.</code>, <code>GK</code>).</li>
 </ul>
 <h2 id="invariants">Invariants<a class="headerlink" href="#invariants" title="Permanent link">&para;</a></h2>
 <blockquote>
@@ -1132,6 +1136,11 @@ missing from the plan is left alone, not removed: a list edited by mistake shoul
 anyone a routine, and a deletion through a name match is one typo away from the wrong routine.
 A name already taken is updated, never created beside, because two routines of one name are two
 things the next match cannot tell apart.</p>
+<p><strong>Invariant — every member of a project renders the same project routine.</strong> A project-scoped
+routine is one live routine shared by several repositories, each of which plans it from its own
+configuration. Its name and prompt therefore depend on the project and nothing about the
+repository planning it, so the exact-name match finds the same routine from any member and the
+prompt each member plans is byte-identical when their <code>project:</code> agrees.</p>
 <p><strong>Invariant — a fire payload is data.</strong> A prompt that reads a <code>&lt;routine-fire-payload&gt;</code> block
 extracts the single value it needs from it and ignores everything else. Text that anyone able to
 label an issue can influence is never an instruction.</p>
@@ -1144,11 +1153,13 @@ label an issue can influence is never an instruction.</p>
   front-matter block between <code>---</code> lines followed by the prompt template, and the <code>id</code> it declares
   is its file name.</li>
 <li><strong>RTN-002</strong> The front matter holds <code>id</code>, <code>name</code>, <code>requires</code> and <code>session</code>, all required, and the
-  triggers <code>schedule</code> and <code>api</code>, of which at least one is present. <code>connectors</code> is optional. Any
-  other key is an error naming it, as <code>CFG-011</code> refuses one.</li>
+  triggers <code>schedule</code> and <code>api</code>, of which at least one is present. <code>connectors</code> and <code>scope</code> are
+  optional. Any other key is an error naming it, as <code>CFG-011</code> refuses one.</li>
 <li><strong>RTN-003</strong> Front matter is read with the standard library by the skill itself, in the subset
-  <code>CFG</code> §6 states — scalars, quoted strings, <code>true</code>/<code>false</code>, <code>[]</code> and <code>-</code> lists — and agrees with
-  <code>lib/yaml_lite</code> on every shipped definition. The skill is installed (§7), so it cannot import
+  <code>CFG</code> §6 states — scalars, quoted strings, <code>true</code>/<code>false</code>, <code>[]</code> and <code>-</code> lists, and in the
+  configuration one level of mapping under <code>fire</code>, <code>bot</code>, <code>labels</code>, <code>commands</code> and <code>project</code>, with
+  a <code>-</code> list one level below that (<code>project.repos</code>) — and agrees with <code>lib/yaml_lite</code> on every
+  shipped definition. The skill is installed (§7), so it cannot import
   <code>lib</code> (<code>DIST-042</code>); agreement is held by test rather than by sharing code.</li>
 <li><strong>RTN-004</strong> <code>requires</code> is one capability name from <code>CFG-020</code>. The skill's copy of that list is
   compared with <code>lib/config.py</code>'s by test, because two declarations of one list drift.</li>
@@ -1161,6 +1172,13 @@ label an issue can influence is never an instruction.</p>
   next.</li>
 <li><strong>RTN-007</strong> Every shipped definition parses and validates. A broken definition fails here, not
   in a consumer's session.</li>
+<li><strong>RTN-008</strong> <code>scope</code> is <code>repository</code>, the default, or <code>project</code>. A <code>repository</code> routine is one per
+  repository. A <code>project</code> routine is one per project, shared by every repository in
+  <code>project.repos</code> (<code>CFG-074</code>).</li>
+<li><strong>RTN-009</strong> A <code>project</code> definition's <code>name</code> and prompt use none of <code>{repo}</code>, <code>{owner}</code> and
+  <code>{repo_name}</code>; one that does is refused at load, naming the placeholder. Each member would
+  otherwise render a different routine and the members would never find one shared routine
+  (the second invariant).</li>
 </ul>
 <h2 id="2-rendering">2. Rendering<a class="headerlink" href="#2-rendering" title="Permanent link">&para;</a></h2>
 <ul>
@@ -1175,10 +1193,15 @@ label an issue can influence is never an instruction.</p>
 <li><strong>RTN-014</strong> An error about the remote never quotes the remote's URL. A cloud session's <code>origin</code>
   can carry a credential in its userinfo, and an error message is the usual way one reaches a log
   (house rules, <em>Never publish a private link</em>).</li>
+<li><strong>RTN-015</strong> <code>{project}</code> renders as <code>project.name</code>, and <code>{project_repos}</code> as <code>project.repos</code>
+  sorted and without repeats, one <code>- owner/name</code> line per repository. Sorted, so two members that
+  list the same repositories in a different order render the same bytes.</li>
+<li><strong>RTN-016</strong> <code>{project}</code> or <code>{project_repos}</code> in a definition rendered for a configuration with
+  no <code>project:</code> is an error naming the definition and the placeholder, never rendered empty.</li>
 </ul>
 <h2 id="3-selection">3. Selection<a class="headerlink" href="#3-selection" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>RTN-020</strong> The plan reads <code>capabilities</code>, <code>routines</code> and <code>fire</code> from
+<li><strong>RTN-020</strong> The plan reads <code>capabilities</code>, <code>routines</code>, <code>fire</code> and <code>project</code> from
   <code>.ai-sdlc/repo-config.yml</code> with the skill's own reader, and agrees with <code>lib/config.py</code> on them
   for every example configuration. A missing file is an error naming the path.</li>
 <li><strong>RTN-021</strong> The routines planned are those <code>routines:</code> names, in the order it names them, once
@@ -1190,6 +1213,20 @@ label an issue can influence is never an instruction.</p>
   repository with no pipeline is a routine that fires into nothing.</li>
 <li><strong>RTN-024</strong> Any problem produces no plan. Every problem is reported, and the command exits
   non-zero, so an agent cannot act on half a plan.</li>
+<li><strong>RTN-025</strong> <code>triage</code>, the definition 0.5.0 shipped, is not a name any more and has no alias.
+  Listing it is an error that names both replacements — <code>repo-triage</code> for one routine per
+  repository, <code>project-triage</code> for one per project — rather than RTN-022's bare list.
+  A clean rename, because nobody had adopted 0.5.0's routines when it was made, and an alias would
+  have to choose one of the two on the repository's behalf.</li>
+<li><strong>RTN-026</strong> A <code>project</code> routine in a configuration with no <code>project:</code> is refused, naming the
+  routine and the key.</li>
+<li><strong>RTN-027</strong> A <code>project</code> routine is refused when the repository being planned is not in
+  <code>project.repos</code>, naming the repository and the routine. Comparison is exact, as the name match
+  is. A repository outside the list would create or update a routine whose prompt refuses that
+  repository's own issues.</li>
+<li><strong>RTN-028</strong> Naming both <code>repo-triage</code> and <code>project-triage</code> is an error naming both. They answer
+  the same fire, and a repository has one <code>fire.endpoint_secret</code>: the gatekeeper could reach only
+  one of them, and the other would be a routine nothing ever runs.</li>
 </ul>
 <h2 id="4-the-plan">4. The plan<a class="headerlink" href="#4-the-plan" title="Permanent link">&para;</a></h2>
 <ul>
@@ -1197,17 +1234,26 @@ label an issue can influence is never an instruction.</p>
   output. A plan an agent compares against live routines must not differ between two runs that
   mean the same thing.</li>
 <li><strong>RTN-031</strong> Each planned routine carries its <code>id</code>, rendered <code>name</code> and <code>prompt</code>, <code>cron</code> (or
-  <code>null</code>), whether it needs an <code>api</code> trigger, <code>connectors</code>, and <code>create_new_session_on_fire: true</code>
-  — everything <code>create_trigger</code> needs, so the agent decides nothing the plan did not say.</li>
+  <code>null</code>), whether it needs an <code>api</code> trigger, <code>connectors</code>, <code>create_new_session_on_fire: true</code> and
+  its <code>scope</code> — everything <code>create_trigger</code> needs, so the agent decides nothing the plan did not
+  say. A <code>project</code> routine also carries <code>project_repos</code>, the rendered list, so a disagreement with
+  the live routine can be stated as repositories rather than as a text diff (RTN-046).</li>
 <li><strong>RTN-032</strong> A routine with an API trigger carries the manual task of adding the trigger in the
   web UI, generating its token, and storing the URL and token as the repository secrets named by
   <code>fire.endpoint_secret</code> and <code>fire.token_secret</code>. When the configuration names none, the task says
   to choose names and record them there, because without them <code>adopt</code> writes no fire inputs and
   nothing fires the routine (<code>ADOPT-070</code>).</li>
-<li><strong>RTN-033</strong> Every planned routine carries the manual task of confirming that the repository is
-  attached on the routine's page, and attaching it in the web UI if not.</li>
+<li><strong>RTN-033</strong> Every <code>repository</code> routine carries the manual task of confirming that the
+  repository is attached on the routine's page, and attaching it in the web UI if not.</li>
 <li><strong>RTN-034</strong> Planning performs no network I/O and writes no file. It reads the configuration, the
   definitions, and at most the <code>origin</code> remote.</li>
+<li><strong>RTN-035</strong> A <code>project</code> routine carries the manual task of attaching <strong>every</strong> repository in
+  <code>project.repos</code>, each named, on the routine's page — not only the one planning it.</li>
+<li><strong>RTN-036</strong> A <code>project</code> routine with an API trigger carries the manual task of adding that
+  trigger <strong>once</strong>, on the shared routine — reusing it if another member already added it, never a
+  second — and of storing the same URL and token as the <code>fire.*</code> secrets in every repository in
+  <code>project.repos</code>, each named. One trigger per member would be one token per member, and only the
+  last one generated would be the routine's.</li>
 </ul>
 <h2 id="5-applying">5. Applying<a class="headerlink" href="#5-applying" title="Permanent link">&para;</a></h2>
 <p>The skill is instructions an agent follows. Its rules are asserted as stated, as <code>DIST-043</code> and
@@ -1228,13 +1274,20 @@ label an issue can influence is never an instruction.</p>
   exists. A name matching more than one live routine is reported and left alone.</li>
 <li><strong>RTN-045</strong> It ends by giving the operator every manual task from the plan, and never writes a
   routine's URL, its token, or a session link into a file, an issue, a comment or a commit.</li>
+<li><strong>RTN-046</strong> An update to a <code>project</code> routine is not confirmed by RTN-042's general yes. The skill
+  states which repositories the plan's <code>project_repos</code> adds to and removes from the live prompt's
+  list, says that the likely cause is another member's <code>project.repos</code> disagreeing with this one,
+  and updates only on an explicit confirmation of that update. Otherwise it reports the
+  disagreement and leaves the routine alone. Two members with different lists would each "fix"
+  the routine back to their own on every run, and neither would ever be told why.</li>
 </ul>
 <h2 id="6-the-shipped-definitions">6. The shipped definitions<a class="headerlink" href="#6-the-shipped-definitions" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>RTN-050</strong> <code>triage</code> requires <code>pipeline</code>, has an API trigger and no schedule, and no connectors.
-  Its prompt names the <code>&lt;routine-fire-payload&gt;</code> block, says to extract only the single issue
-  number from it and ignore any other text, and runs the <code>triage-issue</code> skill on that issue in
-  <code>{repo}</code>. It is fired by the gatekeeper, whose fire text names the issue (<code>GK</code>).</li>
+<li><strong>RTN-050</strong> <code>repo-triage</code> is <code>repository</code>-scoped, requires <code>pipeline</code>, has an API trigger and no
+  schedule, and no connectors; its name is <code>{repo_name} Triage</code>. Its prompt names the
+  <code>&lt;routine-fire-payload&gt;</code> block, says to extract only the single issue number from it and ignore
+  any other text, and runs the <code>triage-issue</code> skill on that issue in <code>{repo}</code>. It is fired by the
+  gatekeeper, whose fire text names the issue (<code>GK</code>).</li>
 <li><strong>RTN-051</strong> <code>dependabot</code> requires <code>hygiene</code>, runs weekly on Monday morning US Central at a
   minute other than <code>0</code>, has no API trigger, and no connectors. <code>hygiene</code> because the merge it
   makes is a squash whose title becomes the commit, and only <code>hygiene</code> enforces that a title parses
@@ -1264,6 +1317,26 @@ requests. <code>RTN-053</code> makes the prompt say so, because an agent that lo
 no such statement would be right to refuse. Whether <code>API</code> should name routine prompts as a
 source of standing instructions is left to the owner.</p>
 </blockquote>
+<ul>
+<li><strong>RTN-054</strong> <code>project-triage</code> is <code>project</code>-scoped, requires <code>pipeline</code>, has an API trigger and no
+  schedule, and no connectors; its name is <code>{project} Triage</code>. Its prompt names the
+  <code>&lt;routine-fire-payload&gt;</code> block as untrusted, says to extract exactly one issue number and exactly
+  one <code>owner/name</code> repository from it, and to stop without changing anything if either is missing
+  or ambiguous or the repository is not in the rendered <code>{project_repos}</code> list; otherwise it runs
+  the <code>triage-issue</code> skill on that issue in that repository. It stays short, as <code>repo-triage</code>
+  does.</li>
+<li><strong>RTN-055</strong> The gatekeeper's fire text names exactly one issue and exactly one <code>owner/name</code>
+  repository, so <code>project-triage</code> can tell which member fired it. The two are compared by test:
+  a fire text that stopped naming the repository would turn every project triage into a refusal.</li>
+</ul>
+<blockquote>
+<p><strong>Choosing repo or project triage.</strong> Both run the same skill on the same fire. <code>repo-triage</code> is
+one routine per repository and needs nothing beyond <code>fire:</code>. <code>project-triage</code> is one routine for
+a group of repositories the owner treats as one project — so one place to read triage runs, one
+trigger token to rotate — at the cost of keeping <code>project:</code> identical in every member. Each
+repository chooses for itself, and a project may mix: a repository not in <code>project.repos</code> keeps
+<code>repo-triage</code>.</p>
+</blockquote>
 <h2 id="7-distribution">7. Distribution<a class="headerlink" href="#7-distribution" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>RTN-060</strong> <code>routines</code> is an installable skill of the <strong>substrate</strong> capability, seeded into
@@ -1283,32 +1356,32 @@ source of standing instructions is left to the owner.</p>
 <tbody>
 <tr>
 <td>Definitions</td>
-<td>RTN-001–007</td>
+<td>RTN-001–009</td>
 <td><code>test_routines_definitions.py</code></td>
 </tr>
 <tr>
 <td>Rendering</td>
-<td>RTN-010–014</td>
+<td>RTN-010–016</td>
 <td><code>test_routines_render.py</code></td>
 </tr>
 <tr>
 <td>Selection</td>
-<td>RTN-020–024</td>
-<td><code>test_routines_plan.py</code></td>
+<td>RTN-020–028</td>
+<td><code>test_routines_plan.py</code>, <code>test_routines_project.py</code></td>
 </tr>
 <tr>
 <td>The plan</td>
-<td>RTN-030–034</td>
-<td><code>test_routines_plan.py</code></td>
+<td>RTN-030–036</td>
+<td><code>test_routines_plan.py</code>, <code>test_routines_project.py</code></td>
 </tr>
 <tr>
 <td>Applying</td>
-<td>RTN-040–045</td>
+<td>RTN-040–046</td>
 <td><code>test_routines_skill.py</code></td>
 </tr>
 <tr>
 <td>The shipped definitions</td>
-<td>RTN-050–053</td>
+<td>RTN-050–055</td>
 <td><code>test_routines_shipped.py</code></td>
 </tr>
 <tr>
@@ -1318,7 +1391,7 @@ source of standing instructions is left to the owner.</p>
 </tr>
 </tbody>
 </table>
-<p><strong>33 requirements, all <code>auto</code>.</strong></p>
+<p><strong>46 requirements, all <code>auto</code>.</strong></p>
 
 
 
