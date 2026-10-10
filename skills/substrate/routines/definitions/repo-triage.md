@@ -1,5 +1,5 @@
 ---
-id: triage
+id: repo-triage
 name: "{repo_name} Triage"
 requires: pipeline
 api: true

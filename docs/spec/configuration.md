@@ -137,12 +137,29 @@ Parsing is stdlib-only, so the accepted subset is stated rather than inherited.
   `capabilities`, for `CFG-063`'s reason: the loader is pure, and the definitions are not in the
   consumer's tree until the `routines` skill is. An unknown name is `RTN-022`, and a routine whose
   capability is absent is `RTN-023`, both caught where the definitions are.
+- **CFG-074** `project` describes the project this repository belongs to, for routines shared by
+  several repositories (`RTN-008`). It is a mapping of `name`, a non-empty string, and `repos`, a
+  non-empty list of `owner/name` repositories; when `project` is present both are required. It
+  defaults to absent. Every error names the key path, down to `project.repos[N]`.
+- **CFG-075** `project.repos` is exposed sorted, with repeats collapsed. Every member of a project
+  renders the same routine from it (`RTN-015`), and two members listing the same repositories in a
+  different order mean the same thing.
+- **CFG-076** The loader does not check `project` against `routines` or against the repository it
+  is in. It is pure and does not know which repository that is (`CFG-005`), and which definitions
+  are project-scoped is known only where the definitions are. Requiring `project:` for a project
+  routine, requiring the repository to be in `project.repos`, and refusing `repo-triage` beside
+  `project-triage` are `RTN-026`, `RTN-027` and `RTN-028`.
 
 > **How the spec is changing.** Routines were configured by hand in the web UI, so no key
 > described them. `routines` is the repository's own list for the same reason `skills` is:
 > nothing central decides what a repository should have. `adopt` does not seed it — a routine
 > needs manual web steps and acts on its own once created, so having one is a decision the
 > repository makes, not a default it inherits.
+>
+> `project` was added when one owner's projects spanned one, three and seven repositories and
+> wanted one triage routine per project rather than one per repository. It describes a fact about
+> the repository — which project it belongs to — rather than switching anything on; selecting the
+> project routine is still `routines:`.
 
 ---
 
@@ -157,7 +174,7 @@ Parsing is stdlib-only, so the accepted subset is stated rather than inherited.
 | Pipeline settings | CFG-040–046 | `test_config_pipeline.py` |
 | The YAML subset | CFG-050–054 | `test_yaml_subset.py` |
 | Installed skills | CFG-060–063 | `test_config_skills.py` |
-| Routines | CFG-070–073 | `test_config_routines.py` |
+| Routines | CFG-070–076 | `test_config_routines.py` |
 | Schema agreement | CFG-010 | `test_config_schema.py` |
 
-**48 requirements, 47 `auto` and 1 `manual`.**
+**47 requirements, 46 `auto` and 1 `manual`.**

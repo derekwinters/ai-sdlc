@@ -1,4 +1,4 @@
-"""RTN-010 to RTN-014 — turning a template into the text a routine will hold.
+"""RTN-010 to RTN-016 — turning a template into the text a routine will hold.
 
 An unknown placeholder is the failure that matters here: passed through, it
 becomes a live routine telling a fresh session about a repository literally
@@ -28,10 +28,10 @@ class TestPlaceholders(unittest.TestCase):
 class TestAnUnknownPlaceholderIsAnError(unittest.TestCase):
     def test_it_is_refused(self):  # RTN-011
         with self.assertRaises(RoutineError) as caught:
-            render("Work in {repository}.", "a/b", "triage")
+            render("Work in {repository}.", "a/b", "repo-triage")
         message = " ".join(caught.exception.problems)
         self.assertIn("{repository}", message)
-        self.assertIn("triage", message)
+        self.assertIn("repo-triage", message)
 
     def test_every_unknown_placeholder_is_named(self):  # RTN-011
         with self.assertRaises(RoutineError) as caught:
@@ -93,6 +93,37 @@ class TestTheRemoteIsNeverQuoted(unittest.TestCase):
         message = str(caught.exception)
         self.assertNotIn("SECRETVALUE", message)
         self.assertNotIn("example.invalid", message)
+
+
+PROJECT = {"name": "Doggiehood",
+           "repos": ["derekwinters/lucas-doggiehood", "derekwinters/doggiehood-api",
+                     "derekwinters/lucas-doggiehood"]}
+
+
+class TestProjectPlaceholders(unittest.TestCase):
+    def test_the_project_name_renders(self):  # RTN-015
+        self.assertEqual(render("{project} Triage", "a/b", "t", PROJECT), "Doggiehood Triage")
+
+    def test_the_repositories_render_sorted_once_each_one_per_line(self):  # RTN-015
+        self.assertEqual(
+            render("{project_repos}", "a/b", "t", PROJECT),
+            "- derekwinters/doggiehood-api\n- derekwinters/lucas-doggiehood",
+        )
+
+    def test_the_order_given_does_not_matter(self):  # RTN-015
+        reordered = {"name": "Doggiehood", "repos": list(reversed(PROJECT["repos"]))}
+        self.assertEqual(render("{project_repos}", "a/b", "t", PROJECT),
+                         render("{project_repos}", "a/b", "t", reordered))
+
+    def test_without_a_project_they_are_errors(self):  # RTN-016
+        for placeholder in ("{project}", "{project_repos}"):
+            with self.subTest(placeholder=placeholder):
+                with self.assertRaises(RoutineError) as caught:
+                    render(f"x {placeholder}", "a/b", "project-triage prompt")
+                message = " ".join(caught.exception.problems)
+                self.assertIn(placeholder, message)
+                self.assertIn("project-triage", message)
+                self.assertIn("project:", message)
 
 
 if __name__ == "__main__":

@@ -80,6 +80,9 @@ ORDERING_STRATEGIES = ("semver", "date", "lexical", "none")
 
 BOT_IDENTITIES = ("github-actions", "app")
 
+#: A GitHub repository as `owner/name`.
+_REPOSITORY = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?/[A-Za-z0-9._-]+$")
+
 #: A value that looks like a credential rather than the *name* of one.
 _LOOKS_LIKE_A_SECRET = re.compile(r"^(https?://|gh[pousr]_|github_pat_)", re.IGNORECASE)
 
@@ -123,6 +126,14 @@ class _Fire:
         self.token_secret = token_secret
 
 
+class _Project:
+    __slots__ = ("name", "repos")
+
+    def __init__(self, name, repos):
+        self.name = name
+        self.repos = repos
+
+
 class Config:
     """A validated configuration. Every optional key has a value."""
 
@@ -138,6 +149,7 @@ class Config:
         "fire",
         "skills",
         "routines",
+        "project",
     )
 
     def __init__(self, **values):
@@ -211,6 +223,7 @@ def parse_config(text, source=None):
         fire=_fire(raw, problems),
         skills=_names(raw, "skills", problems),
         routines=_names(raw, "routines", problems),
+        project=_project(raw, problems),
     )
 
     if problems:
@@ -233,12 +246,14 @@ _SCHEMA_KEYS = {
     "fire": dict,
     "skills": list,
     "routines": list,
+    "project": dict,
 }
 
 _NESTED_KEYS = {
     "bot": {"identity": str, "login": str, "app_id_secret": str, "private_key_secret": str},
     "commands": {"test": str, "verify": str, "spec_validator": str},
     "fire": {"endpoint_secret": str, "token_secret": str},
+    "project": {"name": str, "repos": list},
 }
 
 
@@ -441,3 +456,42 @@ def _fire(raw, problems):
                 f"found something that looks like a value rather than a name"
             )
     return _Fire(section.get("endpoint_secret"), section.get("token_secret"))
+
+
+def _project(raw, problems):
+    """The project this repository belongs to, or None (CFG-074 to CFG-076).
+
+    Shape only. Whether a project routine is selected, and whether this
+    repository is in `repos`, are RTN-026 to RTN-028: the loader knows neither
+    the definitions nor which repository it is in. A wrong type is reported by
+    _reject_unknown, so it is not reported again here.
+    """
+    if "project" not in raw:
+        return None
+    section = raw["project"]
+    if section is None:
+        section = {}
+    if not isinstance(section, dict):
+        return None
+
+    name = section.get("name")
+    if name is None or (isinstance(name, str) and not name.strip()):
+        problems.append("'project.name' is required and must be a non-empty string")
+
+    listed = section.get("repos")
+    repos = []
+    if listed is None or listed == []:
+        problems.append("'project.repos' must list at least one owner/name repository")
+    elif isinstance(listed, list):
+        for index, repo in enumerate(listed):
+            if not isinstance(repo, str) or not _REPOSITORY.match(repo):
+                problems.append(
+                    f"'project.repos[{index}]' must be an owner/name repository, found "
+                    f"{type(repo).__name__} {repo!r}"
+                )
+            elif repo not in repos:
+                repos.append(repo)
+
+    if not isinstance(name, str) or not name.strip() or not repos:
+        return None
+    return _Project(name, sorted(repos))

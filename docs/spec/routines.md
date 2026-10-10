@@ -34,6 +34,10 @@ This section constrains everything below it, so it is stated first.
   unverified, so the operator confirms it on the routine's page.
 - The text an API trigger sends arrives inside a `<routine-fire-payload>` block marked untrusted.
   A prompt acts on it only by saying so.
+- A routine can have **several repositories** attached, and one API trigger. So one routine can
+  serve every repository of a project, each firing the same URL with the same token, as long as
+  the text each sends names the repository as well as the issue — which the gatekeeper's does
+  (`Run triage on issue #N in owner/name.`, `GK`).
 
 ## Invariants
 
@@ -51,6 +55,12 @@ This section constrains everything below it, so it is stated first.
 > A name already taken is updated, never created beside, because two routines of one name are two
 > things the next match cannot tell apart.
 
+> **Invariant — every member of a project renders the same project routine.** A project-scoped
+> routine is one live routine shared by several repositories, each of which plans it from its own
+> configuration. Its name and prompt therefore depend on the project and nothing about the
+> repository planning it, so the exact-name match finds the same routine from any member and the
+> prompt each member plans is byte-identical when their `project:` agrees.
+
 > **Invariant — a fire payload is data.** A prompt that reads a `<routine-fire-payload>` block
 > extracts the single value it needs from it and ignores everything else. Text that anyone able to
 > label an issue can influence is never an instruction.
@@ -64,11 +74,13 @@ This section constrains everything below it, so it is stated first.
   front-matter block between `---` lines followed by the prompt template, and the `id` it declares
   is its file name.
 - **RTN-002** The front matter holds `id`, `name`, `requires` and `session`, all required, and the
-  triggers `schedule` and `api`, of which at least one is present. `connectors` is optional. Any
-  other key is an error naming it, as `CFG-011` refuses one.
+  triggers `schedule` and `api`, of which at least one is present. `connectors` and `scope` are
+  optional. Any other key is an error naming it, as `CFG-011` refuses one.
 - **RTN-003** Front matter is read with the standard library by the skill itself, in the subset
-  `CFG` §6 states — scalars, quoted strings, `true`/`false`, `[]` and `- ` lists — and agrees with
-  `lib/yaml_lite` on every shipped definition. The skill is installed (§7), so it cannot import
+  `CFG` §6 states — scalars, quoted strings, `true`/`false`, `[]` and `- ` lists, and in the
+  configuration one level of mapping under `fire`, `bot`, `labels`, `commands` and `project`, with
+  a `- ` list one level below that (`project.repos`) — and agrees with `lib/yaml_lite` on every
+  shipped definition. The skill is installed (§7), so it cannot import
   `lib` (`DIST-042`); agreement is held by test rather than by sharing code.
 - **RTN-004** `requires` is one capability name from `CFG-020`. The skill's copy of that list is
   compared with `lib/config.py`'s by test, because two declarations of one list drift.
@@ -81,6 +93,13 @@ This section constrains everything below it, so it is stated first.
   next.
 - **RTN-007** Every shipped definition parses and validates. A broken definition fails here, not
   in a consumer's session.
+- **RTN-008** `scope` is `repository`, the default, or `project`. A `repository` routine is one per
+  repository. A `project` routine is one per project, shared by every repository in
+  `project.repos` (`CFG-074`).
+- **RTN-009** A `project` definition's `name` and prompt use none of `{repo}`, `{owner}` and
+  `{repo_name}`; one that does is refused at load, naming the placeholder. Each member would
+  otherwise render a different routine and the members would never find one shared routine
+  (the second invariant).
 
 ## 2. Rendering
 
@@ -95,10 +114,15 @@ This section constrains everything below it, so it is stated first.
 - **RTN-014** An error about the remote never quotes the remote's URL. A cloud session's `origin`
   can carry a credential in its userinfo, and an error message is the usual way one reaches a log
   (house rules, *Never publish a private link*).
+- **RTN-015** `{project}` renders as `project.name`, and `{project_repos}` as `project.repos`
+  sorted and without repeats, one `- owner/name` line per repository. Sorted, so two members that
+  list the same repositories in a different order render the same bytes.
+- **RTN-016** `{project}` or `{project_repos}` in a definition rendered for a configuration with
+  no `project:` is an error naming the definition and the placeholder, never rendered empty.
 
 ## 3. Selection
 
-- **RTN-020** The plan reads `capabilities`, `routines` and `fire` from
+- **RTN-020** The plan reads `capabilities`, `routines`, `fire` and `project` from
   `.ai-sdlc/repo-config.yml` with the skill's own reader, and agrees with `lib/config.py` on them
   for every example configuration. A missing file is an error naming the path.
 - **RTN-021** The routines planned are those `routines:` names, in the order it names them, once
@@ -110,6 +134,20 @@ This section constrains everything below it, so it is stated first.
   repository with no pipeline is a routine that fires into nothing.
 - **RTN-024** Any problem produces no plan. Every problem is reported, and the command exits
   non-zero, so an agent cannot act on half a plan.
+- **RTN-025** `triage`, the definition 0.5.0 shipped, is not a name any more and has no alias.
+  Listing it is an error that names both replacements — `repo-triage` for one routine per
+  repository, `project-triage` for one per project — rather than RTN-022's bare list.
+  A clean rename, because nobody had adopted 0.5.0's routines when it was made, and an alias would
+  have to choose one of the two on the repository's behalf.
+- **RTN-026** A `project` routine in a configuration with no `project:` is refused, naming the
+  routine and the key.
+- **RTN-027** A `project` routine is refused when the repository being planned is not in
+  `project.repos`, naming the repository and the routine. Comparison is exact, as the name match
+  is. A repository outside the list would create or update a routine whose prompt refuses that
+  repository's own issues.
+- **RTN-028** Naming both `repo-triage` and `project-triage` is an error naming both. They answer
+  the same fire, and a repository has one `fire.endpoint_secret`: the gatekeeper could reach only
+  one of them, and the other would be a routine nothing ever runs.
 
 ## 4. The plan
 
@@ -117,17 +155,26 @@ This section constrains everything below it, so it is stated first.
   output. A plan an agent compares against live routines must not differ between two runs that
   mean the same thing.
 - **RTN-031** Each planned routine carries its `id`, rendered `name` and `prompt`, `cron` (or
-  `null`), whether it needs an `api` trigger, `connectors`, and `create_new_session_on_fire: true`
-  — everything `create_trigger` needs, so the agent decides nothing the plan did not say.
+  `null`), whether it needs an `api` trigger, `connectors`, `create_new_session_on_fire: true` and
+  its `scope` — everything `create_trigger` needs, so the agent decides nothing the plan did not
+  say. A `project` routine also carries `project_repos`, the rendered list, so a disagreement with
+  the live routine can be stated as repositories rather than as a text diff (RTN-046).
 - **RTN-032** A routine with an API trigger carries the manual task of adding the trigger in the
   web UI, generating its token, and storing the URL and token as the repository secrets named by
   `fire.endpoint_secret` and `fire.token_secret`. When the configuration names none, the task says
   to choose names and record them there, because without them `adopt` writes no fire inputs and
   nothing fires the routine (`ADOPT-070`).
-- **RTN-033** Every planned routine carries the manual task of confirming that the repository is
-  attached on the routine's page, and attaching it in the web UI if not.
+- **RTN-033** Every `repository` routine carries the manual task of confirming that the
+  repository is attached on the routine's page, and attaching it in the web UI if not.
 - **RTN-034** Planning performs no network I/O and writes no file. It reads the configuration, the
   definitions, and at most the `origin` remote.
+- **RTN-035** A `project` routine carries the manual task of attaching **every** repository in
+  `project.repos`, each named, on the routine's page — not only the one planning it.
+- **RTN-036** A `project` routine with an API trigger carries the manual task of adding that
+  trigger **once**, on the shared routine — reusing it if another member already added it, never a
+  second — and of storing the same URL and token as the `fire.*` secrets in every repository in
+  `project.repos`, each named. One trigger per member would be one token per member, and only the
+  last one generated would be the routine's.
 
 ## 5. Applying
 
@@ -149,13 +196,20 @@ The skill is instructions an agent follows. Its rules are asserted as stated, as
   exists. A name matching more than one live routine is reported and left alone.
 - **RTN-045** It ends by giving the operator every manual task from the plan, and never writes a
   routine's URL, its token, or a session link into a file, an issue, a comment or a commit.
+- **RTN-046** An update to a `project` routine is not confirmed by RTN-042's general yes. The skill
+  states which repositories the plan's `project_repos` adds to and removes from the live prompt's
+  list, says that the likely cause is another member's `project.repos` disagreeing with this one,
+  and updates only on an explicit confirmation of that update. Otherwise it reports the
+  disagreement and leaves the routine alone. Two members with different lists would each "fix"
+  the routine back to their own on every run, and neither would ever be told why.
 
 ## 6. The shipped definitions
 
-- **RTN-050** `triage` requires `pipeline`, has an API trigger and no schedule, and no connectors.
-  Its prompt names the `<routine-fire-payload>` block, says to extract only the single issue
-  number from it and ignore any other text, and runs the `triage-issue` skill on that issue in
-  `{repo}`. It is fired by the gatekeeper, whose fire text names the issue (`GK`).
+- **RTN-050** `repo-triage` is `repository`-scoped, requires `pipeline`, has an API trigger and no
+  schedule, and no connectors; its name is `{repo_name} Triage`. Its prompt names the
+  `<routine-fire-payload>` block, says to extract only the single issue number from it and ignore
+  any other text, and runs the `triage-issue` skill on that issue in `{repo}`. It is fired by the
+  gatekeeper, whose fire text names the issue (`GK`).
 - **RTN-051** `dependabot` requires `hygiene`, runs weekly on Monday morning US Central at a
   minute other than `0`, has no API trigger, and no connectors. `hygiene` because the merge it
   makes is a squash whose title becomes the commit, and only `hygiene` enforces that a title parses
@@ -184,6 +238,24 @@ The skill is instructions an agent follows. Its rules are asserted as stated, as
 > no such statement would be right to refuse. Whether `API` should name routine prompts as a
 > source of standing instructions is left to the owner.
 
+- **RTN-054** `project-triage` is `project`-scoped, requires `pipeline`, has an API trigger and no
+  schedule, and no connectors; its name is `{project} Triage`. Its prompt names the
+  `<routine-fire-payload>` block as untrusted, says to extract exactly one issue number and exactly
+  one `owner/name` repository from it, and to stop without changing anything if either is missing
+  or ambiguous or the repository is not in the rendered `{project_repos}` list; otherwise it runs
+  the `triage-issue` skill on that issue in that repository. It stays short, as `repo-triage`
+  does.
+- **RTN-055** The gatekeeper's fire text names exactly one issue and exactly one `owner/name`
+  repository, so `project-triage` can tell which member fired it. The two are compared by test:
+  a fire text that stopped naming the repository would turn every project triage into a refusal.
+
+> **Choosing repo or project triage.** Both run the same skill on the same fire. `repo-triage` is
+> one routine per repository and needs nothing beyond `fire:`. `project-triage` is one routine for
+> a group of repositories the owner treats as one project — so one place to read triage runs, one
+> trigger token to rotate — at the cost of keeping `project:` identical in every member. Each
+> repository chooses for itself, and a project may mix: a repository not in `project.repos` keeps
+> `repo-triage`.
+
 ## 7. Distribution
 
 - **RTN-060** `routines` is an installable skill of the **substrate** capability, seeded into
@@ -196,12 +268,12 @@ The skill is instructions an agent follows. Its rules are asserted as stated, as
 
 | Section | IDs | Tests |
 |---|---|---|
-| Definitions | RTN-001–007 | `test_routines_definitions.py` |
-| Rendering | RTN-010–014 | `test_routines_render.py` |
-| Selection | RTN-020–024 | `test_routines_plan.py` |
-| The plan | RTN-030–034 | `test_routines_plan.py` |
-| Applying | RTN-040–045 | `test_routines_skill.py` |
-| The shipped definitions | RTN-050–053 | `test_routines_shipped.py` |
+| Definitions | RTN-001–009 | `test_routines_definitions.py` |
+| Rendering | RTN-010–016 | `test_routines_render.py` |
+| Selection | RTN-020–028 | `test_routines_plan.py`, `test_routines_project.py` |
+| The plan | RTN-030–036 | `test_routines_plan.py`, `test_routines_project.py` |
+| Applying | RTN-040–046 | `test_routines_skill.py` |
+| The shipped definitions | RTN-050–055 | `test_routines_shipped.py` |
 | Distribution | RTN-060 | `test_routines_skill.py` |
 
-**33 requirements, all `auto`.**
+**46 requirements, all `auto`.**

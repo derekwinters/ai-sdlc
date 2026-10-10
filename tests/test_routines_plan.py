@@ -60,6 +60,19 @@ class TestReadingTheConfiguration(unittest.TestCase):
                 self.assertEqual(ours["fire"].get("endpoint_secret"),
                                  theirs.fire.endpoint_secret)
                 self.assertEqual(ours["fire"].get("token_secret"), theirs.fire.token_secret)
+                if theirs.project is None:
+                    self.assertIsNone(ours["project"])
+                else:
+                    self.assertEqual(ours["project"]["name"], theirs.project.name)
+                    self.assertEqual(ours["project"]["repos"], theirs.project.repos)
+
+    def test_the_project_is_read_sorted_and_collapsed(self):  # RTN-020
+        root = repository(PIPELINE + "project:\n  name: P\n  repos:\n    - z/z\n"
+                          "    - a/a\n    - z/z\n")
+        self.assertEqual(read_config(root)["project"], {"name": "P", "repos": ["a/a", "z/z"]})
+
+    def test_no_project_is_none(self):  # RTN-020
+        self.assertIsNone(read_config(repository(PIPELINE))["project"])
 
     def test_a_missing_file_names_the_path(self):  # RTN-020
         with self.assertRaises(RoutineError) as caught:
@@ -97,7 +110,7 @@ class TestSelection(unittest.TestCase):
         self.assertEqual(len(found), 2)
 
     def test_the_command_exits_non_zero_and_prints_no_plan(self):  # RTN-024
-        root = repository("capabilities:\n  - hygiene\nroutines:\n  - triage\n")
+        root = repository("capabilities:\n  - hygiene\nroutines:\n  - repo-triage\n")
         out, err = io.StringIO(), io.StringIO()
         with redirect_stdout(out), redirect_stderr(err):
             code = routines_main.main(["main.py", "plan", "--repo", "a/b"], root=root)
@@ -117,7 +130,7 @@ class TestThePlanIsStable(unittest.TestCase):
         self.assertEqual(text, json.dumps(json.loads(text), indent=2, sort_keys=True) + "\n")
 
     def test_the_command_prints_it(self):  # RTN-030
-        root = repository(PIPELINE + "routines:\n  - triage\n")
+        root = repository(PIPELINE + "routines:\n  - repo-triage\n")
         out = io.StringIO()
         with redirect_stdout(out):
             code = routines_main.main(["main.py", "plan", "--repo", "a/b"], root=root)
@@ -136,6 +149,8 @@ class TestWhatAPlannedRoutineCarries(unittest.TestCase):
         self.assertTrue(fired["api"])
         self.assertEqual(fired["connectors"], [])
         self.assertTrue(fired["create_new_session_on_fire"])
+        self.assertEqual(fired["scope"], "repository")
+        self.assertNotIn("project_repos", fired)
         self.assertEqual(weekly["cron"], "CRON_TZ=America/Chicago 52 7 * * 1")
         self.assertFalse(weekly["api"])
 

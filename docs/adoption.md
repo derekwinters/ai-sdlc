@@ -114,7 +114,7 @@ hand. Name the ones you want, in your configuration:
 
 ```yaml
 routines:
-  - triage       # needs the pipeline capability
+  - repo-triage  # needs the pipeline capability; or project-triage, below
   - dependabot   # needs hygiene
 ```
 
@@ -133,13 +133,49 @@ changes a definition.
 
 Two steps are always yours, in the web UI, and the agent ends by listing them:
 
-1. **For an API-triggered routine (`triage`)**, open it, add an API trigger, generate the token,
-   and store the URL and token as the repository secrets your `fire.endpoint_secret` and
-   `fire.token_secret` name. No tool can create a trigger token.
+1. **For an API-triggered routine (`repo-triage`, `project-triage`)**, open it, add an API
+   trigger, generate the token, and store the URL and token as the repository secrets your
+   `fire.endpoint_secret` and `fire.token_secret` name. No tool can create a trigger token.
 2. **For every routine**, confirm on its page that your repository is attached, and attach it if
    not.
 
 See [Routines](spec/routines.md) for the definitions and the rules.
+
+### Repository triage or project triage
+
+The gatekeeper fires a triage routine whenever an issue enters triage. There are two to choose
+from, and each repository names **one** of them — naming both is an error, because a repository
+has one set of `fire` secrets and only one of them would ever run.
+
+- **`repo-triage`** — a routine of this repository's own, named `<repository> Triage`. Nothing to
+  coordinate; the right choice for a repository that stands alone.
+- **`project-triage`** — one routine shared by several repositories you treat as one project,
+  named `<project> Triage`. One place to read triage runs and one trigger token to rotate, instead
+  of one per repository. Its prompt triages an issue only in a repository on the project's list,
+  and refuses a fire that names any other.
+
+For `project-triage`, describe the project in **every** member's configuration — identically,
+because each member renders the shared routine from its own copy:
+
+```yaml
+routines:
+  - project-triage
+project:
+  name: Doggiehood
+  repos:
+    - derekwinters/lucas-doggiehood
+    - derekwinters/doggiehood-api
+```
+
+The order and any repeats in `repos` do not matter; it is rendered sorted. Run the routines skill
+from any member. The manual steps change shape: attach **every** repository in `repos` to the one
+routine, add its API trigger **once** (a member that runs the skill later reuses it), and store
+the same URL and token as the `fire` secrets in every member. If the members' lists ever
+disagree, the skill shows which repositories differ and will not update the shared routine without
+your explicit confirmation of that change — fix `project:` so every member agrees instead.
+
+A project can mix the two: a repository left out of `repos` keeps `repo-triage`. `triage`, the
+name 0.5.0 shipped, is now an error naming both replacements.
 
 ## Where it all lives
 
